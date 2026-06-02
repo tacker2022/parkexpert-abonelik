@@ -124,7 +124,8 @@ export async function onRequest(context) {
 
     if (!res.ok) {
       const errText = await res.text();
-      return new Response(JSON.stringify({ error: `Supabase error: ${errText}` }), { status: res.status, headers });
+      const targetUrl = `${supabaseUrl}/rest/v1/applications`;
+      return new Response(JSON.stringify({ error: `Supabase error: ${errText} (URL: ${targetUrl})` }), { status: res.status, headers });
     }
 
     const data = await res.json();
