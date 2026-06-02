@@ -1924,7 +1924,10 @@ async function handleFormSubmit() {
       phone: phone,
       email: email,
       plate: plate,
-      parking_location: otopark
+      parking_location: otopark,
+      subscription_type: appSubtype,
+      start_date: startDate,
+      car_model: carModel
     };
     triggerEmailNotification(mockApp);
     triggerWhatsAppNotification(mockApp);
@@ -2411,6 +2414,7 @@ function formatPlateSpacing(plate) {
 }
 
 function formatDateTR(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return dateStr || '';
   // Format: YYYY-MM-DD to DD.MM.YYYY
   const pts = dateStr.split('-');
   if (pts.length === 3) {
