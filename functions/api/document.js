@@ -23,7 +23,7 @@ async function verifyToken(token, secret) {
       keyData,
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      ["sign"]
     );
 
     const signatureBuffer = await crypto.subtle.sign(
