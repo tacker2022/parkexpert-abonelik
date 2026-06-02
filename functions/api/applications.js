@@ -1,3 +1,5 @@
+import { sendWhatsApp } from "./whatsapp_helper.js";
+
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
   const binString = atob(base64);
@@ -167,6 +169,49 @@ export async function onRequest(context) {
       }
 
       const updatedData = await updateRes.json();
+
+      // Trigger WhatsApp status notification asynchronously in the background
+      if (updatedData && updatedData.length > 0) {
+        const updatedApp = updatedData[0];
+        context.waitUntil(
+          (async () => {
+            try {
+              const fullName = updatedApp.full_name;
+              const phone = updatedApp.phone;
+              const plateNumber = updatedApp.plate_number;
+              const appLocation = updatedApp.parking_location;
+
+              const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(appLocation)}&select=support_phone`, {
+                headers: {
+                  "apikey": supabaseAnonKey,
+                  "Authorization": `Bearer ${supabaseAnonKey}`
+                }
+              });
+              let supportPhone = "0212 875 34 56";
+              if (otoparkRes.ok) {
+                const parks = await otoparkRes.json();
+                if (parks.length > 0) {
+                  supportPhone = parks[0].support_phone || supportPhone;
+                }
+              }
+
+              let message = "";
+              if (status === "Onaylandı") {
+                message = `Sayın ${fullName}, 🌟\n\n${id} kodlu PARKEXPERT otopark abonelik başvurunuz onaylanmıştır! Araç plakanız (${plateNumber}) sisteme başarıyla tanımlanmış olup otopark giriş-çıkış geçişleriniz aktif edilmiştir.\n\nKeyifli sürüşler dileriz!`;
+              } else if (status === "Reddedildi") {
+                message = `Sayın ${fullName}, ⚠️\n\n${id} kodlu PARKEXPERT otopark abonelik başvurunuz maalesef onaylanamamıştır.\n\nDetaylı bilgi almak için lütfen destek hattımız (${supportPhone}) ile iletişime geçiniz.`;
+              }
+
+              if (message) {
+                await sendWhatsApp(phone, message, context.env);
+              }
+            } catch (waErr) {
+              console.error("Failed to send WhatsApp message on status change:", waErr);
+            }
+          })()
+        );
+      }
+
       return new Response(JSON.stringify({ success: true, data: updatedData }), { status: 200, headers });
     }
 

@@ -1,3 +1,5 @@
+import { sendWhatsApp } from "./whatsapp_helper.js";
+
 export async function onRequest(context) {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -128,6 +130,41 @@ export async function onRequest(context) {
     }
 
     const data = await res.json();
+
+    // Trigger WhatsApp notification asynchronously in the background
+    context.waitUntil(
+      (async () => {
+        try {
+          const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parkingLocation)}&select=*`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          let park = {};
+          if (otoparkRes.ok) {
+            const parks = await otoparkRes.json();
+            if (parks.length > 0) {
+              park = parks[0];
+            }
+          }
+
+          const bankName = park.bank_name || "Vakıfbank";
+          const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
+          const price = subscriptionType.includes("Kurumsal") 
+            ? (park.price_external || "2400 TL") 
+            : (park.price_employee || "1200 TL");
+          const supportPhone = park.support_phone || "0212 875 34 56";
+
+          const message = `Merhaba Sayın ${fullName}, 🌟\n\nPARKEXPERT abonelik başvurunuz alınmıştır. Başvuru kodunuz: ${appId}.\n\nÜyelik işlemlerinizin tamamlanması için havale/EFT yapmanız gereken banka bilgileri aşağıdadır:\n\n📌 Şirket: ${park.company_title || 'PARKEXPERT İŞLETMECİLİĞİ'}\n🏦 Banka: ${bankName}\n💳 IBAN: ${iban}\n💸 Tutar: ${price}\n🚗 Araç Plakası: ${plateNumber}\n\n⚠️ ÖNEMLİ: Lütfen transfer açıklama kısmına sadece araç plakanızı (${plateNumber}) yazınız.\n\nSorularınız için destek hattımız: ${supportPhone}\n\nİyi günler dileriz!`;
+
+          await sendWhatsApp(phone, message, context.env);
+        } catch (waErr) {
+          console.error("Failed to send WhatsApp message on apply:", waErr);
+        }
+      })()
+    );
+
     return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
