@@ -457,6 +457,11 @@ main {
   flex-shrink: 0;
 }
 
+/* Live Plate Simulation Widget Styles */
+#live-sim-plate {
+  white-space: nowrap;
+}
+
 /* Advantages Section */
 .advantages {
   padding: 6rem 0;
@@ -2068,6 +2073,10 @@ textarea.is-invalid {
     padding: 1rem 1.5rem;
   }
   
+  .nav-container nav {
+    display: contents;
+  }
+  
   .mobile-nav-toggle {
     display: block;
   }
@@ -2088,6 +2097,24 @@ textarea.is-invalid {
   
   .nav-menu.active {
     display: flex;
+  }
+  
+  .glass-badge {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .live-camera-frame {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  #live-sim-plate {
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  #live-sim-status {
+    font-size: 0.65rem !important;
+    padding: 0.2rem 0.35rem !important;
   }
   
   .nav-item {
