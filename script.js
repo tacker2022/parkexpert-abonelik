@@ -2270,7 +2270,10 @@ async function loadApplications() {
       }
     });
 
-    if (!response.ok) throw new Error("Could not load applications");
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Could not load applications");
+    }
     allApplications = await response.json();
     
     // Map database properties to frontend compatibility structure
@@ -2299,6 +2302,7 @@ async function loadApplications() {
     });
   } catch (err) {
     console.error("Failed to load applications:", err);
+    alert("Başvurular yüklenirken hata oluştu:\n\n" + err.message);
     allApplications = [];
   }
   
