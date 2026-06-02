@@ -49,7 +49,7 @@ export async function onRequest(context) {
     return new Response(null, { status: 204, headers });
   }
 
-  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "");
+  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
   const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
   const bucket = context.env.BUCKET;

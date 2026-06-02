@@ -14,7 +14,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
   }
 
-  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "");
+  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
   const bucket = context.env.BUCKET;
 
@@ -124,8 +124,7 @@ export async function onRequest(context) {
 
     if (!res.ok) {
       const errText = await res.text();
-      const targetUrl = `${supabaseUrl}/rest/v1/applications`;
-      return new Response(JSON.stringify({ error: `Supabase error: ${errText} (URL: ${targetUrl})` }), { status: res.status, headers });
+      return new Response(JSON.stringify({ error: `Supabase error: ${errText}` }), { status: res.status, headers });
     }
 
     const data = await res.json();
