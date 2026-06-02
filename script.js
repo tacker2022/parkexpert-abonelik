@@ -1,0 +1,4439 @@
+/* ==========================================================================
+   PARKEXPERT INTERACTION SYSTEM
+   Author: Antigravity AI
+   ========================================================================== */
+
+const STORAGE_KEY = 'parkexpert_applications';
+const ADMIN_USERS_KEY = 'parkexpert_admin_users';
+let currentAdminUser = 'superadmin';
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Lucide Icons
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+
+  // Automatically clear old mock data once to update to a fresh clean empty state
+  if (!localStorage.getItem('parkexpert_fresh_empty_v3')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem('parkexpert_fresh_empty_v3', 'true');
+  }
+
+  // Initialize Global Navigation & Common Utilities
+  initGlobalNav();
+
+  // Initialize LocalStorage Mock Data
+  initMockData();
+
+  // Populate active locations marquee ticker from DB
+  populateTickerLocations();
+
+  // Route page-specific controllers
+  const formElement = document.getElementById('subscription-apply-form');
+  const adminTable = document.getElementById('admin-table');
+
+  if (formElement) {
+    initWizardController();
+  } else if (adminTable) {
+    initAdminController();
+  }
+
+  // Initialize Hero Live Ticker Simulation if elements are present
+  initHeroLiveSimulation();
+});
+
+/* ==========================================================================
+   GLOBAL COMMON FUNCTIONS & NAV LOGIC
+   ========================================================================== */
+
+function initGlobalNav() {
+  const toggleBtn = document.getElementById('mobile-nav-toggle');
+  const navMenu = document.getElementById('nav-menu');
+
+  if (toggleBtn && navMenu) {
+    toggleBtn.addEventListener('click', () => {
+      const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+      toggleBtn.setAttribute('aria-expanded', !isExpanded);
+      navMenu.classList.toggle('active');
+    });
+  }
+}
+
+function initHeroLiveSimulation() {
+  const plateEl = document.getElementById('live-sim-plate');
+  const statusEl = document.getElementById('live-sim-status');
+  
+  if (!plateEl || !statusEl) return;
+
+  const plates = ["34 PE 2026", "34 CAN 88", "34 EXP 99", "34 AVM 34", "34 PLK 88"];
+  const states = [
+    { 
+      text: "OKUNUYOR", 
+      bg: "rgba(255, 208, 0, 0.15)", 
+      color: "#ff9f00", 
+      iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ff9f00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right: 2px;"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>`
+    },
+    { 
+      text: "EŞLEŞTİ", 
+      bg: "rgba(15, 59, 162, 0.12)", 
+      color: "#0f3ba2", 
+      iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f3ba2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right: 2px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></svg>`
+    },
+    { 
+      text: "GEÇİŞ AKTİF", 
+      bg: "rgba(37, 211, 102, 0.15)", 
+      color: "#25d366", 
+      iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#25d366" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right: 2px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`
+    }
+  ];
+
+  let plateIndex = 0;
+  let stateIndex = 2; // Start with unlock active
+
+  setInterval(() => {
+    stateIndex = (stateIndex + 1) % states.length;
+    
+    if (stateIndex === 0) {
+      plateIndex = (plateIndex + 1) % plates.length;
+      plateEl.textContent = plates[plateIndex];
+    }
+
+    const currentState = states[stateIndex];
+    statusEl.style.backgroundColor = currentState.bg;
+    statusEl.style.color = currentState.color;
+    
+    statusEl.innerHTML = `${currentState.iconSvg}<span style="vertical-align:middle;">${currentState.text}</span>`;
+  }, 2200);
+}
+
+function populateTickerLocations() {
+  const spans = document.querySelectorAll('.ticker-span');
+  if (spans.length === 0) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
+  if (otoparks.length === 0) {
+    spans.forEach(span => {
+      span.textContent = "🔥 DİJİTAL OTOPARK VE ABONELİK SİSTEMİ AKTİF";
+    });
+    return;
+  }
+
+  const locationNames = otoparks.map(p => p.name.toLocaleUpperCase('tr-TR'));
+  const tickerText = `🔥 AKTİF DİJİTAL LOKASYONLARIMIZ: ${locationNames.join(' • ')}`;
+
+  spans.forEach(span => {
+    span.textContent = tickerText;
+  });
+}
+
+  // Secret Admin Portal Shortcut: Smart single-click vs double-click handler
+  const logo = document.getElementById('nav-logo');
+  if (logo) {
+    let clickTimeout;
+    logo.addEventListener('click', (e) => {
+      e.preventDefault(); // Stop immediate href redirect on first click
+      console.log(`[Logo Click] detail (count): ${e.detail}`);
+
+      // 1. Modifier keys shortcut (Alt + Click or Ctrl + Shift + Click)
+      if (e.altKey || (e.ctrlKey && e.shiftKey)) {
+        console.log('[Logo Click] Modifier key shortcut detected. Redirecting to admin...');
+        clearTimeout(clickTimeout);
+        window.location.href = 'admin.html';
+        return;
+      }
+
+      // 2. Double-click check (using e.detail which is the click count)
+      if (e.detail === 2) {
+        console.log('[Logo Click] Double-click detected! Redirecting to admin...');
+        clearTimeout(clickTimeout);
+        window.location.href = 'admin.html';
+      } else if (e.detail === 1) {
+        // First click: wait briefly to see if a second click follows
+        clickTimeout = setTimeout(() => {
+          console.log('[Logo Click] Single-click threshold passed. Going to homepage...');
+          window.location.href = 'index.html';
+        }, 350); // 350ms is standard double-click threshold
+      }
+    });
+  }
+
+// Global modal helpers
+function openModal(id, event) {
+  if (event) event.preventDefault();
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Stop body scrolling
+    
+    // Setup and trigger scroll check on open dynamically
+    setTimeout(() => {
+      if (id === 'modal-kvkk') {
+        checkScrollRequirement('modal-body-kvkk', 'btn-approve-kvkk', 'scroll-indicator-kvkk');
+      } else if (id === 'modal-terms') {
+        checkScrollRequirement('modal-body-terms', 'btn-approve-terms', 'scroll-indicator-terms');
+      } else if (id === 'modal-consent') {
+        checkScrollRequirement('modal-body-consent', 'btn-approve-consent', 'scroll-indicator-consent');
+      }
+    }, 150);
+  }
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+}
+
+function closeModalOnOverlay(event) {
+  if (event.target.classList.contains('modal-overlay')) {
+    event.target.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+function clearAndResetData(event) {
+  if (event) event.preventDefault();
+  
+  if (currentAdminUser !== 'superadmin') {
+    alert("Bu işlem için Süper Yönetici yetkiniz bulunmalıdır.");
+    return;
+  }
+  
+  if (confirm("Yönetici panelindeki tüm abonelik başvurularını silmek ve sistemi sıfırlamak istediğinize emin misiniz?\n\nBu işlem geri alınamaz!")) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    
+    alert("Yönetici paneli verileri başarıyla temizlendi. Sayfa yenileniyor...");
+    location.reload();
+  }
+}
+
+/* ==========================================================================
+   LOCALSTORAGE INITIALIZATION & MOCK DATA
+   ========================================================================== */
+
+
+function initMockData() {
+  const existingData = localStorage.getItem(STORAGE_KEY);
+  if (!existingData) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+  }
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const existingOtoparks = localStorage.getItem(OTOPARKS_KEY);
+  if (!existingOtoparks) {
+    const defaultOtoparks = [
+      {
+        id: "birlik-sanayi",
+        name: "Birlik Sanayi Sitesi - Beylikdüzü",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "BİRLİK SANAYİ SİTESİ KOOPERATİFİ YÖNETİMİ",
+        taxOffice: "Beylikdüzü",
+        taxNumber: "2910398492",
+        bankName: "Vakıfbank",
+        iban: "TR23 0001 5001 5800 7302 9104 88",
+        priceEmployee: "1200 TL",
+        priceExternal: "2400 TL",
+        supportPhone: "0212 875 34 56"
+      },
+      {
+        id: "dersankoop",
+        name: "Dersankoop & Trios 2023 – İkitelli OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "DERSANKOOP İKİTELLİ ORGANİZE SANAYİ YÖNETİMİ",
+        taxOffice: "İkitelli",
+        taxNumber: "8820194852",
+        bankName: "Halkbank",
+        iban: "TR45 0001 2009 4500 1200 9988 77",
+        priceEmployee: "1500 TL",
+        priceExternal: "3000 TL",
+        supportPhone: "0212 549 12 34"
+      },
+      {
+        id: "aymakoop",
+        name: "Aymakoop – İkitelli OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "AYMAKOOP SİTE İŞLETMECİLİĞİ KOOPERATİFİ",
+        taxOffice: "İkitelli",
+        taxNumber: "1290382942",
+        bankName: "Ziraat Bankası",
+        iban: "TR88 0001 0000 4567 8901 2345 67",
+        priceEmployee: "1400 TL",
+        priceExternal: "2800 TL",
+        supportPhone: "0212 549 56 78"
+      },
+      {
+        id: "aykosan",
+        name: "Aykosan – İkitelli OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "AYKOSAN SANAYİ SİTESİ KOOPERATİFİ",
+        taxOffice: "İkitelli",
+        taxNumber: "3892019283",
+        bankName: "İş Bankası",
+        iban: "TR12 0006 2000 7890 1234 5678 90",
+        priceEmployee: "1300 TL",
+        priceExternal: "2600 TL",
+        supportPhone: "0212 549 90 12"
+      },
+      {
+        id: "tumsan-2",
+        name: "Tümsan 2– İkitelli OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "TÜMSAN 2 SANAYİ SİTESİ KOOPERATİFİ",
+        taxOffice: "İkitelli",
+        taxNumber: "9102839281",
+        bankName: "Yapı Kredi",
+        iban: "TR56 0003 2000 9012 3456 7890 12",
+        priceEmployee: "1400 TL",
+        priceExternal: "2800 TL",
+        supportPhone: "0212 549 34 56"
+      },
+      {
+        id: "tumsan-1",
+        name: "Tümsan 1 – İkitelli OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "TÜMSAN 1 SANAYİ SİTESİ KOOPERATİFİ",
+        taxOffice: "İkitelli",
+        taxNumber: "8293029103",
+        bankName: "Garanti BBVA",
+        iban: "TR34 0006 2000 1234 5678 9012 34",
+        priceEmployee: "1400 TL",
+        priceExternal: "2800 TL",
+        supportPhone: "0212 549 78 90"
+      },
+      {
+        id: "matbaacilar",
+        name: "Matbaacılar Sitesi – Bağcılar OSB",
+        category: "OSB / Sanayi Sitesi Otoparkları",
+        companyTitle: "MATBAACILAR SİTESİ KOOPERATİFİ",
+        taxOffice: "Güneşli",
+        taxNumber: "7293829102",
+        bankName: "Akbank",
+        iban: "TR76 0004 6000 5678 9012 3456 78",
+        priceEmployee: "1600 TL",
+        priceExternal: "3200 TL",
+        supportPhone: "0212 629 12 34"
+      },
+      {
+        id: "samsun-piazza",
+        name: "Samsun Piazza - Samsun",
+        category: "AVM Otoparkları",
+        companyTitle: "RÖNESANS GAYRİMENKUL YATIRIM A.Ş.",
+        taxOffice: "Samsun",
+        taxNumber: "7382019482",
+        bankName: "QNB Finansbank",
+        iban: "TR65 0011 1000 1234 5678 9012 34",
+        priceEmployee: "2000 TL",
+        priceExternal: "4000 TL",
+        supportPhone: "0362 290 10 10"
+      },
+      {
+        id: "maltepe-piazza",
+        name: "Maltepe Piazza - Maltepe",
+        category: "AVM Otoparkları",
+        companyTitle: "RÖNESANS GAYRİMENKUL YATIRIM A.Ş.",
+        taxOffice: "Maltepe",
+        taxNumber: "7382019483",
+        bankName: "Garanti BBVA",
+        iban: "TR92 0006 2000 9876 5432 1098 76",
+        priceEmployee: "2500 TL",
+        priceExternal: "5000 TL",
+        supportPhone: "0216 500 20 20"
+      },
+      {
+        id: "maltepe-park",
+        name: "Maltepe Park – Maltepe",
+        category: "AVM Otoparkları",
+        companyTitle: "PUSULA AKILLI ŞEHİRCİLİK VE BİLGİ TEKNOLOJİLERİ A.Ş.",
+        taxOffice: "ALEMDAĞ VERGİ DAİRESİ",
+        taxNumber: "7330907326",
+        bankName: "Albaraka Türk",
+        iban: "TR11 0020 3000 0876 9030 0000 13",
+        priceEmployee: "1875 TL",
+        priceExternal: "3750 TL",
+        supportPhone: "0501 618 34 82"
+      },
+      {
+        id: "vadi-istanbul",
+        name: "Vadi İstanbul – Sarıyer",
+        category: "AVM Otoparkları",
+        companyTitle: "ARTAŞ İNŞAAT VE SANAYİ A.Ş.",
+        taxOffice: "Sarıyer",
+        taxNumber: "1283928103",
+        bankName: "Denizbank",
+        iban: "TR48 0013 4000 8765 4321 0987 65",
+        priceEmployee: "3000 TL",
+        priceExternal: "6000 TL",
+        supportPhone: "0212 330 30 30"
+      },
+      {
+        id: "kirklar-acik",
+        name: "Kırklar Açık – Libadiye",
+        category: "Açık Otoparklar / Bağımsız Otoparklar",
+        companyTitle: "KIRKLAR OTOPARK İŞLETMELERİ LTD. ŞTİ.",
+        taxOffice: "Üsküdar",
+        taxNumber: "9283920194",
+        bankName: "TEB",
+        iban: "TR79 0003 2000 1234 5678 9012 34",
+        priceEmployee: "1000 TL",
+        priceExternal: "2000 TL",
+        supportPhone: "0216 320 40 40"
+      }
+    ];
+    localStorage.setItem(OTOPARKS_KEY, JSON.stringify(defaultOtoparks));
+  }
+}
+
+/* ==========================================================================
+   WIZARD FORM CONTROLLER (basvuru.html)
+   ========================================================================== */
+
+let currentStep = 1;
+let selectedType = 'bireysel';
+let uploadedFiles = {
+  ruhsat: null,
+  kimlik: null,
+  vergi: null,
+  sirkuler: null,
+  dekont: null,
+  calisma: null
+};
+
+async function populateOtoparkSelection() {
+  const otoparkSelect = document.getElementById('otopark-selection');
+  if (!otoparkSelect) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  let otoparks = [];
+  try {
+    const res = await fetch('/api/otoparks');
+    if (res.ok) {
+      otoparks = await res.json();
+      // Map is_active to isActive for client compatibility
+      otoparks.forEach(p => {
+        if (p.is_active !== undefined) {
+          p.isActive = p.is_active;
+        }
+        if (p.company_title !== undefined) {
+          p.companyTitle = p.company_title;
+        }
+        if (p.tax_office !== undefined) {
+          p.taxOffice = p.tax_office;
+        }
+        if (p.tax_number !== undefined) {
+          p.taxNumber = p.tax_number;
+        }
+        if (p.bank_name !== undefined) {
+          p.bankName = p.bank_name;
+        }
+        if (p.price_employee !== undefined) {
+          p.priceEmployee = p.price_employee;
+        }
+        if (p.price_external !== undefined) {
+          p.priceExternal = p.price_external;
+        }
+        if (p.support_phone !== undefined) {
+          p.supportPhone = p.support_phone;
+        }
+      });
+      localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
+    } else {
+      throw new Error("API failed");
+    }
+  } catch (err) {
+    console.error("Failed to load otoparks, falling back to cache:", err);
+    otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  }
+
+  // 1. Populate native hidden select (helps keep validation & submit working)
+  const firstOption = otoparkSelect.options[0];
+  otoparkSelect.innerHTML = '';
+  if (firstOption) {
+    otoparkSelect.appendChild(firstOption);
+  } else {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.disabled = true;
+    opt.selected = true;
+    opt.textContent = 'Lütfen bir otopark seçin...';
+    otoparkSelect.appendChild(opt);
+  }
+
+  // Group otoparks by category
+  const grouped = {};
+  otoparks.forEach(park => {
+    if (!grouped[park.category]) {
+      grouped[park.category] = [];
+    }
+    grouped[park.category].push(park);
+  });
+
+  // Render grouped options in native select
+  for (const [category, list] of Object.entries(grouped)) {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = category;
+    
+    list.forEach(park => {
+      const option = document.createElement('option');
+      option.value = park.name;
+      const isActive = park.isActive !== false;
+      if (!isActive) {
+        option.disabled = true;
+        option.textContent = `${park.name} (ABONELİĞE GEÇİCİ OLARAK KAPALI)`;
+      } else {
+        option.textContent = park.name;
+      }
+      optgroup.appendChild(option);
+    });
+
+    otoparkSelect.appendChild(optgroup);
+  }
+
+  // 2. Populate custom dropdown UI
+  const customOptionsList = document.getElementById('custom-otopark-select-options');
+  const customTrigger = document.getElementById('custom-otopark-select-trigger');
+  const customContainer = document.getElementById('custom-otopark-select-container');
+  const customSearchInput = document.getElementById('custom-otopark-select-search');
+
+  if (!customOptionsList || !customTrigger || !customContainer) return;
+
+  customOptionsList.innerHTML = '';
+
+  // Render grouped options in custom UI
+  for (const [category, list] of Object.entries(grouped)) {
+    // Group Header
+    const groupHeaderEl = document.createElement('div');
+    groupHeaderEl.className = 'custom-select-group-header';
+    groupHeaderEl.textContent = category;
+    customOptionsList.appendChild(groupHeaderEl);
+
+    list.forEach(park => {
+      const isActive = park.isActive !== false;
+      
+      const optionEl = document.createElement('div');
+      optionEl.className = `custom-select-option${isActive ? '' : ' disabled'}`;
+      optionEl.setAttribute('role', 'option');
+      optionEl.setAttribute('data-value', park.name);
+      
+      let badgeHTML = '';
+      if (!isActive) {
+        badgeHTML = `<span class="custom-select-option-badge custom-select-option-badge--inactive"><i data-lucide="lock" style="width: 10px; height: 10px; display: inline; vertical-align: middle; margin-right: 0.15rem;"></i> Aboneliğe Kapalı</span>`;
+      } else {
+        badgeHTML = `<span class="custom-select-option-badge custom-select-option-badge--active">Aboneliğe Açık</span>`;
+      }
+
+      optionEl.innerHTML = `
+        <div class="custom-select-option-info">
+          <span class="custom-select-option-name">${park.name}</span>
+          ${badgeHTML}
+        </div>
+      `;
+
+      // Select event (only for active ones)
+      if (isActive) {
+        optionEl.addEventListener('click', () => {
+          // Update native select
+          otoparkSelect.value = park.name;
+          
+          // Trigger change event to run validation / payment info updates
+          const event = new Event('change', { bubbles: true });
+          otoparkSelect.dispatchEvent(event);
+
+          // Update trigger label
+          const triggerText = customTrigger.querySelector('.custom-select-trigger-text');
+          if (triggerText) triggerText.textContent = park.name;
+
+          // Toggle selection styling
+          customOptionsList.querySelectorAll('.custom-select-option').forEach(el => el.classList.remove('selected'));
+          optionEl.classList.add('selected');
+
+          // Close panel
+          customContainer.classList.remove('open');
+          customTrigger.setAttribute('aria-expanded', 'false');
+          
+          // Clear invalid border if any
+          customTrigger.classList.remove('is-invalid');
+        });
+      }
+
+      customOptionsList.appendChild(optionEl);
+    });
+  }
+
+  // Create Lucide Icons for badges if necessary
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // 3. Setup Dropdown trigger click handler
+  const handleTriggerClick = (e) => {
+    e.stopPropagation();
+    const isOpen = customContainer.classList.contains('open');
+    
+    // Close other custom dropdowns (if any)
+    document.querySelectorAll('.custom-select-container').forEach(el => el.classList.remove('open'));
+    
+    if (!isOpen) {
+      customContainer.classList.add('open');
+      customTrigger.setAttribute('aria-expanded', 'true');
+      if (customSearchInput) {
+        customSearchInput.value = '';
+        // Filter options to reset search
+        filterCustomOptions('');
+        setTimeout(() => customSearchInput.focus(), 50);
+      }
+    } else {
+      customContainer.classList.remove('open');
+      customTrigger.setAttribute('aria-expanded', 'false');
+    }
+  };
+
+  customTrigger.removeEventListener('click', customTrigger._clickHandler);
+  customTrigger._clickHandler = handleTriggerClick;
+  customTrigger.addEventListener('click', handleTriggerClick);
+
+  // 4. Click outside handler to close dropdown
+  const handleOutsideClick = (e) => {
+    if (!customContainer.contains(e.target)) {
+      customContainer.classList.remove('open');
+      customTrigger.setAttribute('aria-expanded', 'false');
+    }
+  };
+  document.removeEventListener('click', document._outsideSelectHandler);
+  document._outsideSelectHandler = handleOutsideClick;
+  document.addEventListener('click', handleOutsideClick);
+
+  // 5. Setup Live Filter Search logic
+  function filterCustomOptions(query) {
+    const cleanQuery = query.toLocaleUpperCase('tr-TR').trim();
+    let currentHeader = null;
+    let visibleInGroup = 0;
+
+    const children = Array.from(customOptionsList.children);
+    
+    children.forEach(child => {
+      if (child.classList.contains('custom-select-group-header')) {
+        // Handle header visibility dynamically
+        if (currentHeader && visibleInGroup === 0) {
+          currentHeader.style.display = 'none';
+        }
+        currentHeader = child;
+        currentHeader.style.display = 'block';
+        visibleInGroup = 0;
+      } else if (child.classList.contains('custom-select-option')) {
+        const optionName = child.querySelector('.custom-select-option-name').textContent.toLocaleUpperCase('tr-TR');
+        if (optionName.includes(cleanQuery)) {
+          child.style.display = 'flex';
+          visibleInGroup++;
+        } else {
+          child.style.display = 'none';
+        }
+      }
+    });
+
+    // Handle last group header visibility
+    if (currentHeader && visibleInGroup === 0) {
+      currentHeader.style.display = 'none';
+    }
+  }
+
+  if (customSearchInput) {
+    const handleSearchInput = (e) => {
+      filterCustomOptions(e.target.value);
+    };
+    customSearchInput.removeEventListener('input', customSearchInput._inputHandler);
+    customSearchInput._inputHandler = handleSearchInput;
+    customSearchInput.addEventListener('input', handleSearchInput);
+    
+    // Prevent closing dropdown when clicking search input
+    customSearchInput.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  // 6. Check URL query parameters for otopark pre-selection (e.g. ?otopark=birlik-sanayi)
+  const urlParams = new URLSearchParams(window.location.search);
+  const otoparkParam = urlParams.get('otopark');
+  if (otoparkParam) {
+    const matchedPark = otoparks.find(p => p.id === otoparkParam);
+    if (matchedPark && (matchedPark.isActive !== false)) {
+      const optionEl = customOptionsList.querySelector(`.custom-select-option[data-value="${matchedPark.name}"]`);
+      if (optionEl) {
+        optionEl.click();
+      }
+    }
+  }
+}
+
+function initWizardController() {
+  // Populate otopark dropdown dynamically
+  populateOtoparkSelection();
+
+  // Input formatting listeners
+  const tcInput = document.getElementById('tc-identity');
+  if (tcInput) {
+    tcInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, ''); // Digits only
+    });
+  }
+
+  const phoneInput = document.getElementById('phone-number');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', (e) => {
+      formatPhone(e.target);
+    });
+  }
+
+  const plateInput = document.getElementById('license-plate');
+  if (plateInput) {
+    plateInput.addEventListener('input', (e) => {
+      // Auto-capitalize, remove spaces, keep letters and digits only
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+  }
+
+  const taxNoInput = document.getElementById('billing-tax-no');
+  if (taxNoInput) {
+    taxNoInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, ''); // Digits only
+    });
+  }
+
+  // Setup Date picker default min as today
+  const dateInput = document.getElementById('start-date');
+  if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    dateInput.value = today;
+  }
+
+  // Auto-uppercase all standard text inputs and textareas in Turkish as they type
+  const uppercaseInputIds = [
+    'company-name',
+    'full-name',
+    'car-model',
+    'driver-name',
+    'home-address',
+    'application-notes',
+    'billing-company',
+    'billing-tax-office',
+    'billing-address'
+  ];
+
+  uppercaseInputIds.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', (e) => {
+        // Track selection cursor position to prevent jumping
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        
+        // Convert to Turkish uppercase in real-time
+        e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
+        
+        // Restore cursor position
+        e.target.setSelectionRange(start, end);
+      });
+    }
+  });
+
+  // Setup upload zones drag-drop listeners
+  setupDragAndDropZones();
+
+  // Setup premium KVKK scroll checks
+  initPremiumKvkkController();
+
+  // Handle corporate type billing initial labels sync
+  handleBillingCorpTypeChange();
+}
+
+// ==========================================================================
+// PREMIUM KVKK SCROLL-TO-READ & STATE CONTROLLER
+// ==========================================================================
+let docReadState = {
+  kvkk: false,
+  terms: false,
+  consent: false
+};
+
+function initPremiumKvkkController() {
+  // Attach scroll listeners
+  setupModalScrollChecker('modal-body-kvkk', 'btn-approve-kvkk', 'scroll-indicator-kvkk');
+  setupModalScrollChecker('modal-body-terms', 'btn-approve-terms', 'scroll-indicator-terms');
+  setupModalScrollChecker('modal-body-consent', 'btn-approve-consent', 'scroll-indicator-consent');
+}
+
+function setupModalScrollChecker(bodyId, buttonId, indicatorId) {
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+
+  body.addEventListener('scroll', () => {
+    // Check scroll height to see if user has reached bottom (with 40px buffer)
+    const isAtBottom = body.scrollHeight - body.scrollTop <= body.clientHeight + 40;
+    if (isAtBottom) {
+      unlockButton(buttonId, indicatorId);
+    }
+  });
+}
+
+function checkScrollRequirement(bodyId, buttonId, indicatorId) {
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  
+  if (body.scrollHeight <= body.clientHeight + 5) {
+    unlockButton(buttonId, indicatorId);
+  }
+}
+
+function unlockButton(buttonId, indicatorId) {
+  const btn = document.getElementById(buttonId);
+  const indicator = document.getElementById(indicatorId);
+  
+  if (btn && btn.hasAttribute('disabled')) {
+    btn.removeAttribute('disabled');
+    btn.classList.remove('btn-approve-disabled');
+    btn.style.cursor = 'pointer';
+    
+    if (indicator) {
+      indicator.classList.add('scroll-completed');
+      indicator.innerHTML = '<i data-lucide="check-circle" style="width: 14px; height: 14px; color: #22c55e;"></i> Okuma tamamlandı. Onaylayabilirsiniz.';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+}
+
+function approveDocument(type) {
+  docReadState[type] = true;
+  closeModal('modal-' + type);
+
+  // Update document badge dynamically
+  const badge = document.getElementById('doc-badge-' + type);
+  const icon = document.getElementById('doc-icon-' + type);
+  const statusLabel = document.getElementById('status-label-' + type);
+
+  if (badge) {
+    badge.classList.remove('unread');
+    badge.classList.add('read');
+    badge.style.borderColor = '#22c55e';
+    badge.style.background = 'rgba(34, 197, 94, 0.02)';
+  }
+
+  if (icon) {
+    icon.setAttribute('data-lucide', 'check-circle-2');
+    icon.style.color = '#22c55e';
+  }
+
+  if (statusLabel) {
+    statusLabel.innerHTML = '<i data-lucide="check-circle-2" style="width: 14px; height: 14px; color: #22c55e;"></i> Okundu';
+    statusLabel.style.color = '#22c55e';
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // If both documents are read, unlock the checkbox
+  if (docReadState.kvkk && docReadState.terms) {
+    const chk = document.getElementById('chk-kvkk-terms');
+    const label = document.querySelector('label[for="chk-kvkk-terms"]');
+    const wrapper = chk ? chk.closest('.checklist-item-wrapper') : null;
+
+    if (chk) {
+      chk.removeAttribute('disabled');
+      chk.style.cursor = 'pointer';
+      // User must manually check the box per request!
+    }
+
+    if (label) {
+      label.style.cursor = 'pointer';
+    }
+
+    if (wrapper) {
+      wrapper.style.borderColor = '#22c55e';
+      wrapper.style.background = 'rgba(34, 197, 94, 0.01)';
+      // Trigger a satisfying subtle scale pulse animation to notify the user to click it
+      wrapper.style.transform = 'scale(1.01)';
+      setTimeout(() => {
+        wrapper.style.transform = 'none';
+      }, 300);
+    }
+  }
+
+  // If consent document is read, unlock the marketing checkbox
+  if (type === 'consent') {
+    const chk = document.getElementById('chk-marketing');
+    const label = document.querySelector('label[for="chk-marketing"]');
+    const wrapper = chk ? chk.closest('.checklist-item-wrapper') : null;
+
+    if (chk) {
+      chk.removeAttribute('disabled');
+      chk.style.cursor = 'pointer';
+    }
+
+    if (label) {
+      label.style.cursor = 'pointer';
+    }
+
+    if (wrapper) {
+      wrapper.style.borderColor = '#22c55e';
+      wrapper.style.background = 'rgba(34, 197, 94, 0.01)';
+      // Trigger a satisfying subtle scale pulse animation to notify the user to click it
+      wrapper.style.transform = 'scale(1.01)';
+      setTimeout(() => {
+        wrapper.style.transform = 'none';
+      }, 300);
+    }
+  }
+}
+
+function handleKvkkCheckboxClick(event) {
+  // If not read yet, intercept and prevent check
+  if (!docReadState.kvkk || !docReadState.terms) {
+    event.preventDefault();
+    if (event.target) event.target.checked = false;
+
+    // Shake the badges to draw attention
+    const badges = ['doc-badge-kvkk', 'doc-badge-terms'];
+    badges.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('shake-badge');
+        // Red glow warning flash
+        el.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.25)';
+        setTimeout(() => {
+          el.classList.remove('shake-badge');
+          el.style.boxShadow = '';
+        }, 600);
+      }
+    });
+
+    // Show a beautiful float toast notifying the user
+    showToastNotification('Yasal Uyarı', 'Devam etmek için her iki yasal metni de açarak sonuna kadar okumanız gerekmektedir.', 'shield-alert');
+  }
+}
+
+function handleMarketingCheckboxClick(event) {
+  if (!docReadState.consent) {
+    event.preventDefault();
+    if (event.target) event.target.checked = false;
+
+    // Shake the badge to draw attention
+    const el = document.getElementById('doc-badge-consent');
+    if (el) {
+      el.classList.add('shake-badge');
+      el.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.25)';
+      setTimeout(() => {
+        el.classList.remove('shake-badge');
+        el.style.boxShadow = '';
+      }, 600);
+    }
+
+    // Show a beautiful float toast notifying the user
+    showToastNotification('Okuma Gerekli', 'Ticari Elektronik İleti iznini onaylayabilmek için öncelikle ilgili Aydınlatma Metnini açarak sonuna kadar okumanız gerekmektedir.', 'mail');
+  }
+}
+
+function showToastNotification(title, message, iconName) {
+  const toast = document.getElementById('email-toast');
+  const toastTitle = document.getElementById('toast-title');
+  const toastMsg = document.getElementById('toast-message');
+  const toastIcon = toast ? toast.querySelector('.toast-icon') : null;
+
+  if (toast && toastTitle && toastMsg) {
+    toastTitle.textContent = title;
+    toastMsg.textContent = message;
+    
+    if (toastIcon && iconName) {
+      toastIcon.innerHTML = `<i data-lucide="${iconName}" style="width: 22px; height: 22px; color: #ef4444;"></i>`;
+    }
+    
+    toast.classList.add('active');
+    
+    // Clear auto-hide timers if any, then hide in 4 seconds
+    if (window.toastHideTimer) clearTimeout(window.toastHideTimer);
+    window.toastHideTimer = setTimeout(() => {
+      toast.classList.remove('active');
+    }, 4000);
+  }
+}
+
+function formatPhone(input) {
+  let val = input.value.replace(/\D/g, ''); // Digits only
+  if (val.startsWith('0')) {
+    val = val.substring(1); // Remove leading 0 for parsing format
+  }
+  
+  let formatted = '';
+  if (val.length > 0) {
+    formatted += '0 (' + val.substring(0, 3);
+  }
+  if (val.length >= 4) {
+    formatted += ') ' + val.substring(3, 6);
+  }
+  if (val.length >= 7) {
+    formatted += ' ' + val.substring(6, 8);
+  }
+  if (val.length >= 9) {
+    formatted += ' ' + val.substring(8, 10);
+  }
+  
+  input.value = val.length === 0 ? '' : formatted;
+}
+
+// setSubscriptionType removed as wizard step 1 choices are now unified
+
+function hasCustomBilling() {
+  const radioSermaye = document.getElementById('billing-corp-type-sermaye');
+  const radioSahis = document.getElementById('billing-corp-type-sahis');
+  const isSermaye = radioSermaye ? radioSermaye.checked : false;
+  const isSahis = radioSahis ? radioSahis.checked : false;
+
+  if (isSermaye || isSahis) {
+    return true;
+  }
+  
+  // If it's bireysel, it's custom ONLY IF they UNCHECKED "use personal info"
+  const usePersonalInfo = document.getElementById('use-personal-info');
+  return usePersonalInfo ? !usePersonalInfo.checked : false;
+}
+
+function toggleUsePersonalInfo() {
+  const radioBireysel = document.getElementById('billing-corp-type-bireysel');
+  if (!radioBireysel || !radioBireysel.checked) return;
+
+  const chkUsePersonal = document.getElementById('use-personal-info');
+  const bCompanyGroup = document.getElementById('group-billing-company');
+  const bTaxNoGroup = document.getElementById('group-billing-tax-no');
+  const bAddressGroup = document.getElementById('group-billing-address');
+  
+  const compInput = document.getElementById('billing-company');
+  const taxNoInput = document.getElementById('billing-tax-no');
+  const addrInput = document.getElementById('billing-address');
+  
+  const shouldHide = chkUsePersonal ? chkUsePersonal.checked : false;
+  
+  const displayStyle = shouldHide ? 'none' : 'block';
+  if (bCompanyGroup) bCompanyGroup.style.display = displayStyle;
+  if (bTaxNoGroup) bTaxNoGroup.style.display = displayStyle;
+  if (bAddressGroup) bAddressGroup.style.display = displayStyle;
+  
+  if (compInput) compInput.required = !shouldHide;
+  if (taxNoInput) taxNoInput.required = !shouldHide;
+  if (addrInput) addrInput.required = !shouldHide;
+  
+  if (shouldHide) {
+    if (compInput) compInput.value = '';
+    if (taxNoInput) taxNoInput.value = '';
+    if (addrInput) addrInput.value = '';
+    
+    // Hide error messages
+    const errs = ['error-billing-company', 'error-billing-tax-no', 'error-billing-address'];
+    errs.forEach(errId => {
+      const errEl = document.getElementById(errId);
+      if (errEl) errEl.style.display = 'none';
+    });
+  }
+}
+
+function handleBillingCorpTypeChange() {
+  const radioSahis = document.getElementById('billing-corp-type-sahis');
+  const radioBireysel = document.getElementById('billing-corp-type-bireysel');
+  
+  const isSahis = radioSahis ? radioSahis.checked : false;
+  const isBireysel = radioBireysel ? radioBireysel.checked : false;
+
+  const lblCompany = document.getElementById('lbl-billing-company');
+  const compInput = document.getElementById('billing-company');
+  const lblTaxNo = document.getElementById('lbl-billing-tax-no');
+  const taxNoInput = document.getElementById('billing-tax-no');
+  const errorTaxNo = document.getElementById('error-billing-tax-no');
+  const taxOfficeGroup = document.getElementById('group-billing-tax-office');
+  const taxOfficeInput = document.getElementById('billing-tax-office');
+  const usePersonalInfoWrapper = document.getElementById('use-personal-info-wrapper');
+
+  if (isBireysel) {
+    // Show use-personal-info checkbox for standard individuals
+    if (usePersonalInfoWrapper) usePersonalInfoWrapper.style.display = 'block';
+
+    if (lblCompany) lblCompany.textContent = 'Ad Soyad (Fatura Sahibi)';
+    if (compInput) compInput.placeholder = 'Örn: Ahmet Yılmaz';
+    if (lblTaxNo) lblTaxNo.textContent = 'T.C. Kimlik Numarası';
+    if (taxNoInput) {
+      taxNoInput.placeholder = '11 haneli T.C. Kimlik No';
+      taxNoInput.maxLength = 11;
+    }
+    if (errorTaxNo) errorTaxNo.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 11 haneli T.C. kimlik numarasını girin.';
+    
+    // Hide and disable Vergi Dairesi for standard individuals
+    if (taxOfficeGroup) taxOfficeGroup.style.display = 'none';
+    if (taxOfficeInput) {
+      taxOfficeInput.required = false;
+      taxOfficeInput.value = '';
+    }
+
+    // Toggle fields based on personal info reuse state
+    toggleUsePersonalInfo();
+  } else {
+    // Hide use-personal-info checkbox for corporate types
+    if (usePersonalInfoWrapper) usePersonalInfoWrapper.style.display = 'none';
+
+    // Corporate fields must always be shown and required
+    const bCompanyGroup = document.getElementById('group-billing-company');
+    const bTaxNoGroup = document.getElementById('group-billing-tax-no');
+    const bAddressGroup = document.getElementById('group-billing-address');
+    
+    if (bCompanyGroup) bCompanyGroup.style.display = 'block';
+    if (bTaxNoGroup) bTaxNoGroup.style.display = 'block';
+    if (bAddressGroup) bAddressGroup.style.display = 'block';
+    
+    if (compInput) compInput.required = true;
+    if (taxNoInput) taxNoInput.required = true;
+    const addrInput = document.getElementById('billing-address');
+    if (addrInput) addrInput.required = true;
+
+    if (isSahis) {
+      if (lblCompany) lblCompany.textContent = 'Firma Sahibi (Ad Soyad - Ticari Ünvan)';
+      if (compInput) compInput.placeholder = 'Örn: Ahmet Yılmaz veya Ahmet Yılmaz - Yılmaz Ticaret';
+      if (lblTaxNo) lblTaxNo.textContent = 'T.C. Kimlik Numarası (Vergi Numarası)';
+      if (taxNoInput) {
+        taxNoInput.placeholder = '11 haneli T.C. Kimlik No';
+        taxNoInput.maxLength = 11;
+      }
+      if (errorTaxNo) errorTaxNo.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 11 haneli T.C. kimlik numarasını girin.';
+      
+      // Show and enable Vergi Dairesi
+      if (taxOfficeGroup) taxOfficeGroup.style.display = 'block';
+      if (taxOfficeInput) taxOfficeInput.required = true;
+    } else { // Standard corporate LTD/A.Ş.
+      if (lblCompany) lblCompany.textContent = 'Firma Unvanı (Şirket Tam Adı)';
+      if (compInput) compInput.placeholder = 'Örn: ABC Tekstil Sanayi ve Ticaret A.Ş.';
+      if (lblTaxNo) lblTaxNo.textContent = 'Vergi Numarası';
+      if (taxNoInput) {
+        taxNoInput.placeholder = '10 haneli Vergi No';
+        taxNoInput.maxLength = 10;
+        if (taxNoInput.value.length > 10) {
+          taxNoInput.value = taxNoInput.value.substring(0, 10);
+        }
+      }
+      if (errorTaxNo) errorTaxNo.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 10 haneli vergi numarasını girin.';
+      
+      // Show and enable Vergi Dairesi
+      if (taxOfficeGroup) taxOfficeGroup.style.display = 'block';
+      if (taxOfficeInput) taxOfficeInput.required = true;
+    }
+  }
+
+  // Ensure digits format logic is attached
+  if (taxNoInput) {
+    taxNoInput.value = taxNoInput.value.replace(/\D/g, '');
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Drag & Drop event bindings
+function setupDragAndDropZones() {
+  const zones = ['ruhsat', 'kimlik', 'vergi', 'sirkuler', 'dekont', 'calisma'];
+  
+  zones.forEach(zoneId => {
+    const zoneElement = document.getElementById(`zone-${zoneId}`);
+    if (zoneElement) {
+      // Prevent default browser opening of dropped files
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        zoneElement.addEventListener(eventName, (e) => e.preventDefault(), false);
+      });
+
+      // Drag highlights
+      ['dragenter', 'dragover'].forEach(eventName => {
+        zoneElement.addEventListener(eventName, () => zoneElement.classList.add('dragover'), false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        zoneElement.addEventListener(eventName, () => zoneElement.classList.remove('dragover'), false);
+      });
+
+      // Handle dropped files
+      zoneElement.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          const fileInput = document.getElementById(`file-${zoneId}`);
+          if (fileInput) {
+            fileInput.files = files; // Sync dropped files with the input
+            handleFileSelect(fileInput, zoneId);
+          }
+        }
+      });
+    }
+  });
+}
+
+function triggerFileInput(inputId) {
+  const fileInput = document.getElementById(inputId);
+  if (fileInput) {
+    fileInput.click();
+  }
+}
+
+function handleFileSelect(input, type) {
+  const file = input.files[0];
+  const errorMsg = document.getElementById(`error-file-${type}`);
+  
+  if (errorMsg) errorMsg.style.display = 'none'; // Clear error
+  
+  if (!file) return;
+
+  // Validate size (max 5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showUploadError(type, "Dosya boyutu 5MB'dan büyük olamaz.");
+    input.value = '';
+    return;
+  }
+
+  // Validate format
+  const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+  if (!allowedTypes.includes(file.type)) {
+    showUploadError(type, "Desteklenmeyen dosya türü. Sadece PDF, JPG veya PNG yükleyebilirsiniz.");
+    input.value = '';
+    return;
+  }
+
+  // Save to memory state
+  uploadedFiles[type] = file;
+
+  // Render file info preview
+  renderFilePreview(file, type);
+}
+
+function showUploadError(type, message) {
+  const errorMsg = document.getElementById(`error-file-${type}`);
+  if (errorMsg) {
+    errorMsg.innerHTML = `<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> ${message}`;
+    errorMsg.style.display = 'flex';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
+function renderFilePreview(file, type) {
+  const previewList = document.getElementById(`preview-list-${type}`);
+  if (previewList) {
+    previewList.innerHTML = ''; // Clear previous
+
+    const sizeInKB = (file.size / 1024).toFixed(1);
+    const sizeDisplay = sizeInKB > 1000 ? `${(sizeInKB / 1024).toFixed(1)} MB` : `${sizeInKB} KB`;
+
+    const li = document.createElement('li');
+    li.className = 'file-item';
+    li.innerHTML = `
+      <div class="file-info">
+        <i data-lucide="file-text" class="file-icon" style="width: 18px; height: 18px;"></i>
+        <div style="overflow: hidden;">
+          <div class="file-name" title="${file.name}">${file.name}</div>
+          <div class="file-size">${sizeDisplay}</div>
+        </div>
+      </div>
+      <button type="button" class="file-remove" onclick="removeFile('${type}')" aria-label="Dosyayı kaldır">
+        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+      </button>
+    `;
+    previewList.appendChild(li);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
+function removeFile(type) {
+  uploadedFiles[type] = null;
+  const fileInput = document.getElementById(`file-${type}`);
+  if (fileInput) fileInput.value = ''; // Reset input
+  
+  const previewList = document.getElementById(`preview-list-${type}`);
+  if (previewList) previewList.innerHTML = ''; // Clear preview
+}
+
+/* ==========================================================================
+   WIZARD NAVIGATION & VALIDATION
+   ========================================================================== */
+
+
+function navigateStep(direction) {
+  const form = document.getElementById('subscription-apply-form');
+  
+  if (direction === 1) {
+    // Check validation of the current active step before proceeding
+    const isValid = validateStep(currentStep);
+    if (!isValid) {
+      const activeStepEl = document.getElementById(`form-step-${currentStep}`);
+      if (activeStepEl) {
+        // Find the first element that is invalid (.is-invalid) in the step
+        const firstInvalid = activeStepEl.querySelector('.is-invalid');
+        if (firstInvalid) {
+          firstInvalid.focus();
+          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Add premium shake animation
+          firstInvalid.classList.add('error-shake');
+          setTimeout(() => {
+            firstInvalid.classList.remove('error-shake');
+          }, 500);
+        }
+      }
+      return;
+    }
+
+    // Intercept transition from Step 2 to Step 3 for Billing Confirmation Modal
+    if (currentStep === 2) {
+      showBillingConfirmationModal();
+      return; // Stop transition here, modal button confirmBillingAndContinue will proceed
+    }
+  }
+
+  // Increment/Decrement step
+  currentStep += direction;
+
+  // Bound checks
+  if (currentStep < 1) currentStep = 1;
+  if (currentStep > 5) currentStep = 5;
+
+  // Update UI Display
+  updateWizardUI();
+
+  // If entering success step, submit data
+  if (currentStep === 5) {
+    handleFormSubmit();
+  }
+}
+
+function showBillingConfirmationModal() {
+  const isCustom = hasCustomBilling();
+  const confirmContent = document.getElementById('billing-confirm-content');
+  
+  if (!confirmContent) return;
+
+  const fullName = document.getElementById('full-name').value.trim();
+  const tcNo = document.getElementById('tc-identity').value.trim();
+  const homeAddress = document.getElementById('home-address').value.trim();
+
+  if (isCustom) {
+    const radioSahis = document.getElementById('billing-corp-type-sahis');
+    const radioBireysel = document.getElementById('billing-corp-type-bireysel');
+    
+    const isSahis = radioSahis ? radioSahis.checked : false;
+    const isBireysel = radioBireysel ? radioBireysel.checked : false;
+
+    const company = document.getElementById('billing-company').value.trim();
+    const taxOffice = document.getElementById('billing-tax-office').value.trim();
+    const taxNo = document.getElementById('billing-tax-no').value.trim();
+    const address = document.getElementById('billing-address').value.trim();
+
+    if (isBireysel) {
+      confirmContent.innerHTML = `
+        <div style="margin-bottom: 0.75rem;">
+          <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-primary); background: rgba(15, 59, 162, 0.08); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 0.5rem;">Fatura Tipi: Bireysel Fatura (Şahıs - Farklı Bilgilerle)</span>
+        </div>
+        <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; color: var(--color-text-dark); text-align: left;">
+          <div><strong>Fatura Sahibi:</strong> ${company}</div>
+          <div><strong>T.C. Kimlik Numarası:</strong> ${taxNo}</div>
+          <div style="border-top: 1px solid var(--color-border-light); padding-top: 0.5rem; margin-top: 0.25rem;"><strong>Fatura Adresi:</strong><br><span style="color: var(--color-text-muted); font-size: 0.8rem; line-height: 1.4; display: block; margin-top: 0.15rem;">${address}</span></div>
+        </div>
+      `;
+    } else {
+      const companyTypeLabel = isSahis ? 'Şahıs Şirketi' : 'Sermaye Şirketi (LTD. / A.Ş.)';
+      const taxNoLabel = isSahis ? 'T.C. Kimlik Numarası' : 'Vergi Numarası';
+      const companyNameLabel = isSahis ? 'Firma Sahibi' : 'Firma Unvanı';
+
+      confirmContent.innerHTML = `
+        <div style="margin-bottom: 0.75rem;">
+          <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-accent-orange); background: rgba(255, 122, 0, 0.08); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 0.5rem;">Fatura Tipi: Kurumsal Fatura (${companyTypeLabel})</span>
+        </div>
+        <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; color: var(--color-text-dark); text-align: left;">
+          <div><strong>${companyNameLabel}:</strong> ${company}</div>
+          <div><strong>Vergi Dairesi:</strong> ${taxOffice}</div>
+          <div><strong>${taxNoLabel}:</strong> ${taxNo}</div>
+          <div style="border-top: 1px solid var(--color-border-light); padding-top: 0.5rem; margin-top: 0.25rem;"><strong>Fatura Adresi:</strong><br><span style="color: var(--color-text-muted); font-size: 0.8rem; line-height: 1.4; display: block; margin-top: 0.15rem;">${address}</span></div>
+        </div>
+      `;
+    }
+  } else {
+    confirmContent.innerHTML = `
+      <div style="margin-bottom: 0.75rem;">
+        <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-primary); background: rgba(15, 59, 162, 0.08); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 0.5rem;">Fatura Tipi: Bireysel Fatura (Şahıs)</span>
+      </div>
+      <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; color: var(--color-text-dark); text-align: left;">
+        <div><strong>Ad Soyad:</strong> ${fullName}</div>
+        <div><strong>T.C. Kimlik Numarası:</strong> ${tcNo}</div>
+        <div style="border-top: 1px solid var(--color-border-light); padding-top: 0.5rem; margin-top: 0.25rem;"><strong>Fatura Adresi:</strong><br><span style="color: var(--color-text-muted); font-size: 0.8rem; line-height: 1.4; display: block; margin-top: 0.15rem;">${homeAddress}</span></div>
+        <div style="border-top: 1px solid var(--color-border-light); padding-top: 0.5rem; margin-top: 0.25rem; color: var(--color-text-muted); font-size: 0.75rem; line-height: 1.4;">
+          Faturanız verdiğiniz T.C. Kimlik Numarası, isim ve adres bilgilerine düzenlenecektir.
+        </div>
+      </div>
+    `;
+  }
+
+  // Open the billing confirm modal
+  openModal('modal-billing-confirm');
+}
+
+function confirmBillingAndContinue() {
+  closeModal('modal-billing-confirm');
+  
+  // Proceed directly to step 3
+  currentStep = 3;
+  updateWizardUI();
+}
+
+function validateStep(step) {
+  let isValid = true;
+  
+  // Reset all errors and invalid styling
+  const activeStepEl = document.getElementById(`form-step-${step}`);
+  if (!activeStepEl) return true;
+
+  const errors = activeStepEl.querySelectorAll('.error-message');
+  errors.forEach(err => err.style.display = 'none');
+
+  const invalidInputs = activeStepEl.querySelectorAll('.is-invalid');
+  invalidInputs.forEach(el => el.classList.remove('is-invalid'));
+
+  const customTrigger = document.getElementById('custom-otopark-select-trigger');
+  if (customTrigger) customTrigger.classList.remove('is-invalid');
+  
+  if (step === 1) {
+    const otopark = document.getElementById('otopark-selection');
+    const startDate = document.getElementById('start-date');
+
+    if (!otopark.value) {
+      document.getElementById('error-parking').style.display = 'flex';
+      otopark.classList.add('is-invalid');
+      if (customTrigger) customTrigger.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    if (!startDate.value) {
+      document.getElementById('error-date').style.display = 'flex';
+      startDate.classList.add('is-invalid');
+      isValid = false;
+    }
+  }
+  
+  else if (step === 2) {
+    const companyName = document.getElementById('company-name');
+    const fullName = document.getElementById('full-name');
+    const tcNo = document.getElementById('tc-identity');
+    const phone = document.getElementById('phone-number');
+    const email = document.getElementById('email-address');
+    const plate = document.getElementById('license-plate');
+    const carModel = document.getElementById('car-model');
+    const driverName = document.getElementById('driver-name');
+    const homeAddress = document.getElementById('home-address');
+
+    // Validation Company Name
+    if (!companyName || !companyName.value.trim()) {
+      const errEl = document.getElementById('error-company-name');
+      if (errEl) errEl.style.display = 'flex';
+      if (companyName) companyName.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Name (Minimum two words, letters and spaces only)
+    const nameRegex = /^[\p{L} \.\-]+$/u;
+    const nameWords = fullName.value.trim().split(/\s+/);
+    if (!fullName.value.trim() || !nameRegex.test(fullName.value) || nameWords.length < 2) {
+      document.getElementById('error-name').style.display = 'flex';
+      fullName.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation TC (exactly 11 digits)
+    if (!tcNo.value || tcNo.value.length !== 11 || !/^\d{11}$/.test(tcNo.value)) {
+      document.getElementById('error-tc').style.display = 'flex';
+      tcNo.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Phone
+    const digitsOnly = phone.value.replace(/\D/g, '');
+    if (!phone.value || digitsOnly.length < 10) {
+      document.getElementById('error-phone').style.display = 'flex';
+      phone.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Email
+    const emailRegex = /^[^s@]+@[^s@]+\.[^s@]+$/;
+    if (!email.value || !emailRegex.test(email.value)) {
+      document.getElementById('error-email').style.display = 'flex';
+      email.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Plate (Turkish standard format check)
+    const plateRegex = /^(0[1-9]|[1-7][0-9]|8[0-1])[A-Z]{1,3}\d{2,4}$/;
+    const cleanPlate = plate.value.trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleanPlate || !plateRegex.test(cleanPlate)) {
+      document.getElementById('error-plate').style.display = 'flex';
+      plate.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    if (!carModel.value.trim()) {
+      document.getElementById('error-model').style.display = 'flex';
+      carModel.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Driver Name (Minimum two words, letters and spaces only)
+    const driverNameWords = driverName.value.trim().split(/\s+/);
+    if (!driverName.value.trim() || !nameRegex.test(driverName.value) || driverNameWords.length < 2) {
+      const errEl = document.getElementById('error-driver');
+      if (errEl) errEl.style.display = 'flex';
+      driverName.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Home Address
+    if (!homeAddress.value.trim()) {
+      const errEl = document.getElementById('error-home-address');
+      if (errEl) errEl.style.display = 'flex';
+      homeAddress.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    // Validation Billing Info (If custom billing is selected)
+    if (hasCustomBilling()) {
+      const bCompany = document.getElementById('billing-company');
+      const bTaxOffice = document.getElementById('billing-tax-office');
+      const bTaxNo = document.getElementById('billing-tax-no');
+      const bAddress = document.getElementById('billing-address');
+
+      const radioSahis = document.getElementById('billing-corp-type-sahis');
+      const radioBireysel = document.getElementById('billing-corp-type-bireysel');
+      
+      const isSahis = radioSahis ? radioSahis.checked : false;
+      const isBireysel = radioBireysel ? radioBireysel.checked : false;
+
+      if (!bCompany.value.trim()) {
+        const errEl = document.getElementById('error-billing-company');
+        if (errEl) errEl.style.display = 'flex';
+        bCompany.classList.add('is-invalid');
+        isValid = false;
+      }
+      
+      // Vergi Dairesi validation is ONLY required for LTD/A.Ş. and Şahıs Şirketi (not for Bireysel Şahıs)
+      if (!isBireysel && !bTaxOffice.value.trim()) {
+        const errEl = document.getElementById('error-billing-tax-office');
+        if (errEl) errEl.style.display = 'flex';
+        bTaxOffice.classList.add('is-invalid');
+        isValid = false;
+      }
+      
+      // Tax no must be 10 digits for LTD/A.Ş. or 11 digits for Şahıs Şirketi / Şahıs Bireysel
+      const requiredLength = (isSahis || isBireysel) ? 11 : 10;
+      const lengthRegex = (isSahis || isBireysel) ? /^\d{11}$/ : /^\d{10}$/;
+
+      if (!bTaxNo.value || bTaxNo.value.length !== requiredLength || !lengthRegex.test(bTaxNo.value)) {
+        const errEl = document.getElementById('error-billing-tax-no');
+        if (errEl) {
+          errEl.style.display = 'flex';
+          if (isSahis || isBireysel) {
+            errEl.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 11 haneli T.C. kimlik numarasını girin.';
+          } else {
+            errEl.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 10 haneli vergi numarasını girin.';
+          }
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        bTaxNo.classList.add('is-invalid');
+        isValid = false;
+      }
+      if (!bAddress.value.trim()) {
+        const errEl = document.getElementById('error-billing-address');
+        if (errEl) errEl.style.display = 'flex';
+        bAddress.classList.add('is-invalid');
+        isValid = false;
+      }
+    }
+  }
+  
+  else if (step === 3) {
+    if (!uploadedFiles.ruhsat) {
+      document.getElementById('error-file-ruhsat').style.display = 'flex';
+      const zone = document.getElementById('zone-ruhsat');
+      if (zone) zone.classList.add('is-invalid');
+      isValid = false;
+    }
+    if (!uploadedFiles.kimlik) {
+      document.getElementById('error-file-kimlik').style.display = 'flex';
+      const zone = document.getElementById('zone-kimlik');
+      if (zone) zone.classList.add('is-invalid');
+      isValid = false;
+    }
+    if (!uploadedFiles.vergi) {
+      document.getElementById('error-file-vergi').style.display = 'flex';
+      const zone = document.getElementById('zone-vergi');
+      if (zone) zone.classList.add('is-invalid');
+      isValid = false;
+    }
+    if (!uploadedFiles.calisma) {
+      document.getElementById('error-file-calisma').style.display = 'flex';
+      const zone = document.getElementById('zone-calisma');
+      if (zone) zone.classList.add('is-invalid');
+      isValid = false;
+    }
+    if (!uploadedFiles.dekont) {
+      document.getElementById('error-file-dekont').style.display = 'flex';
+      const zone = document.getElementById('zone-dekont');
+      if (zone) zone.classList.add('is-invalid');
+      isValid = false;
+    }
+  }
+  
+  else if (step === 4) {
+    const chkKvkkTerms = document.getElementById('chk-kvkk-terms');
+
+    if (chkKvkkTerms && !chkKvkkTerms.checked) {
+      const errorEl = document.getElementById('error-chk-kvkk-terms');
+      if (errorEl) errorEl.style.display = 'flex';
+      const wrapper = document.getElementById('item-chk-kvkk-terms');
+      if (wrapper) wrapper.classList.add('is-invalid');
+      isValid = false;
+    }
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  return isValid;
+}
+
+function updateWizardUI() {
+  // 1. Show/hide steps
+  const steps = document.querySelectorAll('.form-step');
+  steps.forEach(stepEl => {
+    const stepNum = parseInt(stepEl.getAttribute('data-step'));
+    if (stepNum === currentStep) {
+      stepEl.classList.add('active');
+    } else {
+      stepEl.classList.remove('active');
+    }
+  });
+
+  // 2. Update Progress Tracker indicators classes
+  const indicators = document.querySelectorAll('.step-indicator');
+  indicators.forEach(ind => {
+    const stepNum = parseInt(ind.getAttribute('data-step'));
+    
+    ind.classList.remove('active', 'completed');
+    
+    if (stepNum === currentStep) {
+      ind.classList.add('active');
+    } else if (stepNum < currentStep) {
+      ind.classList.add('completed');
+    }
+  });
+
+  // 3. Update Progress Bar Fill Line width percentage
+  const progressBar = document.getElementById('progress-bar-fill');
+  if (progressBar) {
+    const percent = ((currentStep - 1) / 4) * 100;
+    progressBar.style.width = `${percent}%`;
+  }
+
+  // 4. Update Prev / Next navigation buttons display in footer
+  const prevBtn = document.getElementById('btn-wizard-prev');
+  const nextBtn = document.getElementById('btn-wizard-next');
+  const wizardFooter = document.getElementById('wizard-footer');
+
+  if (currentStep === 1) {
+    prevBtn.style.visibility = 'hidden';
+    nextBtn.style.display = 'inline-flex';
+    nextBtn.querySelector('span').textContent = 'Devam Et';
+  } else if (currentStep > 1 && currentStep < 5) {
+    prevBtn.style.visibility = 'visible';
+    nextBtn.style.display = 'inline-flex';
+    if (currentStep === 4) {
+      nextBtn.querySelector('span').textContent = 'Başvuruyu Tamamla';
+    } else {
+      nextBtn.querySelector('span').textContent = 'Devam Et';
+    }
+  } else if (currentStep === 5) {
+    // Hide wizard footer controls completely on success screen
+    if (wizardFooter) wizardFooter.style.display = 'none';
+  }
+
+  if (currentStep === 3) {
+    updatePaymentPanel();
+  }
+}
+
+function updatePaymentPanel() {
+  const panel = document.getElementById('payment-info-panel');
+  if (!panel) return;
+
+  const otoparkSelect = document.getElementById('otopark-selection');
+  if (!otoparkSelect) return;
+
+  const selectedName = otoparkSelect.value;
+  if (!selectedName) {
+    panel.innerHTML = `
+      <div style="padding: 1rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-md); text-align: center; color: var(--color-text-muted); font-size: 0.875rem;">
+        Lütfen 1. adımda abonelik otoparkını seçiniz.
+      </div>
+    `;
+    return;
+  }
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.name === selectedName);
+
+  if (!park) {
+    panel.innerHTML = `
+      <div style="padding: 1rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-md); text-align: center; color: var(--color-text-muted); font-size: 0.875rem;">
+        Seçilen otoparka ait ödeme bilgisi bulunamadı.
+      </div>
+    `;
+    return;
+  }
+
+  // Pre-formatted pricing
+  const employeePrice = park.priceEmployee || 'Belirtilmedi';
+  const externalPrice = park.priceExternal || 'Belirtilmedi';
+
+  panel.innerHTML = `
+    <div class="payment-info-card">
+      <div class="payment-card-title">
+        <i data-lucide="credit-card" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
+        <span>Ödeme ve Şirket Bilgileri (${park.name} Aboneliği İçin)</span>
+      </div>
+      <div class="payment-grid">
+        <div class="payment-section">
+          <div class="payment-section-title">Şirket Yasal Bilgileri</div>
+          <div class="payment-detail-row">
+            <span class="payment-detail-label">Alıcı / Firma Unvanı:</span>
+            <span class="payment-detail-value">${park.companyTitle || 'PUSULA AKILLI ŞEHİRCİLİK VE BİLGİ TEKNOLOJİLERİ A.Ş.'}</span>
+          </div>
+          <div class="payment-detail-row" style="margin-top: 0.5rem;">
+            <span class="payment-detail-label">Vergi Dairesi / No:</span>
+            <span class="payment-detail-value">${park.taxOffice || 'ALEMDAĞ VERGİ DAİRESİ'} / ${park.taxNumber || '733 090 73 26'}</span>
+          </div>
+        </div>
+
+        <div class="payment-section">
+          <div class="payment-section-title">Banka Hesap Bilgileri</div>
+          <div class="payment-detail-row">
+            <span class="payment-detail-label">Banka Adı:</span>
+            <span class="payment-detail-value">${park.bankName || 'Albaraka Türk'}</span>
+          </div>
+          <div class="payment-detail-row" style="margin-top: 0.5rem;">
+            <span class="payment-detail-label">IBAN:</span>
+            <div class="iban-container">
+              <span class="iban-text" id="iban-text-val">${park.iban}</span>
+              <button type="button" class="btn-copy-iban" onclick="copyIbanToClipboard(this, '${park.iban}')" title="IBAN Kopyala">
+                <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+                <span class="copy-tooltip">Kopyalandı!</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="payment-section">
+          <div class="payment-section-title">Tarife & İletişim</div>
+          <div class="payment-detail-row">
+            <span class="payment-detail-label">Fiyat Bilgisi (Aylık / Araç Başı):</span>
+            <span class="payment-detail-value">Personel: ${employeePrice} | Dış Abonelik: ${externalPrice}</span>
+          </div>
+          <div class="payment-detail-row" style="margin-top: 0.5rem;">
+            <span class="payment-detail-label">Abonelik Destek Hattı:</span>
+            <span class="payment-detail-value" style="color: var(--color-primary);">${park.supportPhone || '0501 618 34 82'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="payment-warning-text">
+        <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+        <span>AÇIKLAMA KISMINA PLAKA VE ABONE BİLGİSİ YAZMAYI UNUTMAYINIZ!</span>
+      </div>
+    </div>
+  `;
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function copyIbanToClipboard(btn, iban) {
+  navigator.clipboard.writeText(iban).then(() => {
+    btn.classList.add('copied');
+    
+    // Change icon to check
+    const icon = btn.querySelector('i');
+    if (icon) {
+      icon.outerHTML = '<i data-lucide="check" style="width: 14px; height: 14px; color: #22c55e;"></i>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      const newIcon = btn.querySelector('i');
+      if (newIcon) {
+        newIcon.outerHTML = '<i data-lucide="copy" style="width: 14px; height: 14px;"></i>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+    }, 2000);
+  }).catch(err => {
+    console.error('Copy failed: ', err);
+  });
+}
+
+function generateApplicationCode() {
+  // Format: PE-2026-XXXX (4 character random upper alphanumeric)
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let rand = '';
+  for (let i = 0; i < 4; i++) {
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `PE-2026-${rand}`;
+}
+
+function showSubmitLoader() {
+  const loader = document.createElement('div');
+  loader.id = 'submit-loader-overlay';
+  loader.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-family: inherit;
+  `;
+  loader.innerHTML = `
+    <div style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--color-accent-gold, #ffb800); border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 1.25rem;"></div>
+    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.5px;">Başvurunuz Kaydediliyor</h3>
+    <p style="margin: 0.4rem 0 0 0; font-size: 0.825rem; color: rgba(255,255,255,0.6); text-align: center; max-width: 320px; line-height: 1.4;">Belgeleriniz ve ön kayıt bilgileriniz güvenli bulut depolama alanına yükleniyor, lütfen bekleyin...</p>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  document.body.appendChild(loader);
+}
+
+function hideSubmitLoader() {
+  const loader = document.getElementById('submit-loader-overlay');
+  if (loader) loader.remove();
+}
+
+async function handleFormSubmit() {
+  // Construct Application payload
+  const appCode = generateApplicationCode();
+  
+  // Set in DOM success badge
+  const appCodeEl = document.getElementById('success-app-code');
+  if (appCodeEl) appCodeEl.textContent = appCode;
+
+  // Retrieve inputs
+  const companyName = document.getElementById('company-name').value.trim().toLocaleUpperCase('tr-TR');
+  const fullName = document.getElementById('full-name').value.trim().toLocaleUpperCase('tr-TR');
+  const otopark = document.getElementById('otopark-selection').value;
+  const startDate = document.getElementById('start-date').value;
+  const tcNo = document.getElementById('tc-identity').value.trim();
+  const phone = document.getElementById('phone-number').value.trim();
+  const email = document.getElementById('email-address').value.trim();
+  const plate = document.getElementById('license-plate').value.trim().toUpperCase();
+  const carModel = document.getElementById('car-model').value.trim().toLocaleUpperCase('tr-TR');
+  const driverName = document.getElementById('driver-name').value.trim().toLocaleUpperCase('tr-TR');
+  const homeAddress = document.getElementById('home-address').value.trim().toLocaleUpperCase('tr-TR');
+  const notes = document.getElementById('application-notes').value.trim().toLocaleUpperCase('tr-TR');
+
+  // Retrieve billing info
+  const isCustom = hasCustomBilling();
+  const radioSahisSubmit = document.getElementById('billing-corp-type-sahis');
+  const radioBireyselSubmit = document.getElementById('billing-corp-type-bireysel');
+  
+  const isSahisSubmit = radioSahisSubmit ? radioSahisSubmit.checked : false;
+  const isBireyselSubmit = radioBireyselSubmit ? radioBireyselSubmit.checked : false;
+  
+  const billingInfo = {
+    company_type: isBireyselSubmit ? 'bireysel' : (isSahisSubmit ? 'sahis' : 'sermaye'),
+    company: isCustom ? document.getElementById('billing-company').value.trim().toLocaleUpperCase('tr-TR') : fullName,
+    tax_office: (isCustom && !isBireyselSubmit) ? document.getElementById('billing-tax-office').value.trim().toLocaleUpperCase('tr-TR') : '',
+    tax_no: isCustom ? document.getElementById('billing-tax-no').value.trim() : tcNo,
+    address: isCustom ? document.getElementById('billing-address').value.trim().toLocaleUpperCase('tr-TR') : homeAddress,
+    is_custom: isCustom
+  };
+
+  let appSubtype = 'Bireysel';
+  if (isBireyselSubmit) {
+    appSubtype = isCustom ? 'Bireysel (Şahıs Faturası)' : 'Bireysel';
+  } else if (isSahisSubmit) {
+    appSubtype = 'Kurumsal (Şahıs Şirketi)';
+  } else {
+    appSubtype = 'Kurumsal (LTD. / A.Ş.)';
+  }
+
+  // Show loader overlay
+  showSubmitLoader();
+
+  try {
+    const formData = new FormData();
+    formData.append("id", appCode);
+    formData.append("full_name", fullName);
+    formData.append("email", email);
+    formData.append("phone", phone);
+    formData.append("plate_number", plate);
+    formData.append("parking_location", otopark);
+    formData.append("company_name", companyName || (billingInfo.company_type !== 'bireysel' ? billingInfo.company : null));
+    formData.append("tax_office", billingInfo.tax_office);
+    formData.append("tax_number", billingInfo.tax_no);
+    formData.append("subscription_type", appSubtype);
+    
+    // Additional text inputs
+    formData.append("tc_no", tcNo);
+    formData.append("car_model", carModel);
+    formData.append("driver_name", driverName);
+    formData.append("home_address", homeAddress);
+    formData.append("notes", notes);
+    formData.append("date_applied", new Date().toISOString().split('T')[0]);
+
+    if (uploadedFiles.ruhsat) formData.append("ruhsat", uploadedFiles.ruhsat);
+    if (uploadedFiles.kimlik) formData.append("kimlik", uploadedFiles.kimlik);
+    if (uploadedFiles.dekont) formData.append("dekont", uploadedFiles.dekont);
+    if (uploadedFiles.vergi) formData.append("vergi", uploadedFiles.vergi);
+    if (uploadedFiles.sirkuler) formData.append("sirkuler", uploadedFiles.sirkuler);
+    if (uploadedFiles.calisma) formData.append("calisma", uploadedFiles.calisma);
+
+    const response = await fetch("/api/apply", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Başvuru kaydedilirken bir hata oluştu.");
+    }
+
+    hideSubmitLoader();
+
+    // Trigger simulated notifications for feedback logs
+    const mockApp = {
+      id: appCode,
+      full_name: fullName,
+      phone: phone,
+      email: email,
+      plate: plate,
+      parking_location: otopark
+    };
+    triggerEmailNotification(mockApp);
+    triggerWhatsAppNotification(mockApp);
+
+  } catch (err) {
+    hideSubmitLoader();
+    alert(`Başvuru Gönderilemedi!\n\nHata: ${err.message}`);
+    // Revert current step to step 4 so user can correct and retry
+    currentStep = 4;
+    updateWizardUI();
+  }
+}
+
+// Simulated Email Notification System
+let currentSimulatedApp = null;
+
+function triggerEmailNotification(app) {
+  currentSimulatedApp = app;
+
+  // 1. Populate the simulated inbox modal elements
+  const fields = {
+    'email-sim-to-name': app.full_name,
+    'email-sim-to-addr': `<${app.email}>`,
+    'email-sim-subject-code': app.id,
+    'email-sim-body-name': app.full_name,
+    'email-sim-info-code': app.id,
+    'email-sim-info-plate': app.plate,
+    'email-sim-info-location': app.parking_location,
+    'email-sim-info-type': app.subscription_type,
+    'email-sim-info-date': formatDateTR(app.start_date),
+    'email-sim-info-model': app.car_model || 'Belirtilmedi'
+  };
+
+  for (const [id, value] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  const toast = document.getElementById('email-toast');
+  const toastTitle = document.getElementById('toast-title');
+  const toastMessage = document.getElementById('toast-message');
+  const isAdmin = !!document.querySelector('.admin-layout');
+  if (toast && isAdmin) {
+    // Reset classes and set loading state
+    toast.classList.add('active');
+    if (toastTitle) toastTitle.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.25rem;">📧 E-posta Bildirimi</span>`;
+    if (toastMessage) toastMessage.textContent = 'Güvenli SMTP sunucusuna bağlanılıyor...';
+
+    // Phase 1: Sending...
+    setTimeout(() => {
+      if (toastMessage) toastMessage.textContent = `${app.email} adresine gönderiliyor...`;
+    }, 1000);
+
+    // Phase 2: Sent successfully!
+    setTimeout(() => {
+      if (toastMessage) toastMessage.innerHTML = `📬 <strong>Onay e-postası iletildi!</strong><br><span style="font-size:0.7rem; color:var(--color-primary);">Detayları görmek için "Görüntüle"ye tıklayın.</span>`;
+      
+      // Dynamic Lucide update for success check icon in toast
+      const toastIcon = toast.querySelector('.toast-icon');
+      if (toastIcon) {
+        toastIcon.innerHTML = `<i data-lucide="mail-check" style="color:#25d366;"></i>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+      
+      // Auto-hide toast after showing success for a while
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 6000);
+
+    }, 2800);
+  }
+
+  /* ========================================================================
+     ℹ️ PRODUCTION EMAILJS INTEGRATION READY
+     ------------------------------------------------------------------------
+     To send REAL physical emails, uncomment the following block, sign up for 
+     a free EmailJS account, and configure your keys:
+     
+     // 1. Add SDK script in basvuru.html: <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+     // 2. Initialize in your code: emailjs.init("YOUR_PUBLIC_KEY");
+     // 3. Trigger sending:
+     
+     emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+       to_name: app.full_name,
+       to_email: app.email,
+       app_code: app.id,
+       license_plate: app.plate,
+       parking_location: app.parking_location,
+       subscription_type: app.subscription_type,
+       start_date: app.start_date
+     }).then(
+       (response) => { console.log('EMAIL SENT SUCCESS!', response.status, response.text); },
+       (error) => { console.log('EMAIL SEND FAILED...', error); }
+     );
+     ======================================================================== */
+}
+
+function openEmailSimulationModal() {
+  if (currentSimulatedApp) {
+    openModal('modal-email-simulation');
+  }
+}
+
+/* Simulated WhatsApp Notification System */
+let currentSimulatedAppForWhatsApp = null;
+
+function triggerWhatsAppNotification(app) {
+  currentSimulatedAppForWhatsApp = app;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.name === app.parking_location) || {};
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+  // Populate simulated WhatsApp modal elements
+  const fields = {
+    'whatsapp-sim-name': app.full_name,
+    'whatsapp-sim-code': app.id,
+    'whatsapp-sim-plate': app.plate,
+    'whatsapp-sim-location': app.parking_location,
+    'whatsapp-sim-price': app.subscription_type.includes('Kurumsal') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL'),
+    'whatsapp-sim-phone': park.supportPhone || '0216 504 47 22',
+    'whatsapp-sim-bank': park.bankName || 'Vakıfbank',
+    'whatsapp-sim-iban': park.iban || 'TR23 0001 5001 5800 7302 9104 88',
+    'whatsapp-sim-time': timeStr
+  };
+
+  for (const [id, value] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  const toast = document.getElementById('whatsapp-toast');
+  const toastTitle = document.getElementById('whatsapp-toast-title');
+  const toastMessage = document.getElementById('whatsapp-toast-message');
+  const isAdmin = !!document.querySelector('.admin-layout');
+  if (toast && isAdmin) {
+    toast.classList.add('active');
+    if (toastTitle) toastTitle.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.25rem; color:#25d366;">💬 WhatsApp Bildirimi</span>`;
+    if (toastMessage) toastMessage.textContent = 'WhatsApp API sunucularına bağlanılıyor...';
+
+    // Phase 1: Sending message...
+    setTimeout(() => {
+      if (toastMessage) toastMessage.textContent = `${app.phone} numarasına teyit iletiliyor...`;
+    }, 1200);
+
+    // Phase 2: Sent successfully!
+    setTimeout(() => {
+      if (toastMessage) toastMessage.innerHTML = `<strong>Başvuru teyit mesajı iletildi!</strong><br><span style="font-size:0.7rem; color:#25d366;">Detayları görmek için tıklayın.</span>`;
+      
+      const toastIcon = toast.querySelector('.toast-icon');
+      if (toastIcon) {
+        toastIcon.innerHTML = `<i data-lucide="message-square" style="color:#25d366; fill:#25d366;"></i>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+      
+      // Auto-hide toast
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 7000);
+
+    }, 3200);
+
+    // Make toast clickable to open the simulation modal
+    toast.style.cursor = 'pointer';
+    toast.onclick = () => {
+      openWhatsAppSimulationModal();
+      toast.classList.remove('active');
+    };
+  }
+}
+
+function openWhatsAppSimulationModal() {
+  if (currentSimulatedAppForWhatsApp) {
+    openModal('modal-whatsapp-simulation');
+  }
+}
+
+function redirectToWhatsAppConfirm() {
+  if (!currentSimulatedAppForWhatsApp) return;
+
+  const app = currentSimulatedAppForWhatsApp;
+  
+  // Fetch otopark phone for WhatsApp redirection
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.name === app.parking_location) || {};
+  
+  // Fetch dynamic otopark support number
+  let rawPhone = park.supportPhone || '0216 504 47 22';
+  let cleanedPhone = rawPhone.replace(/\D/g, '');
+  
+  // Convert 05XX... to international 905XX... format for TR
+  if (cleanedPhone.startsWith('0')) {
+    cleanedPhone = '90' + cleanedPhone.substring(1);
+  } else if (!cleanedPhone.startsWith('90')) {
+    cleanedPhone = '90' + cleanedPhone;
+  }
+
+  // Pre-fill encoded message
+  const textMsg = `Merhaba PARKEXPERT Yetkilisi,\n\n${app.plate} plakalı aracım için abonelik ön başvurusu gerçekleştirdim.\n\n📦 Başvuru Takip Kodu: ${app.id}\n🚗 Araç Plakası: ${app.plate}\n📍 Otopark Konumu: ${app.parking_location}\n\nÖdeme dekontumu ve başvuru detaylarımı teyit etmek üzere iletişime geçiyorum. İşlemlerimi onaylar mısınız? Teşekkürler.`;
+
+  const encodedMsg = encodeURIComponent(textMsg);
+  const waUrl = `https://api.whatsapp.com/send?phone=${cleanedPhone}&text=${encodedMsg}`;
+  
+  // Open real WhatsApp web or app chat in a new tab!
+  window.open(waUrl, '_blank');
+}
+
+
+/* ==========================================================================
+   ADMIN SaaS PANEL CONTROLLER (admin.html)
+   ========================================================================== */
+
+let allApplications = [];
+let filteredApplications = [];
+let currentAppId = null;
+
+async function handleAdminLogin(event) {
+  if (event) event.preventDefault();
+
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  const errorMsg = document.getElementById('login-error-msg');
+
+  if (!usernameInput || !passwordInput) return;
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Giriş başarısız.");
+    }
+
+    const data = await res.json();
+    
+    // Save to localStorage
+    localStorage.setItem('parkexpert_token', data.token);
+    localStorage.setItem('parkexpert_user', JSON.stringify(data.user));
+    localStorage.setItem('parkexpert_current_admin', data.user.id);
+    
+    // Hide overlay
+    const overlay = document.getElementById('modal-login-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // Clear form
+    usernameInput.value = '';
+    passwordInput.value = '';
+
+    // Initialize controller and fetch
+    initAdminController();
+
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.textContent = err.message;
+      errorMsg.style.display = 'block';
+    }
+  }
+}
+
+function handleAdminLogout() {
+  localStorage.removeItem('parkexpert_token');
+  localStorage.removeItem('parkexpert_user');
+  localStorage.removeItem('parkexpert_current_admin');
+  
+  // Reload page to show login screen
+  location.reload();
+}
+
+async function initAdminController() {
+  const token = localStorage.getItem('parkexpert_token');
+  const overlay = document.getElementById('modal-login-overlay');
+
+  if (!token) {
+    if (overlay) overlay.style.display = 'flex';
+    return;
+  }
+
+  if (overlay) overlay.style.display = 'none';
+
+  // Load otoparks from server
+  await loadOtoparks();
+
+  // Populate active admin user selector in header
+  populateActiveUserSelect().then(() => {
+    // Configure screen visibility and initial filters based on loaded admin
+    handleUserRoleChange();
+  });
+
+  // Attach Turkish auto-uppercase listeners for otopark edit modal fields
+  const uppercaseOtoparkIds = [
+    'edit-otopark-name',
+    'edit-otopark-title',
+    'edit-otopark-tax-office',
+    'edit-otopark-bank',
+    'edit-otopark-price-emp',
+    'edit-otopark-price-ext'
+  ];
+
+  uppercaseOtoparkIds.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', (e) => {
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
+        e.target.setSelectionRange(start, end);
+      });
+    }
+  });
+
+  const ibanInput = document.getElementById('edit-otopark-iban');
+  if (ibanInput) {
+    ibanInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+}
+
+async function loadApplications() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const response = await fetch("/api/applications", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) throw new Error("Could not load applications");
+    allApplications = await response.json();
+    
+    // Map database properties to frontend compatibility structure
+    allApplications.forEach(app => {
+      app.plate = app.plate_number;
+      app.files = {
+        ruhsat: app.ruhsat_url,
+        kimlik: app.kimlik_url,
+        vergi: app.vergi_url || '',
+        calisma: app.calisma_url || '',
+        dekont: app.dekont_url,
+        sirkuler: app.sirkuler_url || ''
+      };
+      
+      const isSermaye = app.subscription_type === 'Kurumsal (LTD. / A.Ş.)';
+      const isSahis = app.subscription_type === 'Kurumsal (Şahıs Şirketi)';
+      const companyType = isSermaye ? 'sermaye' : (isSahis ? 'sahis' : 'bireysel');
+      
+      app.billing = {
+        company_type: companyType,
+        company: app.company_name || app.full_name,
+        tax_office: app.tax_office || '',
+        tax_no: app.tax_number || app.tc_no,
+        address: app.home_address || ''
+      };
+    });
+  } catch (err) {
+    console.error("Failed to load applications:", err);
+    allApplications = [];
+  }
+  
+  filteredApplications = [...allApplications];
+  populateCompanyFilter();
+  applyFilters();
+}
+
+function populateCompanyFilter() {
+  const filterCompany = document.getElementById('filter-company');
+  if (!filterCompany) return;
+  
+  const currentVal = filterCompany.value;
+  filterCompany.innerHTML = '<option value="">Tüm Firmalar</option>';
+  
+  // Get unique companies from allApplications
+  const companies = [...new Set(allApplications.map(app => app.company_name).filter(Boolean))];
+  companies.sort((a, b) => a.localeCompare(b, 'tr'));
+  
+  companies.forEach(company => {
+    const opt = document.createElement('option');
+    opt.value = company;
+    opt.textContent = company;
+    filterCompany.appendChild(opt);
+  });
+  
+  filterCompany.value = currentVal;
+}
+
+function renderTable(apps) {
+  const tbody = document.getElementById('table-body');
+  const countEl = document.getElementById('table-results-count');
+  
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  if (countEl) {
+    countEl.textContent = `(${apps.length} sonuç)`;
+  }
+
+  if (apps.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 4.5rem 2rem; background: #ffffff;">
+          <div class="empty-state-container" style="max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="empty-state-icon" style="width: 70px; height: 70px; background: rgba(15, 59, 162, 0.05); border: 1px solid rgba(15, 59, 162, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); margin-bottom: 1.25rem; box-shadow: var(--shadow-sm); animation: pulse 2s infinite ease-in-out;">
+              <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
+            </div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin: 0 0 0.5rem 0;">Şu Anda Aktif Başvuru Bulunmamaktadır</h3>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; margin: 0 0 1.5rem 0; text-align: center;">
+              Sistemde listelenecek abonelik başvurusu bulunmuyor. Yeni başvurular yapıldıkça bu panelde anlık olarak görüntülenecektir.
+            </p>
+            <a href="basvuru.html" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0.5rem 1.5rem; font-size: 0.825rem; text-decoration: none; border-radius: var(--radius-sm); font-weight: 600;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+              <span>Yeni Test Başvurusu Yap</span>
+            </a>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    return;
+  }
+
+  apps.forEach(app => {
+    const tr = document.createElement('tr');
+    tr.id = `row-${app.id}`;
+    
+    // Status Badge classes
+    let statusClass = 'status-yeni';
+    if (app.status === 'İnceleniyor') statusClass = 'status-inceleniyor';
+    if (app.status === 'Onaylandı') statusClass = 'status-onaylandi';
+    if (app.status === 'Reddedildi') statusClass = 'status-reddedildi';
+
+    // Format Plaka beautifully
+    const plateFormatted = formatPlateSpacing(app.plate);
+
+    tr.innerHTML = `
+      <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
+      <td>
+        <div class="col-customer">
+          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${app.full_name}</span>
+          <span class="customer-details" style="margin: 0.3rem 0 0.4rem 0; display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.725rem; font-weight: 700; color: var(--color-primary-dark); background: rgba(15, 59, 162, 0.06); padding: 0.25rem 0.55rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 59, 162, 0.12); width: fit-content; text-transform: uppercase; letter-spacing: 0.02em;">
+            <i data-lucide="building-2" style="width: 12px; height: 12px; color: var(--color-primary);"></i>
+            <span>${app.company_name || 'SERBEST ÇALIŞAN'}</span>
+          </span>
+          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${app.phone}</span>
+        </div>
+      </td>
+      <td><span class="col-plate">${plateFormatted}</span></td>
+      <td><span class="col-otopark">${app.parking_location}</span></td>
+      <td>${formatDateTR(app.date_applied)}</td>
+      <td><span class="status-badge ${statusClass}">${app.status}</span></td>
+      <td style="text-align: center;">
+        <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Başvuru Detayını Gör">
+          <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function formatPlateSpacing(plate) {
+  // Regex format: 34ABC123 to 34 ABC 123
+  const match = plate.match(/^(\d{2})([A-Z]{1,3})(\d{2,4})$/);
+  if (match) {
+    return `${match[1]} ${match[2]} ${match[3]}`;
+  }
+  return plate; // fallback
+}
+
+function formatDateTR(dateStr) {
+  // Format: YYYY-MM-DD to DD.MM.YYYY
+  const pts = dateStr.split('-');
+  if (pts.length === 3) {
+    return `${pts[2]}.${pts[1]}.${pts[0]}`;
+  }
+  return dateStr;
+}
+
+function applyFilters() {
+  const query = document.getElementById('search-query').value.toLowerCase().trim();
+  const location = document.getElementById('filter-location').value;
+  const company = document.getElementById('filter-company')?.value;
+  const status = document.getElementById('filter-status').value;
+  const dateVal = document.getElementById('filter-date').value;
+
+  filteredApplications = allApplications.filter(app => {
+    // 1. Text search match (plate, name, phone, email, appCode)
+    const matchesQuery = !query || 
+      app.full_name.toLowerCase().includes(query) ||
+      app.plate.toLowerCase().includes(query) ||
+      app.phone.includes(query) ||
+      app.id.toLowerCase().includes(query) ||
+      app.email.toLowerCase().includes(query) ||
+      (app.company_name && app.company_name.toLowerCase().includes(query));
+
+    // 2. Location match
+    const matchesLocation = !location || app.parking_location === location;
+
+    // 3. Company match
+    const matchesCompany = !company || app.company_name === company;
+
+    // 4. Status match
+    const matchesStatus = !status || app.status === status;
+
+    // 5. Date match
+    const matchesDate = !dateVal || app.date_applied === dateVal;
+
+    return matchesQuery && matchesLocation && matchesCompany && matchesStatus && matchesDate;
+  });
+
+  // Re-render
+  renderTable(filteredApplications);
+  renderCompaniesTable(filteredApplications);
+  
+  // Recalculate and update metrics
+  updateMetrics(allApplications);
+}
+
+function updateMetrics(apps) {
+  const total = apps.length;
+  const countNew = apps.filter(a => a.status === 'Yeni').length;
+  const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
+  const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
+
+  document.getElementById('stats-total').textContent = total;
+  document.getElementById('stats-new').textContent = countNew;
+  document.getElementById('stats-approved').textContent = countApproved;
+  document.getElementById('stats-rejected').textContent = countRejected;
+}
+
+/* ==========================================================================
+   ADMIN DETAILS DRAWER (SLIDE-OVER PANEL)
+   ========================================================================== */
+
+function openDrawer(appId) {
+  currentAppId = appId;
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const drawer = document.getElementById('drawer-overlay');
+  const drawerBody = document.getElementById('drawer-body-content');
+  const drawerTitle = document.getElementById('drawer-title');
+
+  if (!drawer || !drawerBody) return;
+
+  // Set Title
+  drawerTitle.textContent = `Detay: ${app.id}`;
+
+  // Build Body Content
+  let statusBadgeClass = 'status-yeni';
+  if (app.status === 'İnceleniyor') statusBadgeClass = 'status-inceleniyor';
+  if (app.status === 'Onaylandı') statusBadgeClass = 'status-onaylandi';
+  if (app.status === 'Reddedildi') statusBadgeClass = 'status-reddedildi';
+
+  // Construct files layout with explicit document type headers/labels
+  let documentsHtml = '';
+  
+  if (app.files.ruhsat) {
+    documentsHtml += `
+    <div class="doc-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(249, 115, 22, 0.15); padding-bottom: 0.25rem;">🚗 Ruhsat Belgesi</div>
+      <i data-lucide="file-text" class="doc-icon" style="width: 20px; height: 20px; margin: 0 auto 0.5rem auto; color: var(--color-accent-orange);"></i>
+      <div class="doc-title" style="margin-bottom: 0.5rem;">${app.files.ruhsat.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('Ruhsat Belgesi', '${app.files.ruhsat}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+  
+  if (app.files.kimlik) {
+    documentsHtml += `
+    <div class="doc-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(249, 115, 22, 0.15); padding-bottom: 0.25rem;">🆔 Kimlik / Ehliyet</div>
+      <i data-lucide="file-text" class="doc-icon" style="width: 20px; height: 20px; margin: 0 auto 0.5rem auto; color: var(--color-accent-orange);"></i>
+      <div class="doc-title" style="margin-bottom: 0.5rem;">${app.files.kimlik.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('Kimlik / Ehliyet', '${app.files.kimlik}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+
+  if (app.files.vergi) {
+    documentsHtml += `
+    <div class="doc-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(249, 115, 22, 0.15); padding-bottom: 0.25rem;">🏢 Vergi Levhası</div>
+      <i data-lucide="file-text" class="doc-icon" style="width: 20px; height: 20px; margin: 0 auto 0.5rem auto; color: var(--color-accent-orange);"></i>
+      <div class="doc-title" style="margin-bottom: 0.5rem;">${app.files.vergi.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('Vergi Levhası', '${app.files.vergi}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+
+  if (app.files.sirkuler) {
+    documentsHtml += `
+    <div class="doc-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(249, 115, 22, 0.15); padding-bottom: 0.25rem;">📝 İmza Sirküleri</div>
+      <i data-lucide="file-text" class="doc-icon" style="width: 20px; height: 20px; margin: 0 auto 0.5rem auto; color: var(--color-accent-orange);"></i>
+      <div class="doc-title" style="margin-bottom: 0.5rem;">${app.files.sirkuler.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('İmza Sirküleri', '${app.files.sirkuler}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+
+  if (app.files.calisma) {
+    documentsHtml += `
+    <div class="doc-card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(249, 115, 22, 0.15); padding-bottom: 0.25rem;">📄 Çalışma Belgesi</div>
+      <i data-lucide="file-check-2" class="doc-icon" style="width: 20px; height: 20px; margin: 0 auto 0.5rem auto; color: var(--color-accent-orange);"></i>
+      <div class="doc-title" style="margin-bottom: 0.5rem;">${app.files.calisma.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('Çalışma Belgesi', '${app.files.calisma}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+
+  if (app.files.dekont) {
+    documentsHtml += `
+    <div class="doc-card" style="border-color: var(--color-primary-light); display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; padding: 1rem 0.8rem; background-color: var(--color-bg-light);">
+      <div style="font-size: 0.65rem; font-weight: 800; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(15, 59, 162, 0.15); padding-bottom: 0.25rem;">💳 Ödeme Dekontu</div>
+      <i data-lucide="receipt" class="doc-icon" style="color: var(--color-primary); width: 20px; height: 20px; margin: 0 auto 0.5rem auto;"></i>
+      <div class="doc-title" style="font-weight: 700; margin-bottom: 0.5rem;">${app.files.dekont.split('/').pop()}</div>
+      <span class="doc-preview-link" onclick="openDocPreview('Ödeme Dekontu', '${app.files.dekont}')" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;">
+        <i data-lucide="zoom-in" style="width: 12px; height: 12px;"></i> Önizle
+      </span>
+    </div>`;
+  }
+
+  drawerBody.innerHTML = `
+    <!-- Detail Section: Status & Type -->
+    <div class="detail-section">
+      <div class="detail-section-title">Durum & Abonelik Tipi</div>
+      <div class="detail-grid">
+        <span class="detail-label">Başvuru Durumu:</span>
+        <span class="detail-value"><span class="status-badge ${statusBadgeClass}">${app.status}</span></span>
+        
+        <span class="detail-label">Abonelik Tipi:</span>
+        <span class="detail-value">${app.subscription_type}</span>
+
+        <span class="detail-label">Seçilen Konum:</span>
+        <span class="detail-value">${app.parking_location}</span>
+
+        <span class="detail-label">Başvuru Tarihi:</span>
+        <span class="detail-value">${formatDateTR(app.date_applied)}</span>
+      </div>
+    </div>
+
+    <!-- Detail Section: Customer Info -->
+    <div class="detail-section">
+      <div class="detail-section-title">Müşteri & Şoför Bilgileri</div>
+      <div class="detail-grid">
+        <span class="detail-label">Firma / Kurum Adı:</span>
+        <span class="detail-value" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 800; font-size: 0.825rem; color: var(--color-primary-dark); background: rgba(15, 59, 162, 0.08); padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 59, 162, 0.15); text-transform: uppercase; letter-spacing: 0.03em;">
+            <i data-lucide="building-2" style="width: 14px; height: 14px; color: var(--color-primary);"></i>
+            <span>${app.company_name || 'SERBEST ÇALIŞAN'}</span>
+          </span>
+          <button onclick="changeApplicationCompany('${app.id}')" class="btn-edit-inline" title="Firmayı Düzenle / Aktar" style="background: none; border: none; cursor: pointer; color: var(--color-primary); display: inline-flex; align-items: center;">
+            <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+          </button>
+        </span>
+
+        <span class="detail-label">Başvuru Sahibi:</span>
+        <span class="detail-value">${app.full_name}</span>
+
+        <span class="detail-label">Şoför Adı:</span>
+        <span class="detail-value" style="font-weight: 700;">${app.driver_name || app.full_name}</span>
+
+        <span class="detail-label">T.C. Kimlik No:</span>
+        <span class="detail-value">${app.tc_no}</span>
+
+        <span class="detail-label">Telefon:</span>
+        <span class="detail-value">${app.phone}</span>
+
+        <span class="detail-label">E-posta:</span>
+        <span class="detail-value">${app.email}</span>
+
+        <span class="detail-label">İşyeri Adresi:</span>
+        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${app.home_address || 'Belirtilmedi'}</span>
+      </div>
+    </div>
+
+    <!-- Detail Section: Vehicle Info -->
+    <div class="detail-section">
+      <div class="detail-section-title">Araç Bilgileri</div>
+      <div class="detail-grid">
+        <span class="detail-label">Araç Plakası:</span>
+        <span class="detail-value" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="col-plate">${formatPlateSpacing(app.plate)}</span>
+          <button onclick="editApplicationPlate('${app.id}')" class="btn-edit-inline" title="Plakayı Düzenle" style="background: none; border: none; cursor: pointer; color: var(--color-primary); display: inline-flex; align-items: center;">
+            <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+          </button>
+        </span>
+
+        <span class="detail-label">Marka / Model:</span>
+        <span class="detail-value">${app.car_model}</span>
+      </div>
+    </div>
+
+    <!-- Detail Section: Billing Info -->
+    <div class="detail-section">
+      <div class="detail-section-title">Fatura Bilgileri</div>
+      ${app.billing ? `
+      <div class="detail-grid">
+        <span class="detail-label">${app.billing.company_type === 'sermaye' ? 'Firma Unvanı' : (app.billing.company_type === 'sahis' ? 'Firma Sahibi' : 'Fatura Sahibi')}:</span>
+        <span class="detail-value" style="font-weight: 700;">${app.billing.company}</span>
+
+        ${app.billing.company_type !== 'bireysel' ? `
+        <span class="detail-label">Vergi Dairesi:</span>
+        <span class="detail-value">${app.billing.tax_office}</span>
+        ` : ''}
+
+        <span class="detail-label">${app.billing.company_type === 'sermaye' ? 'Vergi Numarası' : 'T.C. Kimlik No'}:</span>
+        <span class="detail-value">${app.billing.tax_no}</span>
+
+        <span class="detail-label">Fatura Adresi:</span>
+        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${app.billing.address}</span>
+      </div>
+      ` : `
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); font-style: italic; margin: 0;">
+        Bu başvuru için ayrı bir kurumsal fatura bilgisi belirtilmemiştir (Bireysel Fatura).
+      </p>
+      `}
+    </div>
+
+    <!-- Detail Section: User Notes -->
+    <div class="detail-section">
+      <div class="detail-section-title">Başvuru Notu</div>
+      <p style="font-size: 0.9rem; color: var(--color-text-dark); background-color: var(--color-bg-light); padding: 0.875rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border-light); font-style: ${app.notes ? 'normal' : 'italic'};">
+        ${app.notes ? app.notes : 'Bu başvuru için müşteri not girmemiştir.'}
+      </p>
+    </div>
+
+    <!-- Detail Section: Documents -->
+    <div class="detail-section">
+      <div class="detail-section-title">Yüklenen Belgeler</div>
+      <div class="doc-viewer-grid">
+        ${documentsHtml}
+      </div>
+    </div>
+
+    <!-- Detail Section: Sent Notifications (Giden Bildirimler) -->
+    <div class="detail-section" style="border: 1px solid rgba(16, 185, 129, 0.15); background: rgba(16, 185, 129, 0.02); border-radius: var(--radius-sm); padding: 1.25rem;">
+      <div class="detail-section-title" style="color: #047857; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="bell" style="width: 16px; height: 16px; color: var(--color-accent-gold);"></i>
+        <span>Otomatik Bildirim Günlüğü</span>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1rem; line-height: 1.4;">
+        Başvuru esnasında müşteriye merkez ofis sunucuları üzerinden otomatik olarak iletilen e-posta onayını ve WhatsApp teyit mesajı kayıtlarını buradan inceleyebilirsiniz.
+      </p>
+      <div style="display: flex; gap: 0.75rem; width: 100%;">
+        <button onclick="adminOpenWhatsAppSimulation('${app.id}')" class="btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: #25d366; color: #ffffff; border: none; font-size: 0.8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; min-height: 38px; box-shadow: 0 2px 6px rgba(37, 211, 102, 0.2); transition: all 0.2s ease;">
+          <i data-lucide="message-circle" style="width: 14px; height: 14px; fill: #ffffff;"></i> WhatsApp Bildirimi
+        </button>
+        <button onclick="adminOpenEmailSimulation('${app.id}')" class="btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: var(--color-primary); color: var(--color-primary-dark); border: none; font-size: 0.8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; min-height: 38px; box-shadow: 0 2px 6px rgba(15, 59, 162, 0.15); transition: all 0.2s ease;">
+          <i data-lucide="mail" style="width: 14px; height: 14px;"></i> E-posta Bildirimi
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Highlight active row in table
+  highlightTableRow(appId);
+
+  // Show/Hide Delete Button in Drawer based on role
+  const deleteBtn = document.getElementById('btn-drawer-delete');
+  if (deleteBtn) {
+    deleteBtn.style.display = currentAdminUser === 'superadmin' ? 'inline-block' : 'none';
+  }
+
+  // Show Drawer Overlay and slide-over panel
+  drawer.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function adminOpenWhatsAppSimulation(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.name === app.parking_location) || {};
+
+  // Setup date formatted time
+  const timeStr = new Date(app.date_applied || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+  // Update header metadata (hidden support numbers / status)
+  const titleEl = document.getElementById('whatsapp-sim-title');
+  if (titleEl) {
+    titleEl.textContent = `${app.parking_location} Otopark Yetkilisi`;
+  }
+
+  // Populate dynamic HTML inside bubble container depending on approval state
+  const bubbleContainer = document.getElementById('whatsapp-bubble-container');
+  if (bubbleContainer) {
+    let whatsappBody = '';
+    
+    if (app.status === 'Onaylandı') {
+      whatsappBody = `
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          Merhaba Sayın <strong>${app.full_name}</strong>, 🌟
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Abonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve **ONAYLANMIŞTIR**. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:
+        </p>
+
+        <div style="background: rgba(7, 94, 84, 0.05); border-left: 3px solid #075e54; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: sans-serif;">
+          <div><strong>📦 Başvuru Kodu:</strong> <span style="color: #075e54; font-weight: 700;">${app.id}</span></div>
+          <div><strong>🚗 Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700;">${app.plate}</span></div>
+          <div><strong>📍 Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+          <div><strong>💸 Abonelik Tipi:</strong> <span>${app.subscription_type}</span></div>
+          <div><strong>📞 Destek Telefonu:</strong> <span>${park.supportPhone || '0216 504 47 22'}</span></div>
+        </div>
+
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          🚗 <strong>HGS Otomatik Geçiş Bilgilendirmesi:</strong>
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Plaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!
+        </p>
+      `;
+    } else if (app.status === 'Reddedildi') {
+      whatsappBody = `
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          Merhaba Sayın <strong>${app.full_name}</strong>, ⚠️
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle **REDDEDİLMİŞTİR**.
+        </p>
+
+        <div style="background: rgba(185, 28, 28, 0.05); border-left: 3px solid #b91c1c; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: sans-serif;">
+          <div><strong>📦 Başvuru Kodu:</strong> <span style="color: #b91c1c; font-weight: 700;">${app.id}</span></div>
+          <div><strong>🚗 Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700;">${app.plate}</span></div>
+          <div><strong>📍 Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+          <div><strong>⚠️ Durum:</strong> <span style="color: #b91c1c; font-weight: 700;">Belge Eksikliği / Dekont Hatası</span></div>
+        </div>
+
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          💬 <strong>Nasıl Düzeltebilirsiniz?</strong>
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Lütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: **${park.supportPhone || '0216 504 47 22'}**
+        </p>
+      `;
+    } else {
+      // Normal Pending review receipt
+      whatsappBody = `
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          Merhaba Sayın <strong>${app.full_name}</strong>, 🌟
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Abonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce <strong>kontrol edilmek üzere başarıyla teslim alınmıştır!</strong> Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:
+        </p>
+
+        <div style="background: rgba(7, 94, 84, 0.05); border-left: 3px solid #075e54; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: sans-serif;">
+          <div><strong>📦 Başvuru Kodu:</strong> <span style="color: #075e54; font-weight: 700;">${app.id}</span></div>
+          <div><strong>🚗 Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700;">${app.plate}</span></div>
+          <div><strong>📍 Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+          <div><strong>💸 Personel / Harici Fiyatı:</strong> <span>${app.subscription_type.includes('Kurumsal') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL')}</span></div>
+          <div><strong>📞 Destek Telefonu:</strong> <span>${park.supportPhone || '0216 504 47 22'}</span></div>
+        </div>
+
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+          💳 <strong>Ödeme ve Dekont Bilgilendirmesi:</strong>
+        </p>
+        <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+          Yüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz <strong>en geç 1 saat içerisinde</strong> onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.
+        </p>
+      `;
+    }
+
+    // Wrap with banks and timers
+    bubbleContainer.innerHTML = `
+      ${whatsappBody}
+      
+      ${app.status !== 'Reddedildi' ? `
+      <!-- IBAN info in chat bubble -->
+      <div style="background: #fdf6e2; border: 1px dashed #d5a229; border-radius: 4px; padding: 0.5rem; font-size: 0.75rem; color: #7d6015; text-align: left; font-family: monospace; word-break: break-word;">
+        <strong>Banka:</strong> <span>${park.bankName || 'Vakıfbank'}</span><br>
+        <strong>IBAN:</strong> <span>${park.iban || 'TR23 0001 5001 5800 7302 9104 88'}</span>
+      </div>
+      ` : ''}
+
+      <!-- Time bubble info -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.2rem; font-size: 0.65rem; color: #949494; margin-top: 0.15rem; width: 100%;">
+        <span>${timeStr}</span>
+        <span style="color: #4fc3f7; font-weight: 700; display: inline-flex; align-items: center;">✓✓</span>
+      </div>
+    `;
+  }
+
+  openModal('modal-whatsapp-simulation');
+}
+
+function adminOpenEmailSimulation(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.name === app.parking_location) || {};
+
+  // Setup dynamic headers
+  const toNameEl = document.getElementById('email-sim-to-name');
+  const toAddrEl = document.getElementById('email-sim-to-addr');
+  const subjectEl = document.getElementById('email-sim-subject-code');
+
+  if (toNameEl) toNameEl.textContent = app.full_name;
+  if (toAddrEl) toAddrEl.textContent = `<${app.email}>`;
+
+  // Render Subject and Content Body depending on approval state
+  const templateBody = document.getElementById('email-template-body');
+  if (templateBody) {
+    let emailSubject = '';
+    let emailBody = '';
+    
+    if (app.status === 'Onaylandı') {
+      emailSubject = `🎉 PARKEXPERT Abonelik Başvurunuz ONAYLANDI! (Takip No: ${app.id})`;
+      emailBody = `
+        <h2 style="font-size: 1.25rem; color: var(--color-primary-dark); font-weight: 700; margin-bottom: 1rem; text-align: center;">Sayın <span>${app.full_name}</span>,</h2>
+        
+        <p style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1.5rem; text-align: center;">
+          Abonelik başvuru evraklarınız ve ödeme dekontunuz ekiplerimiz tarafından doğrulanmış ve **ONAYLANMIŞTIR**. Plaka tanıma sistemimiz aktif edilmiştir.
+        </p>
+
+        <div style="background: var(--color-bg-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #10b981;">
+          <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; font-weight: 700; border: none; padding: 0;">Onaylanan Abonelik Detayları</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+            <div><strong style="color: var(--color-text-dark);">Takip Numarası:</strong> <span style="color: var(--color-primary); font-weight: 700;">${app.id}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">${app.plate}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span>${app.subscription_type}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.date_applied)}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Durum:</strong> <span style="color:#10b981; font-weight:700;">Aktif / Onaylandı</span></div>
+          </div>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px dashed #10b981; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <i data-lucide="check-circle" style="color: #10b981; width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+          <p style="font-size: 0.8rem; line-height: 1.5; color: var(--color-primary-dark); margin: 0; text-align: left;">
+            Otopark giriş ve çıkışlarında plaka tanıma HGS (Hızlı Geçiş Sistemi) plakanızı otomatik olarak okuyacak ve geçiş izni verecektir. Bilet almanıza veya kart kullanmanıza gerek yoktur.
+          </p>
+        </div>
+      `;
+    } else if (app.status === 'Reddedildi') {
+      emailSubject = `⚠️ PARKEXPERT Abonelik Başvurunuz Hakkında (Takip No: ${app.id})`;
+      emailBody = `
+        <h2 style="font-size: 1.25rem; color: var(--color-primary-dark); font-weight: 700; margin-bottom: 1rem; text-align: center;">Sayın <span>${app.full_name}</span>,</h2>
+        
+        <p style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1.5rem; text-align: center;">
+          Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun eşleşmemesi nedeniyle **REDDEDİLMİŞTİR**.
+        </p>
+
+        <div style="background: var(--color-bg-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #ef4444;">
+          <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; font-weight: 700; border: none; padding: 0;">Reddedilen Başvuru Detayları</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+            <div><strong style="color: var(--color-text-dark);">Takip Numarası:</strong> <span style="color: var(--color-primary); font-weight: 700;">${app.id}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">${app.plate}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Durum:</strong> <span style="color:#ef4444; font-weight:700;">Belge Eksikliği / Ödeme Sorunu</span></div>
+          </div>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px dashed #ef4444; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <i data-lucide="x-circle" style="color: #ef4444; width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+          <p style="font-size: 0.8rem; line-height: 1.5; color: var(--color-primary-dark); margin: 0; text-align: left;">
+            Lütfen evraklarınızı, plaka numaranızı veya dekont bilgilerinizi kontrol ederek doğru belgelerle yeni bir abonelik başvurusu oluşturunuz ya da bizimle iletişime geçiniz: destek@parkexpert.net
+          </p>
+        </div>
+      `;
+    } else {
+      // Normal pending receipt review
+      emailSubject = `🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: ${app.id})`;
+      emailBody = `
+        <h2 style="font-size: 1.25rem; color: var(--color-primary-dark); font-weight: 700; margin-bottom: 1rem; text-align: center;">Sayın <span>${app.full_name}</span>,</h2>
+        
+        <p style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1.5rem; text-align: center;">
+          Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
+        </p>
+
+        <div style="background: var(--color-bg-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--color-primary);">
+          <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; font-weight: 700; border: none; padding: 0;">Başvuru Detayları</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+            <div><strong style="color: var(--color-text-dark);">Takip Numarası:</strong> <span style="color: var(--color-primary); font-weight: 700;">${app.id}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">${app.plate}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span>${app.subscription_type}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.date_applied)}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Araç Modeli:</strong> <span>${app.car_model || 'Belirtilmedi'}</span></div>
+          </div>
+        </div>
+
+        <div style="background: rgba(255, 208, 0, 0.1); border: 1px dashed var(--color-accent-gold); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <i data-lucide="info" style="color: var(--color-primary); width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+          <p style="font-size: 0.8rem; line-height: 1.5; color: var(--color-primary-dark); margin: 0; text-align: left;">
+            Başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktif edilecek ve tarafınıza <strong>SMS</strong> ile bilgilendirme yapılacaktır. Takip numaranız ile istediğiniz an durum sorgulaması yapabilirsiniz.
+          </p>
+        </div>
+      `;
+    }
+
+    if (subjectEl) {
+      subjectEl.innerHTML = emailSubject;
+    }
+
+    templateBody.innerHTML = `
+      <!-- Logo in Email -->
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 45px; object-fit: contain;">
+        <div style="width: 40px; height: 3px; background: var(--color-accent-gold); margin: 0.5rem auto 0 auto; border-radius: var(--radius-full);"></div>
+      </div>
+      
+      ${emailBody}
+
+      <div style="border-top: 1px solid var(--color-border-light); padding-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--color-text-muted);">
+        <p style="margin-bottom: 0.25rem;">Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.</p>
+        <p style="font-weight: 700; color: var(--color-primary-dark);">PARKEXPERT Müşteri Hizmetleri</p>
+        <p style="margin-top: 0.25rem;"><a href="mailto:destek@parkexpert.net" style="color: var(--color-primary); text-decoration: none;">destek@parkexpert.net</a> | 0216 504 47 22</p>
+      </div>
+    `;
+  }
+
+  openModal('modal-email-simulation');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function highlightTableRow(appId) {
+  const rows = document.querySelectorAll('#table-body tr');
+  rows.forEach(r => r.style.backgroundColor = ''); // Clear highlights
+
+  const activeRow = document.getElementById(`row-${appId}`);
+  if (activeRow) {
+    activeRow.style.backgroundColor = 'rgba(249, 115, 22, 0.05)';
+  }
+}
+
+function closeDrawer() {
+  const drawer = document.getElementById('drawer-overlay');
+  if (drawer) {
+    drawer.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  
+  // Clear table row highlights
+  const rows = document.querySelectorAll('#table-body tr');
+  rows.forEach(r => r.style.backgroundColor = '');
+}
+
+function closeDrawerOnOverlay(event) {
+  if (event.target.classList.contains('drawer-overlay')) {
+    closeDrawer();
+  }
+}
+
+async function updateCurrentAppStatus(newStatus) {
+  if (!currentAppId) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/applications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ id: currentAppId, status: newStatus })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Durum güncellenirken hata oluştu.");
+    }
+
+    // Find and update status in database array
+    const appIndex = allApplications.findIndex(a => a.id === currentAppId);
+    if (appIndex !== -1) {
+      allApplications[appIndex].status = newStatus;
+      
+      // Refresh table rendering with current filter set
+      applyFilters();
+      
+      // Refresh the drawer body content to show updated status
+      openDrawer(currentAppId);
+
+      // Trigger simulated status notification alerts (Toasts) for the admin
+      triggerAdminStatusToasts(allApplications[appIndex], newStatus);
+
+      // Show simulated admin status log
+      console.log(`Application ${currentAppId} status updated to: ${newStatus}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+function triggerAdminStatusToasts(app, status) {
+  const emailToast = document.getElementById('email-toast');
+  const whatsappToast = document.getElementById('whatsapp-toast');
+
+  if (emailToast && whatsappToast) {
+    const eTitle = document.getElementById('toast-title');
+    const eMessage = document.getElementById('toast-message');
+    const wTitle = document.getElementById('whatsapp-toast-title');
+    const wMessage = document.getElementById('whatsapp-toast-message');
+
+    // Reset icons in case of repeated status changes
+    const eIcon = emailToast.querySelector('.toast-icon');
+    const wIcon = whatsappToast.querySelector('.toast-icon');
+    if (eIcon) eIcon.innerHTML = `<i data-lucide="mail"></i>`;
+    if (wIcon) wIcon.innerHTML = `<i data-lucide="message-circle" style="fill: #25d366; color: #ffffff;"></i>`;
+
+    // Reset classes and trigger show Email Toast
+    emailToast.classList.add('active');
+    if (eTitle) eTitle.innerHTML = `📧 E-posta Sunucusu`;
+    if (eMessage) eMessage.textContent = `${app.email} adresine durum güncellemesi iletiliyor...`;
+
+    // Reset classes and trigger show WhatsApp Toast with a slight delay
+    setTimeout(() => {
+      whatsappToast.classList.add('active');
+      if (wTitle) wTitle.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.25rem; color:#25d366;">💬 WhatsApp API Gateway</span>`;
+      if (wMessage) wMessage.textContent = `${app.phone} numarasına bildirim teyidi iletiliyor...`;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }, 1000);
+
+    // Complete Email Toast
+    setTimeout(() => {
+      if (eMessage) {
+        if (status === 'Onaylandı') {
+          eMessage.innerHTML = `📬 <strong>Abonelik Aktivasyon Onay E-postası başarıyla iletildi!</strong><br><span style="font-size:0.7rem; color:var(--color-primary);">Kayıtları incelemek için "Görüntüle"ye tıklayın.</span>`;
+        } else {
+          eMessage.innerHTML = `⚠️ <strong>Başvuru Red/Düzeltme E-postası başarıyla iletildi!</strong><br><span style="font-size:0.7rem; color:var(--color-primary);">Kayıtları incelemek için "Görüntüle"ye tıklayın.</span>`;
+        }
+      }
+      if (eIcon) eIcon.innerHTML = `<i data-lucide="mail-check" style="color:#25d366;"></i>`;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }, 2800);
+
+    // Complete WhatsApp Toast
+    setTimeout(() => {
+      if (wMessage) {
+        if (status === 'Onaylandı') {
+          wMessage.innerHTML = `<strong>Abonelik Aktivasyon WhatsApp Onayı iletildi!</strong><br><span style="font-size:0.7rem; color:#25d366;">Geçiş aktif edildi. Görmek için tıklayın.</span>`;
+        } else {
+          wMessage.innerHTML = `<strong>Abonelik Red Detay WhatsApp Mesajı iletildi!</strong><br><span style="font-size:0.7rem; color:#25d366;">Görmek için tıklayın.</span>`;
+        }
+      }
+      if (wIcon) wIcon.innerHTML = `<i data-lucide="message-square-code" style="color:#25d366; fill:#25d366;"></i>`;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }, 3800);
+
+    // Auto-hide both toasts
+    setTimeout(() => {
+      emailToast.classList.remove('active');
+    }, 8500);
+    setTimeout(() => {
+      whatsappToast.classList.remove('active');
+    }, 9500);
+
+    // Make toasts clickable to open simulation modals
+    emailToast.style.cursor = 'pointer';
+    emailToast.onclick = () => {
+      adminOpenEmailSimulation(app.id);
+      emailToast.classList.remove('active');
+    };
+    whatsappToast.style.cursor = 'pointer';
+    whatsappToast.onclick = () => {
+      adminOpenWhatsAppSimulation(app.id);
+      whatsappToast.classList.remove('active');
+    };
+  }
+}
+
+/* ==========================================================================
+   DOCUMENT VIEWING & DOWNLOAD SIMULATOR
+   ========================================================================== */
+
+async function openDocPreview(docType, path) {
+  const modal = document.getElementById('modal-doc-preview');
+  const titleEl = document.getElementById('preview-doc-title');
+  const filenameEl = document.getElementById('preview-filename');
+  const previewDocBox = document.getElementById('preview-doc-box');
+
+  if (!modal) return;
+  
+  if (titleEl) titleEl.textContent = `${docType} Önizleme`;
+  if (filenameEl) filenameEl.textContent = path ? path.split('/').pop() : '';
+  
+  // Show loading indicator
+  if (previewDocBox) {
+    previewDocBox.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
+        <div style="width: 32px; height: 32px; border: 3px solid rgba(15, 59, 162, 0.1); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 1rem;"></div>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0;">Evrak güvenli depodan çekiliyor...</p>
+      </div>
+      <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    `;
+  }
+  
+  modal.classList.add('active');
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token || !path) {
+    if (previewDocBox) {
+      previewDocBox.innerHTML = `
+        <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #ef4444; margin-bottom: 1rem;"></i>
+        <h4 style="color: #ef4444; margin-bottom: 0.5rem;">Erişim Hatası</h4>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0;">Geçersiz oturum veya bulunamayan dosya yolu.</p>
+      `;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/document?path=${encodeURIComponent(path)}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("File could not be fetched");
+
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const filename = path.split('/').pop();
+    const isImage = blob.type.startsWith('image/');
+
+    if (previewDocBox) {
+      if (isImage) {
+        previewDocBox.innerHTML = `
+          <img src="${objectUrl}" alt="${docType}" style="max-width: 100%; max-height: 350px; border-radius: var(--radius-sm); object-fit: contain; box-shadow: var(--shadow-sm);">
+          <div style="margin-top: 1.25rem;">
+            <a href="${objectUrl}" download="${filename}" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; display: inline-flex; justify-content: center; align-items: center; gap: 0.35rem;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i> Dosyayı İndir
+            </a>
+          </div>
+        `;
+      } else {
+        previewDocBox.innerHTML = `
+          <i data-lucide="file-text" style="width: 48px; height: 48px; color: var(--color-accent-orange); margin-bottom: 1rem;"></i>
+          <h4 style="margin-bottom: 0.5rem;">${filename}</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.5rem;">Evrak resmi doğrulanmıştır. PDF görüntüleyici güvenlidir.</p>
+          <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <a href="${objectUrl}" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; display: inline-flex; align-items: center; gap: 0.35rem; background: #e2e8f0; color: #475569;">
+              <i data-lucide="eye" style="width: 14px; height: 14px;"></i> Tarayıcıda Aç
+            </a>
+            <a href="${objectUrl}" download="${filename}" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i> Dosyayı İndir
+            </a>
+          </div>
+        `;
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  } catch (err) {
+    console.error(err);
+    if (previewDocBox) {
+      previewDocBox.innerHTML = `
+        <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #ef4444; margin-bottom: 1rem;"></i>
+        <h4 style="color: #ef4444; margin-bottom: 0.5rem;">Yükleme Hatası</h4>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0;">Evrak depodan çekilirken bir hata oluştu.</p>
+      `;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+}
+
+function simulateDocDownload(event) {
+  event.preventDefault();
+  const filename = document.getElementById('preview-filename').textContent;
+  
+  // Generate dummy text payload
+  const dummyContent = `PARKEXPERT DIGITAL DOCUMENT PREVIEW\n\nDocument Name: ${filename}\nStatus: Verified Secure\nVerification Timestamp: ${new Date().toISOString()}`;
+  const blob = new Blob([dummyContent], { type: 'text/plain;charset=utf-8' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* ==========================================================================
+   EXCEL / CSV EXPORT SYSTEM (Pure Vanilla JS Implementation)
+   ========================================================================== */
+
+function exportToExcel() {
+  if (filteredApplications.length === 0) {
+    alert("Dışa aktarılacak herhangi bir başvuru bulunmamaktadır.");
+    return;
+  }
+
+  // 1. Setup headers
+  const headers = [
+    "Başvuru No",
+    "Abonelik Tipi",
+    "Otopark Konumu",
+    "Ad Soyad",
+    "Şoför Adı",
+    "T.C. Kimlik No",
+    "Telefon",
+    "E-posta",
+    "Araç Plakası",
+    "Araç Marka Model",
+    "İşyeri Adresi",
+    "Başvuru Tarihi",
+    "Başvuru Durumu",
+    "Firma Unvanı",
+    "Vergi Dairesi",
+    "Vergi Numarası",
+    "Fatura Adresi"
+  ];
+
+  // 2. Setup rows
+  const rows = filteredApplications.map(app => [
+    app.id,
+    app.subscription_type,
+    app.parking_location,
+    app.full_name,
+    app.driver_name || app.full_name,
+    `'${app.tc_no}`, // Prefix with tick to prevent scientific notation in Excel
+    app.phone,
+    app.email,
+    app.plate,
+    app.car_model,
+    app.home_address ? app.home_address.replace(/\r?\n/g, " ") : "",
+    formatDateTR(app.date_applied),
+    app.status,
+    app.billing ? app.billing.company : "",
+    app.billing ? app.billing.tax_office : "",
+    app.billing ? `'${app.billing.tax_no}` : "", // Prefix with tick to prevent scientific notation in Excel
+    app.billing ? app.billing.address.replace(/\r?\n/g, " ") : "" // Flatten address
+  ]);
+
+  // 3. Assemble CSV string with semicolon delimiters (Turkish Excel friendly)
+  const csvContent = [
+    headers.join(";"),
+    ...rows.map(r => r.map(cell => {
+      // Escape cell strings containing quotes or semicolons
+      let cellStr = String(cell);
+      if (cellStr.includes(";") || cellStr.includes('"') || cellStr.includes("\n")) {
+        cellStr = `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(";"))
+  ].join("\n");
+
+  // 4. Encode as UTF-8 with BOM (Byte Order Mark) to ensure Excel opens Turkish chars perfectly
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const blob = new Blob([bom, csvContent], { type: "text/csv;charset=utf-8;" });
+  
+  // 5. Trigger browser download
+  const dateStr = new Date().toISOString().split('T')[0];
+  const filename = `ParkExpert_Abonelik_Basvurulari_${dateStr}.csv`;
+  
+  const link = document.createElement("a");
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+function renderOtoparksTable() {
+  const gridContainer = document.getElementById('otoparks-grid-container');
+  const countEl = document.getElementById('otoparks-results-count');
+  if (!gridContainer) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
+  if (countEl) {
+    countEl.textContent = `(${otoparks.length} konum)`;
+  }
+
+  gridContainer.innerHTML = '';
+
+  if (otoparks.length === 0) {
+    gridContainer.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-size: 0.95rem;">
+        Sistemde tanımlı otopark işletmesi bulunamadı.
+      </div>
+    `;
+    return;
+  }
+
+  otoparks.forEach(park => {
+    // Category badge class
+    let catClass = 'otopark-card__category--sanayi';
+    if (park.category === 'AVM Otoparkları') {
+      catClass = 'otopark-card__category--avm';
+    } else if (park.category === 'Açık Otoparklar / Bağımsız Otoparklar') {
+      catClass = 'otopark-card__category--acik';
+    }
+
+    // Shorten category label for badge
+    let catLabel = park.category;
+    if (catLabel === 'Sanayi Sitesi Otoparkları') catLabel = 'Sanayi';
+    else if (catLabel === 'AVM Otoparkları') catLabel = 'AVM';
+    else if (catLabel === 'Açık Otoparklar / Bağımsız Otoparklar') catLabel = 'Açık / Bağımsız';
+
+    // Active status configuration
+    const isActive = park.isActive !== false;
+    const cardStatusClass = isActive ? '' : ' otopark-card--inactive';
+    const statusBtnClass = isActive ? 'otopark-card__status-btn--active' : 'otopark-card__status-btn--inactive';
+    const statusText = isActive ? 'AÇIK' : 'KAPALI';
+    const statusTitle = isActive ? 'Abonelik Alımını Kapat' : 'Abonelik Alımını Aç';
+    const statusDotColor = isActive ? '#10b981' : '#ef4444';
+
+    const card = document.createElement('div');
+    card.className = `otopark-card${cardStatusClass}`;
+    card.innerHTML = `
+      <div class="otopark-card__header">
+        <div class="otopark-card__name">${park.name}</div>
+        <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+          <span class="otopark-card__category ${catClass}">${catLabel}</span>
+          <button type="button" class="otopark-card__status-btn ${statusBtnClass}" onclick="toggleOtoparkStatus('${park.id}')" title="${statusTitle}">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: ${statusDotColor};"></span>
+            <span>${statusText}</span>
+          </button>
+        </div>
+      </div>
+      <div class="otopark-card__body">
+        <div class="otopark-card__field otopark-card__field--full">
+          <span class="otopark-card__label">Şirket Unvanı</span>
+          <span class="otopark-card__value" style="text-transform: uppercase;">${park.companyTitle || 'Belirtilmedi'}</span>
+        </div>
+        <div class="otopark-card__field">
+          <span class="otopark-card__label">Vergi Dairesi</span>
+          <span class="otopark-card__value">${park.taxOffice || 'Belirtilmedi'}</span>
+        </div>
+        <div class="otopark-card__field">
+          <span class="otopark-card__label">Vergi No</span>
+          <span class="otopark-card__value">${park.taxNumber || 'Belirtilmedi'}</span>
+        </div>
+        <div class="otopark-card__field">
+          <span class="otopark-card__label">Banka</span>
+          <span class="otopark-card__value" style="color: var(--color-primary-dark); font-weight: 700;">${park.bankName}</span>
+        </div>
+        <div class="otopark-card__field">
+          <span class="otopark-card__label">Fiyatlar</span>
+          <span class="otopark-card__value otopark-card__value--price">
+            <span class="otopark-card__price-emp">${park.priceEmployee}</span> · <span class="otopark-card__price-ext">${park.priceExternal}</span>
+          </span>
+        </div>
+        <div class="otopark-card__field otopark-card__field--full">
+          <span class="otopark-card__label">IBAN</span>
+          <span class="otopark-card__value otopark-card__value--iban">
+            <span>${park.iban}</span>
+            <button type="button" class="btn-copy-iban" onclick="copyIbanToClipboard(this, '${park.iban}')" title="IBAN Kopyala">
+              <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
+              <span class="copy-tooltip" style="font-size: 0.65rem; padding: 0.2rem 0.35rem;">Kopyalandı!</span>
+            </button>
+          </span>
+        </div>
+      </div>
+      <div class="otopark-card__footer">
+        <span class="otopark-card__support">
+          <i data-lucide="phone" style="width: 12px; height: 12px;"></i>
+          ${park.supportPhone || '—'}
+        </span>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="otopark-card__edit-btn" onclick="editOtopark('${park.id}')">
+            <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
+          </button>
+          <button class="otopark-card__edit-btn" onclick="deleteOtopark('${park.id}')" style="color: #ef4444;">
+            <i data-lucide="trash-2" style="width: 12px; height: 12px; color: #ef4444;"></i> Sil
+          </button>
+        </div>
+      </div>
+    `;
+
+    gridContainer.appendChild(card);
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+
+function editOtopark(otoparkId) {
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.id === otoparkId);
+
+  if (!park) return;
+
+  document.getElementById('edit-otopark-id').value = park.id;
+  
+  const nameInput = document.getElementById('edit-otopark-name');
+  if (nameInput) {
+    nameInput.value = park.name;
+    nameInput.readOnly = true;
+    nameInput.style.backgroundColor = '#f1f5f9';
+    nameInput.style.cursor = 'not-allowed';
+  }
+
+  const catSelect = document.getElementById('edit-otopark-category');
+  if (catSelect) {
+    catSelect.value = park.category || 'OSB / Sanayi Sitesi Otoparkları';
+  }
+  
+  const catGroup = document.getElementById('group-otopark-category');
+  if (catGroup) catGroup.style.display = 'none';
+
+  document.getElementById('edit-otopark-title').value = park.companyTitle || '';
+  document.getElementById('edit-otopark-tax-office').value = park.taxOffice || '';
+  document.getElementById('edit-otopark-tax-number').value = park.taxNumber || '';
+  document.getElementById('edit-otopark-bank').value = park.bankName || '';
+  document.getElementById('edit-otopark-iban').value = park.iban || '';
+  document.getElementById('edit-otopark-price-emp').value = park.priceEmployee || '';
+  document.getElementById('edit-otopark-price-ext').value = park.priceExternal || '';
+  document.getElementById('edit-otopark-support').value = park.supportPhone || '';
+  document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
+
+  document.getElementById('otopark-modal-title').textContent = 'Otopark İşletmesi Düzenle';
+  openModal('modal-otopark-edit');
+}
+
+async function loadOtoparks() {
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  let otoparks = [];
+  try {
+    const res = await fetch('/api/otoparks');
+    if (res.ok) {
+      otoparks = await res.json();
+      otoparks.forEach(p => {
+        if (p.is_active !== undefined) p.isActive = p.is_active;
+        if (p.company_title !== undefined) p.companyTitle = p.company_title;
+        if (p.tax_office !== undefined) p.taxOffice = p.tax_office;
+        if (p.tax_number !== undefined) p.taxNumber = p.tax_number;
+        if (p.bank_name !== undefined) p.bankName = p.bank_name;
+        if (p.price_employee !== undefined) p.priceEmployee = p.price_employee;
+        if (p.price_external !== undefined) p.priceExternal = p.price_external;
+        if (p.support_phone !== undefined) p.supportPhone = p.support_phone;
+      });
+      localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
+    }
+  } catch (err) {
+    console.error("Failed to load otoparks:", err);
+  }
+}
+
+async function saveOtoparkConfig(event) {
+  event.preventDefault();
+  
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const id = document.getElementById('edit-otopark-id').value;
+  const nameVal = document.getElementById('edit-otopark-name').value.trim();
+  const categoryVal = document.getElementById('edit-otopark-category').value;
+  const companyTitleVal = document.getElementById('edit-otopark-title').value.trim().toLocaleUpperCase('tr-TR');
+  const taxOfficeVal = document.getElementById('edit-otopark-tax-office').value.trim().toLocaleUpperCase('tr-TR');
+  const taxNumberVal = document.getElementById('edit-otopark-tax-number').value.trim();
+  const bankNameVal = document.getElementById('edit-otopark-bank').value.trim().toLocaleUpperCase('tr-TR');
+  const ibanVal = document.getElementById('edit-otopark-iban').value.trim().toUpperCase();
+  const priceEmployeeVal = document.getElementById('edit-otopark-price-emp').value.trim().toLocaleUpperCase('tr-TR');
+  const priceExternalVal = document.getElementById('edit-otopark-price-ext').value.trim().toLocaleUpperCase('tr-TR');
+  const supportPhoneVal = document.getElementById('edit-otopark-support').value.trim();
+  const statusVal = document.getElementById('edit-otopark-status').value;
+
+  const payload = {
+    id: id || undefined,
+    name: nameVal,
+    category: categoryVal,
+    companyTitle: companyTitleVal,
+    taxOffice: taxOfficeVal,
+    taxNumber: taxNumberVal,
+    bankName: bankNameVal,
+    iban: ibanVal,
+    priceEmployee: priceEmployeeVal,
+    priceExternal: priceExternalVal,
+    supportPhone: supportPhoneVal,
+    isActive: statusVal === 'active'
+  };
+
+  try {
+    const res = await fetch('/api/otoparks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Otopark kaydedilirken hata oluştu.");
+    }
+
+    closeModal('modal-otopark-edit');
+    await loadOtoparks();
+    renderOtoparksTable();
+    populateLocationFilter();
+
+    alert("Otopark bilgileri başarıyla kaydedildi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+async function toggleOtoparkStatus(otoparkId) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  let otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.id === otoparkId);
+
+  if (!park) return;
+
+  const currentStatus = park.isActive !== false;
+  
+  const payload = {
+    id: park.id,
+    name: park.name,
+    category: park.category,
+    companyTitle: park.companyTitle,
+    taxOffice: park.taxOffice,
+    taxNumber: park.taxNumber,
+    bankName: park.bankName,
+    iban: park.iban,
+    priceEmployee: park.priceEmployee,
+    priceExternal: park.priceExternal,
+    supportPhone: park.supportPhone,
+    isActive: !currentStatus
+  };
+
+  try {
+    const res = await fetch('/api/otoparks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Durum güncellenirken hata oluştu.");
+    }
+
+    await loadOtoparks();
+    renderOtoparksTable();
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+/* ==========================================================================
+   PREMIUM COMPANY CLUSTERING & ANALYSIS CONTROLLERS
+   ========================================================================== */
+
+let currentAdminTab = 'applications';
+
+function switchAdminTab(tabName) {
+  if ((tabName === 'otoparks' || tabName === 'admins') && currentAdminUser !== 'superadmin') {
+    alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
+    switchAdminTab('applications');
+    return;
+  }
+  currentAdminTab = tabName;
+  const tabApp = document.getElementById('tab-applications');
+  const tabComp = document.getElementById('tab-companies');
+  const tabOto = document.getElementById('tab-otoparks');
+  const tabAdm = document.getElementById('tab-admins');
+  const panelApp = document.getElementById('panel-applications');
+  const panelComp = document.getElementById('panel-companies');
+  const panelOto = document.getElementById('panel-otoparks');
+  const panelAdm = document.getElementById('panel-admins');
+
+  if (!tabApp || !tabComp || !panelApp || !panelComp) return;
+
+  // Reset active classes
+  tabApp.classList.remove('active');
+  tabComp.classList.remove('active');
+  if (tabOto) tabOto.classList.remove('active');
+  if (tabAdm) tabAdm.classList.remove('active');
+
+  // Hide panels
+  panelApp.style.display = 'none';
+  panelComp.style.display = 'none';
+  if (panelOto) panelOto.style.display = 'none';
+  if (panelAdm) panelAdm.style.display = 'none';
+
+  if (tabName === 'applications') {
+    tabApp.classList.add('active');
+    panelApp.style.display = 'block';
+  } else if (tabName === 'companies') {
+    tabComp.classList.add('active');
+    panelComp.style.display = 'block';
+    renderCompaniesTable(filteredApplications);
+  } else if (tabName === 'otoparks') {
+    if (tabOto) tabOto.classList.add('active');
+    if (panelOto) panelOto.style.display = 'block';
+    renderOtoparksTable();
+  } else if (tabName === 'admins') {
+    if (tabAdm) tabAdm.classList.add('active');
+    if (panelAdm) panelAdm.style.display = 'block';
+    renderAdminsTable();
+  }
+
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+function renderCompaniesTable(apps) {
+  const container = document.getElementById('companies-grid-container');
+  const countEl = document.getElementById('companies-results-count');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // 1. Group applications by company
+  const groups = {};
+  apps.forEach(app => {
+    const rawCompany = app.company_name ? app.company_name.trim() : '';
+    const companyKey = rawCompany ? rawCompany.toUpperCase() : 'SERBEST ÇALIŞAN';
+    
+    if (!groups[companyKey]) {
+      groups[companyKey] = {
+        name: rawCompany || 'SERBEST ÇALIŞAN',
+        vehicles: 0,
+        records: [],
+        applications: []
+      };
+    }
+    
+    groups[companyKey].vehicles++;
+    
+    const plate = app.plate ? app.plate.trim().toUpperCase() : '';
+    const ownerName = app.full_name ? app.full_name.trim() : 'Bilinmeyen Sürücü';
+    
+    groups[companyKey].records.push({
+      plate: plate,
+      owner: ownerName,
+      appId: app.id,
+      status: app.status
+    });
+    
+    groups[companyKey].applications.push(app);
+  });
+
+  // 2. Convert groups to an array and sort
+  const groupList = Object.values(groups);
+
+  // Sort alphabetically by company name, but keep 'SERBEST ÇALIŞAN' at the very bottom!
+  groupList.sort((a, b) => {
+    const aName = a.name.toUpperCase();
+    const bName = b.name.toUpperCase();
+    
+    if (aName === 'SERBEST ÇALIŞAN') return 1;
+    if (bName === 'SERBEST ÇALIŞAN') return -1;
+    return a.name.localeCompare(b.name, 'tr');
+  });
+
+  // Update company results count header
+  if (countEl) {
+    countEl.textContent = `(${groupList.length} firma / grup)`;
+  }
+
+  // 3. Handle Empty State
+  if (groupList.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 4.5rem 2rem; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md);">
+        <div class="empty-state-container" style="max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div class="empty-state-icon" style="width: 70px; height: 70px; background: rgba(15, 59, 162, 0.05); border: 1px solid rgba(15, 59, 162, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); margin-bottom: 1.25rem; box-shadow: var(--shadow-sm); animation: pulse 2s infinite ease-in-out;">
+            <i data-lucide="building-2" style="width: 32px; height: 32px;"></i>
+          </div>
+          <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin: 0 0 0.5rem 0;">Şu Anda Filtrelere Uygun Firma Bulunmamaktadır</h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; margin: 0 0 1.5rem 0; text-align: center;">
+            Seçtiğiniz filtre değerlerine veya arama terimine uygun kümelenmiş firma verisi bulunamadı.
+          </p>
+        </div>
+      </div>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    return;
+  }
+
+  // 4. Render each company card
+  groupList.forEach(group => {
+    const isSerbest = group.name.toUpperCase() === 'SERBEST ÇALIŞAN';
+    const badgeIcon = isSerbest ? 'users' : 'building-2';
+
+    // Sort records by plate
+    group.records.sort((a, b) => a.plate.localeCompare(b.plate, 'tr'));
+
+    // Format combined records list
+    const recordsHtml = group.records.map(rec => {
+      const formatted = formatPlateSpacing(rec.plate);
+      
+      let statusClass = 'status-yeni';
+      let statusText = 'YENİ / BEKLEYEN';
+      if (rec.status === 'Onaylandı') {
+        statusClass = 'status-onaylandi';
+        statusText = 'ONAYLANDI';
+      } else if (rec.status === 'Reddedildi') {
+        statusClass = 'status-reddedildi';
+        statusText = 'REDDEDİLDİ';
+      }
+
+      return `
+        <div class="company-plate-row">
+          <span class="mini-tr-plate" onclick="openDrawer('${rec.appId}')" title="Abonelik Detayını Gör">${formatted}</span>
+          <span class="plate-owner-info">
+            <i data-lucide="user" style="width: 14px; height: 14px; color: var(--color-text-muted);"></i>
+            <span>${rec.owner}</span>
+          </span>
+          <span class="status-badge-compact ${statusClass}">${statusText}</span>
+        </div>
+      `;
+    }).join('');
+
+    const card = document.createElement('article');
+    card.className = 'company-card';
+    card.innerHTML = `
+      <div class="company-card-header">
+        <div class="company-card-title">
+          <div class="company-badge-icon">
+            <i data-lucide="${badgeIcon}" style="width: 20px; height: 20px;"></i>
+          </div>
+          <span class="company-name-text" title="${group.name}">${group.name}</span>
+        </div>
+        <span class="company-vehicle-count">
+          <i data-lucide="car" style="width: 12px; height: 12px;"></i>
+          <span>${group.vehicles} Araç</span>
+        </span>
+      </div>
+
+      <div class="company-plates-section">
+        <span class="company-section-title">Kayıtlı Plakalar ve Aboneler</span>
+        <div class="company-plates-list">
+          ${recordsHtml || '<span style="font-size: 0.8rem; color: var(--color-text-muted); font-style: italic;">Kayıt Yok</span>'}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+/* ==========================================================================
+   YÖNETİCİ HIZLI DÜZENLEME & FİRMA AKTARIM KONTROLLERİ
+   ========================================================================== */
+
+function editApplicationPlate(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const modal = document.getElementById('modal-quick-edit');
+  const titleEl = document.getElementById('quick-edit-title');
+  const contentEl = document.getElementById('quick-edit-content');
+  const appIdInput = document.getElementById('quick-edit-app-id');
+  const typeInput = document.getElementById('quick-edit-type');
+
+  if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  if (titleEl) titleEl.textContent = "Plaka Güncelle";
+  appIdInput.value = appId;
+  typeInput.value = 'plate';
+
+  contentEl.innerHTML = `
+    <div class="filter-group" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.375rem;">
+      <label for="edit-plate-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Araç Plakası</label>
+      <input type="text" id="edit-plate-input" value="${app.plate}" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-weight: 800; text-transform: uppercase; color: var(--color-text-dark); letter-spacing: 0.05em; font-family: monospace; font-size: 0.95rem; box-sizing: border-box;" required>
+      <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; margin-bottom: 0;">Plaka otomatik olarak büyük harfe ve boşluksuz formata çevrilecektir.</p>
+    </div>
+  `;
+
+  const editPlateInput = document.getElementById('edit-plate-input');
+  if (editPlateInput) {
+    editPlateInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    // Focus and set selection range
+    editPlateInput.focus();
+    editPlateInput.setSelectionRange(editPlateInput.value.length, editPlateInput.value.length);
+  }
+
+  modal.classList.add('active');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function changeApplicationCompany(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const modal = document.getElementById('modal-quick-edit');
+  const titleEl = document.getElementById('quick-edit-title');
+  const contentEl = document.getElementById('quick-edit-content');
+  const appIdInput = document.getElementById('quick-edit-app-id');
+  const typeInput = document.getElementById('quick-edit-type');
+
+  if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  if (titleEl) titleEl.textContent = "Firmayı Düzenle / Aktar";
+  appIdInput.value = appId;
+  typeInput.value = 'company';
+
+  // Get unique companies from allApplications
+  const companiesSet = new Set(allApplications.map(a => a.company_name ? a.company_name.trim() : '').filter(Boolean));
+  const companiesList = Array.from(companiesSet).sort((a, b) => a.localeCompare(b, 'tr'));
+
+  // Build select options
+  let optionsHtml = `<option value="SERBEST ÇALIŞAN" ${(!app.company_name || app.company_name === 'SERBEST ÇALIŞAN') ? 'selected' : ''}>SERBEST ÇALIŞAN (Şirketsiz)</option>`;
+  companiesList.forEach(comp => {
+    if (comp !== 'SERBEST ÇALIŞAN') {
+      optionsHtml += `<option value="${comp}" ${(app.company_name && app.company_name.trim() === comp) ? 'selected' : ''}>${comp}</option>`;
+    }
+  });
+  optionsHtml += `<option value="__NEW__">[ + Yeni Firma Oluştur ve Aktar ]</option>`;
+
+  contentEl.innerHTML = `
+    <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
+      <label for="edit-company-select" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Mevcut Firmaya Aktar</label>
+      <select id="edit-company-select" onchange="toggleNewCompanyField()" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+        ${optionsHtml}
+      </select>
+    </div>
+
+    <div class="filter-group" id="group-new-company-field" style="margin-bottom: 1rem; display: none; flex-direction: column; gap: 0.375rem;">
+      <label for="edit-company-new-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Firma / Kurum Adı</label>
+      <input type="text" id="edit-company-new-input" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-weight: 700; color: var(--color-text-dark); box-sizing: border-box;">
+      <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; margin-bottom: 0;">Yeni oluşturulacak firma otomatik büyük harfle kaydedilir.</p>
+    </div>
+  `;
+
+  const editCompanyNewInput = document.getElementById('edit-company-new-input');
+  if (editCompanyNewInput) {
+    editCompanyNewInput.addEventListener('input', (e) => {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
+      e.target.setSelectionRange(start, end);
+    });
+  }
+
+  modal.classList.add('active');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleNewCompanyField() {
+  const select = document.getElementById('edit-company-select');
+  const groupNew = document.getElementById('group-new-company-field');
+  const inputNew = document.getElementById('edit-company-new-input');
+  
+  if (select && groupNew && inputNew) {
+    if (select.value === '__NEW__') {
+      groupNew.style.display = 'flex';
+      inputNew.required = true;
+      inputNew.focus();
+    } else {
+      groupNew.style.display = 'none';
+      inputNew.required = false;
+      inputNew.value = '';
+    }
+  }
+}
+
+function saveQuickEdit(event) {
+  event.preventDefault();
+  const appId = document.getElementById('quick-edit-app-id').value;
+  const type = document.getElementById('quick-edit-type').value;
+
+  const appIndex = allApplications.findIndex(a => a.id === appId);
+  if (appIndex === -1) return;
+
+  if (type === 'plate') {
+    const inputVal = document.getElementById('edit-plate-input').value.trim().toUpperCase();
+    if (!inputVal) return;
+    
+    allApplications[appIndex].plate = inputVal;
+    
+  } else if (type === 'company') {
+    const selectVal = document.getElementById('edit-company-select').value;
+    let targetCompany = '';
+    
+    if (selectVal === '__NEW__') {
+      targetCompany = document.getElementById('edit-company-new-input').value.trim().toLocaleUpperCase('tr-TR');
+    } else {
+      targetCompany = selectVal === 'SERBEST ÇALIŞAN' ? '' : selectVal;
+    }
+    
+    allApplications[appIndex].company_name = targetCompany;
+  }
+
+  // 1. Save to LocalStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allApplications));
+
+  // 2. Close modal
+  closeModal('modal-quick-edit');
+
+  // 3. Refresh interface dropdown, table rendering and stats
+  populateCompanyFilter();
+  applyFilters();
+
+  // 4. If detail drawer is open for this application, refresh its content!
+  openDrawer(appId);
+
+  // 5. Success Alert
+  alert("Değişiklikler başarıyla kaydedildi.");
+}
+
+async function deleteCurrentApplication() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+  if (!currentAppId) return;
+
+  if (confirm("Bu abonelik başvurusunu tamamen silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!")) {
+    try {
+      const res = await fetch(`/api/applications?id=${encodeURIComponent(currentAppId)}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Başvuru silinirken hata oluştu.");
+      }
+
+      await loadApplications();
+      applyFilters();
+
+      const drawer = document.getElementById('drawer-overlay');
+      if (drawer) drawer.classList.remove('active');
+
+      alert("Başvuru başarıyla silindi.");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+}
+
+async function populateActiveUserSelect() {
+  const select = document.getElementById('active-user-role');
+  if (!select) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  const userJson = localStorage.getItem('parkexpert_user');
+  if (!token || !userJson) return;
+
+  const loggedInUser = JSON.parse(userJson);
+
+  if (loggedInUser.role === 'superadmin') {
+    try {
+      const res = await fetch('/api/admins', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const admins = await res.json();
+        localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(admins));
+
+        select.innerHTML = '<option value="superadmin">Süper Yönetici</option>';
+        admins.forEach(admin => {
+          const opt = document.createElement('option');
+          opt.value = admin.id;
+          opt.textContent = `${admin.name} (@${admin.username})`;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch admins:", err);
+    }
+  } else {
+    select.innerHTML = `<option value="${loggedInUser.id}">${loggedInUser.name} (@${loggedInUser.username})</option>`;
+    select.disabled = true;
+    select.style.cursor = 'default';
+  }
+
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const savedUser = localStorage.getItem('parkexpert_current_admin') || loggedInUser.id;
+  if (savedUser === 'superadmin' || admins.some(a => a.id === savedUser)) {
+    currentAdminUser = savedUser;
+  } else {
+    currentAdminUser = loggedInUser.id;
+    localStorage.setItem('parkexpert_current_admin', loggedInUser.id);
+  }
+  select.value = currentAdminUser;
+}
+
+function handleUserRoleChange() {
+  const select = document.getElementById('active-user-role');
+  if (!select) return;
+
+  const val = select.value;
+  currentAdminUser = val;
+  localStorage.setItem('parkexpert_current_admin', val);
+
+  const avatar = document.getElementById('current-user-avatar');
+  const subtext = document.getElementById('active-user-subtext');
+  const tabOto = document.getElementById('tab-otoparks');
+  const tabAdm = document.getElementById('tab-admins');
+  const dangerZone = document.querySelector('.sidebar-footer');
+
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+
+  if (val === 'superadmin') {
+    if (avatar) avatar.textContent = 'SA';
+    if (subtext) subtext.textContent = 'Sistem Sahibi (Tüm Yetkiler)';
+    if (tabOto) tabOto.style.display = 'inline-flex';
+    if (tabAdm) tabAdm.style.display = 'inline-flex';
+    if (dangerZone) dangerZone.style.display = 'block';
+  } else {
+    const adminObj = admins.find(a => a.id === val);
+    if (adminObj) {
+      const initials = adminObj.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      if (avatar) avatar.textContent = initials;
+      if (subtext) subtext.textContent = 'Otopark Temsilcisi';
+    }
+    if (tabOto) tabOto.style.display = 'none';
+    if (tabAdm) tabAdm.style.display = 'none';
+    if (dangerZone) dangerZone.style.display = 'none';
+
+    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins') {
+      switchAdminTab('applications');
+    }
+  }
+
+  loadApplications();
+  populateLocationFilter();
+  applyFilters();
+}
+
+function populateLocationFilter() {
+  const filterSelect = document.getElementById('filter-location');
+  if (!filterSelect) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
+  const currentSelection = filterSelect.value;
+  filterSelect.innerHTML = '<option value="">Tüm Konumlar</option>';
+
+  let allowedOtoparks = otoparks;
+  if (currentAdminUser !== 'superadmin') {
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const activeAdminObj = admins.find(a => a.id === currentAdminUser);
+    if (activeAdminObj) {
+      const allowedNames = activeAdminObj.otoparks || [];
+      allowedOtoparks = otoparks.filter(park => allowedNames.includes(park.name));
+    } else {
+      allowedOtoparks = [];
+    }
+  }
+
+  const grouped = {};
+  allowedOtoparks.forEach(park => {
+    if (!grouped[park.category]) {
+      grouped[park.category] = [];
+    }
+    grouped[park.category].push(park);
+  });
+
+  for (const [category, list] of Object.entries(grouped)) {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = category;
+    list.forEach(park => {
+      const option = document.createElement('option');
+      option.value = park.name;
+      option.textContent = park.name;
+      optgroup.appendChild(option);
+    });
+    filterSelect.appendChild(optgroup);
+  }
+
+  if (allowedOtoparks.some(park => park.name === currentSelection)) {
+    filterSelect.value = currentSelection;
+  } else {
+    filterSelect.value = '';
+  }
+}
+
+function renderAdminsTable() {
+  const container = document.getElementById('admins-grid-container');
+  const countEl = document.getElementById('admins-results-count');
+  if (!container) return;
+
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  if (countEl) {
+    countEl.textContent = `(${admins.length} yetkili)`;
+  }
+
+  container.innerHTML = '';
+
+  if (admins.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-size: 0.95rem;">
+        Sistemde tanımlı yetkili bulunamadı. "Yeni Yönetici Tanımla" butonu ile ekleyebilirsiniz.
+      </div>
+    `;
+    return;
+  }
+
+  admins.forEach(admin => {
+    const card = document.createElement('div');
+    card.className = 'otopark-card';
+    
+    const otoparkBadges = admin.otoparks.map(oto => 
+      `<span class="otopark-card__category otopark-card__category--sanayi" style="margin: 0.15rem 0.25rem 0.15rem 0; display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.5rem; text-transform: none;">${oto}</span>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="otopark-card__header">
+        <div class="otopark-card__name">${admin.name}</div>
+        <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700;">@${admin.username}</span>
+      </div>
+      <div class="otopark-card__body" style="padding: 1.25rem 1.5rem;">
+        <div class="otopark-card__field otopark-card__field--full">
+          <span class="otopark-card__label" style="margin-bottom: 0.5rem;">Yetkili Olduğu Otoparklar</span>
+          <div style="margin-top: 0.25rem;">
+            ${otoparkBadges || '<span style="color: var(--color-text-muted); font-style: italic;">Yetkili otopark atanmamış</span>'}
+          </div>
+        </div>
+      </div>
+      <div class="otopark-card__footer" style="margin-top: auto; border-top: 1px solid var(--color-border-light); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="otopark-card__edit-btn" onclick="editAdmin('${admin.id}')" style="background: none; border: none; font-size: 0.8rem; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
+          <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
+        </button>
+        <button class="otopark-card__edit-btn" onclick="deleteAdmin('${admin.id}')" style="background: none; border: none; font-size: 0.8rem; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
+          <i data-lucide="trash-2" style="width: 12px; height: 12px; color: #ef4444;"></i> Sil
+        </button>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function populateAdminOtoparksCheckboxes(selectedOtoparks = []) {
+  const container = document.getElementById('edit-admin-otoparks-checkboxes');
+  if (!container) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
+  container.innerHTML = '';
+
+  if (otoparks.length === 0) {
+    container.innerHTML = '<span style="color: var(--color-text-muted); font-style: italic;">Sistemde kayıtlı otopark bulunamadı.</span>';
+    return;
+  }
+
+  otoparks.forEach(park => {
+    const isChecked = selectedOtoparks.includes(park.name) ? 'checked' : '';
+    const wrapper = document.createElement('label');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '0.5rem';
+    wrapper.style.fontSize = '0.85rem';
+    wrapper.style.color = 'var(--color-text-dark)';
+    wrapper.style.cursor = 'pointer';
+
+    wrapper.innerHTML = `
+      <input type="checkbox" name="admin-otopark-choice" value="${park.name}" ${isChecked} style="cursor: pointer; width: 15px; height: 15px;">
+      <span>${park.name}</span>
+    `;
+
+    container.appendChild(wrapper);
+  });
+}
+
+function openCreateAdminModal() {
+  document.getElementById('form-admin-edit').reset();
+  document.getElementById('edit-admin-id').value = '';
+  document.getElementById('edit-admin-username').readOnly = false;
+  document.getElementById('edit-admin-username').style.backgroundColor = '#ffffff';
+  document.getElementById('edit-admin-username').style.cursor = 'text';
+  document.getElementById('admin-edit-title').textContent = 'Yeni Yönetici Yetkilendir';
+  
+  const passInput = document.getElementById('edit-admin-password');
+  if (passInput) {
+    passInput.required = true;
+    passInput.value = '';
+  }
+  const passStar = document.getElementById('admin-password-required-star');
+  if (passStar) passStar.style.display = 'inline';
+
+  populateAdminOtoparksCheckboxes([]);
+  openModal('modal-admin-edit');
+}
+
+function editAdmin(adminId) {
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const adminObj = admins.find(a => a.id === adminId);
+  if (!adminObj) return;
+
+  document.getElementById('edit-admin-id').value = adminObj.id;
+  document.getElementById('edit-admin-name').value = adminObj.name;
+  document.getElementById('edit-admin-username').value = adminObj.username;
+  document.getElementById('edit-admin-username').readOnly = true;
+  document.getElementById('edit-admin-username').style.backgroundColor = '#f1f5f9';
+  document.getElementById('edit-admin-username').style.cursor = 'not-allowed';
+  document.getElementById('admin-edit-title').textContent = 'Yönetici Bilgilerini Düzenle';
+
+  const passInput = document.getElementById('edit-admin-password');
+  if (passInput) {
+    passInput.required = false;
+    passInput.value = '';
+  }
+  const passStar = document.getElementById('admin-password-required-star');
+  if (passStar) passStar.style.display = 'none';
+
+  populateAdminOtoparksCheckboxes(adminObj.otoparks || []);
+  openModal('modal-admin-edit');
+}
+
+async function saveAdminConfig(event) {
+  event.preventDefault();
+  
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const id = document.getElementById('edit-admin-id').value;
+  const name = document.getElementById('edit-admin-name').value.trim();
+  const username = document.getElementById('edit-admin-username').value.trim().toLowerCase().replace(/\s+/g, '');
+  const password = document.getElementById('edit-admin-password').value;
+  
+  const checkboxes = document.querySelectorAll('input[name="admin-otopark-choice"]:checked');
+  const selectedOtoparks = Array.from(checkboxes).map(cb => cb.value);
+
+  if (selectedOtoparks.length === 0) {
+    alert("Lütfen en az bir otopark seçiniz.");
+    return;
+  }
+
+  if (!id && !password) {
+    alert("Yeni yöneticiler için şifre zorunludur.");
+    return;
+  }
+
+  const payload = {
+    id: id || undefined,
+    name,
+    username,
+    otoparks: selectedOtoparks
+  };
+
+  if (password) {
+    payload.password = password;
+  }
+
+  try {
+    const res = await fetch('/api/admins', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Yönetici kaydedilirken hata oluştu.");
+    }
+
+    closeModal('modal-admin-edit');
+    await populateActiveUserSelect();
+    renderAdminsTable();
+    alert("Yönetici yetkilendirmesi başarıyla kaydedildi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+async function deleteAdmin(adminId) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  if (confirm("Bu yönetici yetkilendirmesini silmek istediğinize emin misiniz?")) {
+    try {
+      const res = await fetch(`/api/admins?id=${encodeURIComponent(adminId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Yönetici silinirken hata oluştu.");
+      }
+
+      if (currentAdminUser === adminId) {
+        currentAdminUser = 'superadmin';
+        localStorage.setItem('parkexpert_current_admin', 'superadmin');
+      }
+      
+      await populateActiveUserSelect();
+      renderAdminsTable();
+      handleUserRoleChange();
+      alert("Yönetici yetkileri kaldırıldı.");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+}
+
+function openCreateOtoparkModal() {
+  document.getElementById('otopark-edit-form').reset();
+  document.getElementById('edit-otopark-id').value = '';
+  
+  const nameInput = document.getElementById('edit-otopark-name');
+  if (nameInput) {
+    nameInput.readOnly = false;
+    nameInput.style.backgroundColor = '#ffffff';
+    nameInput.style.cursor = 'text';
+  }
+
+  const catGroup = document.getElementById('group-otopark-category');
+  if (catGroup) catGroup.style.display = 'block';
+
+  document.getElementById('otopark-modal-title').textContent = 'Yeni Otopark İşletmesi Ekle';
+  openModal('modal-otopark-edit');
+}
+
+async function deleteOtopark(parkId) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+  if (confirm("Bu otopark işletmesini sistemden tamamen kaldırmak istediğinize emin misiniz?\n\nBu işlem otoparka kayıtlı ödeme ve fatura tanımlarını silecek, ancak mevcut başvuruları etkilemeyecektir.")) {
+    try {
+      const res = await fetch(`/api/otoparks?id=${encodeURIComponent(parkId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Otopark silinirken hata oluştu.");
+      }
+
+      await loadOtoparks();
+      renderOtoparksTable();
+      populateLocationFilter();
+      alert("Otopark başarıyla kaldırıldı.");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+}
+

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PARKEXPERT Otopark ve AVM Abonelik Yönetim SaaS Paneli. Başvuruları filtreleyin, belgeleri onaylayın veya reddedin.">
+  <title>PARKEXPERT | Yönetici Paneli</title>
+  
+  <!-- Favicon Mock -->
+  <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
+  
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body style="background-color: #f1f5f9;">
+
+  <div class="admin-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar" aria-label="Yönetim Paneli Menüsü">
+      <div class="sidebar-logo">
+        <a href="index.html" class="logo-link">
+          <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 42px; width: auto; display: block;">
+        </a>
+      </div>
+      
+      <nav style="flex: 1;">
+        <ul class="sidebar-menu">
+          <li class="sidebar-item active">
+            <a href="admin.html" aria-current="page">
+              <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
+              <span>Başvuru Listesi</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="index.html">
+              <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+              <span>Ana Sayfa</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="basvuru.html">
+              <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i>
+              <span>Yeni Başvuru</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Footer (Danger Zone Card) -->
+      <div class="sidebar-footer" style="margin-top: auto; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem;">
+        <div class="danger-zone-card" style="background: rgba(239, 68, 68, 0.03); border: 1px dashed rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); padding: 0.875rem; text-align: center;">
+          <h5 style="font-size: 0.775rem; font-weight: 700; color: #dc2626; margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+            <i data-lucide="shield-alert" style="width: 14px; height: 14px; color: #dc2626;"></i> Sistem Yönetimi
+          </h5>
+          <p style="font-size: 0.675rem; color: var(--color-text-muted); margin-bottom: 0.75rem; line-height: 1.3;">Tüm yerel başvuru verilerini sıfırlayabilirsiniz.</p>
+          <button onclick="clearAndResetData(event)" class="btn-clear-data" style="width: 100%; min-height: 36px; background: #ef4444; border: none; border-radius: var(--radius-sm); color: #ffffff; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; cursor: pointer; transition: all var(--transition-fast);">
+            <i data-lucide="trash-2" style="width: 14px; height: 14px; color: #ffffff;"></i>
+            <span>Verileri Temizle</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <div class="admin-main">
+      
+      <!-- Top Header -->
+      <header class="admin-header">
+        <div class="admin-header-title">
+          <h1>Abonelik Başvuruları</h1>
+          <p>Tüm gelen başvuruları anlık olarak inceleyin, belgeleri doğrulayın ve durumlarını güncelleyin.</p>
+        </div>
+        
+        <!-- Logged in Admin Avatar / Switcher -->
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div class="admin-user" id="admin-user-selector-block" style="display: flex; align-items: center; gap: 0.75rem; background: rgba(15, 59, 162, 0.05); padding: 0.5rem 1rem; border-radius: var(--radius-lg); border: 1px solid rgba(15, 59, 162, 0.1);">
+            <div class="user-avatar" id="current-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--color-primary); color: var(--color-primary-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;">SA</div>
+            <div class="user-info" style="display: flex; flex-direction: column; gap: 0.15rem;">
+              <select id="active-user-role" onchange="handleUserRoleChange()" style="background: none; border: none; font-size: 0.85rem; font-weight: 800; color: var(--color-primary-dark); cursor: pointer; outline: none; padding-right: 1rem; font-family: inherit;">
+                <option value="superadmin">Süper Yönetici</option>
+              </select>
+              <p id="active-user-subtext" style="font-size: 0.7rem; color: var(--color-text-muted); margin: 0; font-weight: 600;">Sistem Sahibi (Tüm Yetkiler)</p>
+            </div>
+          </div>
+          <button onclick="handleAdminLogout()" class="btn-logout" title="Güvenli Çıkış Yap" style="background: none; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03); color: #ef4444; border-radius: var(--radius-lg); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast);">
+            <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dashboard Grid Content -->
+      <main class="admin-content">
+        
+        <!-- Summary Cards Section (Metrics) -->
+        <section class="metrics-grid" aria-label="Başvuru İstatistikleri">
+          <!-- Total -->
+          <article class="metric-card" id="metric-card-total">
+            <div class="metric-card-details">
+              <h4>Toplam Başvuru</h4>
+              <div class="metric-card-value" id="stats-total">0</div>
+              <span class="metric-card-subtitle" style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">Sistemdeki tüm kayıtlar</span>
+            </div>
+            <div class="metric-card-icon total">
+              <i data-lucide="archive"></i>
+            </div>
+          </article>
+          <!-- New / Pending -->
+          <article class="metric-card" id="metric-card-new">
+            <div class="metric-card-details">
+              <h4 style="display: flex; align-items: center; gap: 0.35rem;">
+                <span>Yeni / Bekleyen</span>
+                <span class="pulse-dot" style="display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%; animation: pulse-glowing-blue 1.5s infinite ease-in-out; box-shadow: 0 0 6px #2563eb;"></span>
+              </h4>
+              <div class="metric-card-value" id="stats-new">0</div>
+              <span class="metric-card-subtitle" style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">İncelenmeyi bekleyenler</span>
+            </div>
+            <div class="metric-card-icon new">
+              <i data-lucide="clock"></i>
+            </div>
+          </article>
+          <!-- Approved -->
+          <article class="metric-card" id="metric-card-approved">
+            <div class="metric-card-details">
+              <h4>Onaylandı</h4>
+              <div class="metric-card-value" id="stats-approved">0</div>
+              <span class="metric-card-subtitle" style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">ParkExpert yazılımına aktarılanlar</span>
+            </div>
+            <div class="metric-card-icon approved">
+              <i data-lucide="check-circle-2"></i>
+            </div>
+          </article>
+          <!-- Rejected -->
+          <article class="metric-card" id="metric-card-rejected">
+            <div class="metric-card-details">
+              <h4>Reddedildi</h4>
+              <div class="metric-card-value" id="stats-rejected">0</div>
+              <span class="metric-card-subtitle" style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">Reddedilmiş işlemler</span>
+            </div>
+            <div class="metric-card-icon rejected">
+              <i data-lucide="x-circle"></i>
+            </div>
+          </article>
+        </section>
+
+        <!-- Filters Section -->
+        <section class="filters-panel" aria-label="Filtreleme Seçenekleri">
+          <div class="filters-grid">
+            <!-- Search bar -->
+            <div class="filter-group">
+              <label for="search-query">Arama Terimi</label>
+              <div class="search-input-wrapper">
+                <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+                <input type="text" id="search-query" placeholder="Plaka, Ad Soyad, Firma, Telefon veya No..." oninput="applyFilters()">
+              </div>
+            </div>
+
+            <!-- Otopark Filter -->
+            <div class="filter-group">
+              <label for="filter-location">Otopark / AVM</label>
+              <select id="filter-location" onchange="applyFilters()">
+                <option value="">Tüm Konumlar</option>
+                <optgroup label="OSB / Sanayi Sitesi Otoparkları">
+                  <option value="Birlik Sanayi Sitesi - Beylikdüzü">Birlik Sanayi Sitesi - Beylikdüzü</option>
+                  <option value="Dersankoop & Trios 2023 – İkitelli OSB">Dersankoop & Trios 2023 – İkitelli OSB</option>
+                  <option value="Aymakoop – İkitelli OSB">Aymakoop – İkitelli OSB</option>
+                  <option value="Aykosan – İkitelli OSB">Aykosan – İkitelli OSB</option>
+                  <option value="Tümsan 2– İkitelli OSB">Tümsan 2– İkitelli OSB</option>
+                  <option value="Tümsan 1 – İkitelli OSB">Tümsan 1 – İkitelli OSB</option>
+                  <option value="Matbaacılar Sitesi – Bağcılar OSB">Matbaacılar Sitesi – Bağcılar OSB</option>
+                </optgroup>
+                <optgroup label="AVM Otoparkları">
+                  <option value="Samsun Piazza - Samsun">Samsun Piazza - Samsun</option>
+                  <option value="Maltepe Piazza - Maltepe">Maltepe Piazza - Maltepe</option>
+                  <option value="Maltepe Park – Maltepe">Maltepe Park – Maltepe</option>
+                  <option value="Vadi İstanbul – Sarıyer">Vadi İstanbul – Sarıyer</option>
+                </optgroup>
+                <optgroup label="Açık Otoparklar / Bağımsız Otoparklar">
+                  <option value="Kırklar Açık – Libadiye">Kırklar Açık – Libadiye</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Company Filter -->
+            <div class="filter-group">
+              <label for="filter-company">Firma / Kurum</label>
+              <select id="filter-company" onchange="applyFilters()">
+                <option value="">Tüm Firmalar</option>
+              </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-group">
+              <label for="filter-status">Başvuru Durumu</label>
+              <select id="filter-status" onchange="applyFilters()">
+                <option value="">Tüm Durumlar</option>
+                <option value="Yeni">Yeni / Bekleyen</option>
+                <option value="Onaylandı">Onaylandı</option>
+                <option value="Reddedildi">Reddedildi</option>
+              </select>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="filter-group">
+              <label for="filter-date">Başvuru Tarihi</label>
+              <input type="date" id="filter-date" onchange="applyFilters()">
+            </div>
+          </div>
+        </section>
+
+        <!-- Admin Premium Tab Switcher -->
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" id="tab-applications" onclick="switchAdminTab('applications')">
+            <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+            <span>Başvuru Listesi</span>
+          </button>
+          <button class="admin-tab-btn" id="tab-companies" onclick="switchAdminTab('companies')">
+            <i data-lucide="building-2" style="width: 16px; height: 16px;"></i>
+            <span>Firma ve Kümelenme Analizi</span>
+          </button>
+          <button class="admin-tab-btn" id="tab-otoparks" onclick="switchAdminTab('otoparks')">
+            <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i>
+            <span>Otopark İşletmeleri</span>
+          </button>
+          <button class="admin-tab-btn" id="tab-admins" onclick="switchAdminTab('admins')">
+            <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+            <span>Yetkili Yönetimi</span>
+          </button>
+        </div>
+
+        <!-- Panel 1: Detailed Applications -->
+        <div id="panel-applications">
+          <!-- Applications Data Table header controls -->
+          <section class="admin-actions-bar">
+            <h3>Başvuru Listesi <span id="table-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 sonuç)</span></h3>
+            <button class="btn-export" onclick="exportToExcel()" id="btn-excel-export">
+              <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+              <span>Excel Dışa Aktar</span>
+            </button>
+          </section>
+
+          <!-- Datatable Card -->
+          <section class="table-container" aria-label="Başvurular Tablosu">
+            <table class="admin-table" id="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Başvuru No</th>
+                  <th scope="col">Müşteri Bilgileri</th>
+                  <th scope="col">Araç Plakası</th>
+                  <th scope="col">Otopark Konumu</th>
+                  <th scope="col">Başvuru Tarihi</th>
+                  <th scope="col">Durum</th>
+                  <th scope="col" style="text-align: center;">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <!-- Panel 2: Aggregated Companies -->
+        <div id="panel-companies" style="display: none;">
+          <!-- Companies header controls -->
+          <section class="admin-actions-bar">
+            <h3>Firma ve Kümelenme Analizi <span id="companies-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 firma)</span></h3>
+          </section>
+          
+          <!-- Companies Grid Container -->
+          <div class="companies-grid" id="companies-grid-container">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Panel 3: Otopark Operations Management -->
+        <div id="panel-otoparks" style="display: none;">
+          <!-- Otoparks Header Controls -->
+          <section class="admin-actions-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <h3>Otopark İşletmeleri Yönetimi <span id="otoparks-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 otopark)</span></h3>
+            <button class="btn btn-primary" id="btn-add-otopark" onclick="openCreateOtoparkModal()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+              <span>Yeni Otopark Ekle</span>
+            </button>
+          </section>
+
+          <!-- Otoparks Card Grid Container -->
+          <div class="otoparks-grid" id="otoparks-grid-container" style="margin-top: 1.5rem;">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Panel 4: Admin Users Management -->
+        <div id="panel-admins" style="display: none;">
+          <section class="admin-actions-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <h3>Yönetici ve Temsilci Yetkilendirme <span id="admins-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 yetkili)</span></h3>
+            <button class="btn btn-primary" onclick="openCreateAdminModal()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+              <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
+              <span>Yeni Yönetici Tanımla</span>
+            </button>
+          </section>
+
+          <!-- Admins Grid Container -->
+          <div class="otoparks-grid" id="admins-grid-container" style="margin-top: 1.5rem;">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       SLIDING DETAIL DRAWER (SLIDE-OVER PANEL)
+       ========================================================================== */ -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawerOnOverlay(event)">
+    <div class="drawer-panel" role="dialog" aria-labelledby="drawer-title" aria-modal="true">
+      <div class="drawer-header">
+        <h3 class="drawer-title" id="drawer-title">Başvuru Detayı</h3>
+        <button class="drawer-close" onclick="closeDrawer()" aria-label="Kapat">&times;</button>
+      </div>
+      
+      <div class="drawer-body" id="drawer-body-content">
+        <!-- Rendered via JS based on selected row data -->
+      </div>
+      
+      <!-- Status management footer actions -->
+      <footer class="drawer-footer">
+        <div class="status-actions-container">
+          <div class="status-actions-title">Başvuru Durumunu Güncelle</div>
+          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+            <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla</button>
+            <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet</button>
+            <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: none;">Sil</button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL FOR DOCUMENT FULLSCREEN PREVIEW
+       ========================================================================== -->
+  <div class="modal-overlay" id="modal-doc-preview" onclick="closeModalOnOverlay(event)" style="z-index: 1200;">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="preview-doc-title">Belge Önizleme</h3>
+        <button class="modal-close" onclick="closeModal('modal-doc-preview')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 2rem 1rem;">
+        <!-- Simulated Document Frame Preview -->
+        <div id="preview-doc-box" style="border: 2px dashed var(--color-border-light); border-radius: var(--radius-md); padding: 3rem 1.5rem; background-color: var(--color-bg-light); display: inline-block; width: 100%;">
+          <i data-lucide="file-text" style="width: 48px; height: 48px; color: var(--color-accent-orange); margin-bottom: 1rem;"></i>
+          <h4 id="preview-filename" style="margin-bottom: 0.5rem;">ruhsat.pdf</h4>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.5rem;">Evrak resmi doğrulanmıştır. PDF görüntüleyici güvenlidir.</p>
+          <a href="#" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; display: inline-flex;" onclick="simulateDocDownload(event)">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i> Dosyayı İndir
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL FOR QUICK EDITING (PLATE & COMPANY)
+       ========================================================================== -->
+  <div class="modal-overlay" id="modal-quick-edit" onclick="closeModalOnOverlay(event)" style="z-index: 1200;">
+    <div class="modal-window" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="quick-edit-title">Bilgileri Düzenle</h3>
+        <button class="modal-close" onclick="closeModal('modal-quick-edit')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 2rem;">
+        <form id="quick-edit-form" onsubmit="saveQuickEdit(event)">
+          <input type="hidden" id="quick-edit-app-id">
+          <input type="hidden" id="quick-edit-type"> <!-- 'plate' or 'company' -->
+          
+          <div id="quick-edit-content">
+            <!-- Dynamic fields injected via JS -->
+          </div>
+          
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-quick-edit')" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; min-height: 38px; width: auto; background: #e2e8f0; color: #475569; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">İptal</button>
+            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; background: var(--color-primary); color: var(--color-primary-dark); font-weight: 700; border: none; border-radius: var(--radius-sm); cursor: pointer;">Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL FOR OTOPARK EDITING
+       ========================================================================== -->
+  <div class="modal-overlay" id="modal-otopark-edit" onclick="closeModalOnOverlay(event)" style="z-index: 1200;">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="otopark-modal-title">Otopark İşletmesi Bilgileri</h3>
+        <button class="modal-close" onclick="closeModal('modal-otopark-edit')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 2rem;">
+        <form id="otopark-edit-form" onsubmit="saveOtoparkConfig(event)">
+          <input type="hidden" id="edit-otopark-id">
+          
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Otopark Name Display -->
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Konum Adı <span style="color:red;">*</span></label>
+              <input type="text" id="edit-otopark-name" required placeholder="Örn. Piazza AVM - Maltepe" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+            </div>
+
+            <!-- Otopark Category Selection -->
+            <div class="form-group" id="group-otopark-category">
+              <label for="edit-otopark-category" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Kategori <span style="color:red;">*</span></label>
+              <select id="edit-otopark-category" required style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background-color: #fff; cursor: pointer; font-weight: 600;">
+                <option value="OSB / Sanayi Sitesi Otoparkları">OSB / Sanayi Sitesi Otoparkları</option>
+                <option value="AVM Otoparkları">AVM Otoparkları</option>
+                <option value="Açık Otoparklar / Bağımsız Otoparklar">Açık Otoparklar / Bağımsız Otoparklar</option>
+              </select>
+            </div>
+
+            <!-- Company Title -->
+            <div class="form-group">
+              <label for="edit-otopark-title" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Yasal Şirket Unvanı <span style="color:red;">*</span></label>
+              <input type="text" id="edit-otopark-title" required placeholder="Fatura kesilecek yasal unvan..." style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+            </div>
+
+            <!-- Tax Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label for="edit-otopark-tax-office" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Vergi Dairesi <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-tax-office" required placeholder="Alemdağ V.D." style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+              <div class="form-group">
+                <label for="edit-otopark-tax-number" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Vergi Numarası <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-tax-number" required placeholder="7330907326" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+            </div>
+
+            <!-- Bank Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
+              <div class="form-group">
+                <label for="edit-otopark-bank" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Banka Adı <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-bank" required placeholder="Albaraka Türk" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+              <div class="form-group">
+                <label for="edit-otopark-iban" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">IBAN <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-iban" required placeholder="TR11 0020 3000..." style="font-family: monospace; border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+            </div>
+
+            <!-- Pricing & Support Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label for="edit-otopark-price-emp" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Personel Fiyatı <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-price-emp" required placeholder="1875 TL" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+              <div class="form-group">
+                <label for="edit-otopark-price-ext" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Harici Fiyat <span style="color:red;">*</span></label>
+                <input type="text" id="edit-otopark-price-ext" required placeholder="3750 TL" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-otopark-support" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Abonelik Destek Telefonu <span style="color:red;">*</span></label>
+              <input type="text" id="edit-otopark-support" required placeholder="0501 618 34 82" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+            </div>
+
+            <!-- Active/Inactive Enrollment Status -->
+            <div class="form-group">
+              <label for="edit-otopark-status" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Abonelik Alım Durumu <span style="color:red;">*</span></label>
+              <select id="edit-otopark-status" required style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background-color: #fff; cursor: pointer; font-weight: 600;">
+                <option value="active" style="color: #047857; font-weight: 600;">ABONELİĞE AÇIK (AKTİF)</option>
+                <option value="inactive" style="color: #b91c1c; font-weight: 600;">ABONELİĞE KAPALI (PASİF)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-otopark-edit')" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; min-height: 38px; width: auto; background: #e2e8f0; color: #475569; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">İptal</button>
+            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; background: var(--color-primary); color: var(--color-primary-dark); font-weight: 700; border: none; border-radius: var(--radius-sm); cursor: pointer;">Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin User Edit/Create Modal -->
+  <div class="modal-overlay" id="modal-admin-edit" onclick="closeModalOnOverlay(event)" style="z-index: 1250;">
+    <div class="modal-window" role="dialog" aria-labelledby="admin-edit-title" aria-modal="true" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="admin-edit-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">Yönetici Yetkilendirme Formu</h3>
+        <button class="modal-close" onclick="closeModal('modal-admin-edit')" aria-label="Kapat">&times;</button>
+      </div>
+      <form id="form-admin-edit" onsubmit="saveAdminConfig(event)">
+        <input type="hidden" id="edit-admin-id">
+        <div class="modal-body" style="padding: 1.5rem; text-align: left; display: flex; flex-direction: column; gap: 1rem; background: #ffffff;">
+          <div class="form-group">
+            <label for="edit-admin-name" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Yönetici Ad Soyad <span style="color:red;">*</span></label>
+            <input type="text" id="edit-admin-name" required placeholder="Örn. Ahmet Yılmaz" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="edit-admin-username" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Kullanıcı Adı (Sistem Girişi) <span style="color:red;">*</span></label>
+            <input type="text" id="edit-admin-username" required placeholder="Örn. ahmetbirlik" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+          </div>
+          <div class="form-group" id="admin-password-group">
+            <label for="edit-admin-password" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Giriş Şifresi <span style="color:red;" id="admin-password-required-star">*</span></label>
+            <input type="password" id="edit-admin-password" placeholder="Şifre girin..." style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+            <small id="admin-password-help" style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">Yeni kullanıcı için zorunludur. Düzenleme yaparken boş bırakılırsa mevcut şifre korunur.</small>
+          </div>
+          <div class="form-group">
+            <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Yetkili Olduğu Otoparklar <span style="color:red;">*</span></label>
+            <div id="edit-admin-otoparks-checkboxes" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto; border: 1px solid var(--color-border-light); padding: 0.75rem; border-radius: var(--radius-sm);">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-admin-edit')" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; min-height: 38px; width: auto; background: #e2e8f0; color: #475569; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">İptal</button>
+          <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; background: var(--color-primary); color: var(--color-primary-dark); font-weight: 700; border: none; border-radius: var(--radius-sm); cursor: pointer;">Kaydet ve Yetkilendir</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Simüle E-posta Bildirimi Modal -->
+  <div class="modal-overlay" id="modal-email-simulation" onclick="closeModalOnOverlay(event)" style="z-index: 1300;">
+    <div class="modal-window" role="dialog" aria-labelledby="email-sim-title" aria-modal="true" style="max-width: 650px;">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(15, 59, 162, 0.1); display: flex; align-items: center; justify-content: center; color: var(--color-primary-dark);">
+            <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="email-sim-title" style="font-size: 1rem; font-weight: 700; margin: 0;">Simüle Edilmiş E-posta</h3>
+            <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">Sistem tarafından gönderilen onay e-postasının önizlemesidir.</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-email-simulation')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #f8fafc; padding: 1.5rem; overflow-y: auto;">
+        
+        <!-- Mail Client Header -->
+        <div style="background: #ffffff; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 1.25rem; border: 1px solid var(--color-border-light); border-bottom: none;">
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Kimden:</strong> PARKEXPERT Sistem <span style="color: var(--color-text-muted); font-size: 0.8rem;">&lt;destek@parkexpert.net&gt;</span></div>
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Kime:</strong> <span id="email-sim-to-name">Caner Yılmaz</span> <span id="email-sim-to-addr" style="color: var(--color-text-muted); font-size: 0.8rem;">&lt;caner.yilmaz@gmail.com&gt;</span></div>
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Konu:</strong> 🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: <span id="email-sim-subject-code" style="font-weight: 700; color: var(--color-primary);">PE-2026-X9A3</span>)</div>
+        </div>
+
+        <!-- Mail Template Body -->
+        <div id="email-template-body" style="background: #ffffff; padding: 2rem; border: 1px solid var(--color-border-light); border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-sm);">
+          
+          <!-- Logo in Email -->
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 45px; object-fit: contain;">
+            <div style="width: 40px; height: 3px; background: var(--color-accent-gold); margin: 0.5rem auto 0 auto; border-radius: var(--radius-full);"></div>
+          </div>
+
+          <h2 style="font-size: 1.25rem; color: var(--color-primary-dark); font-weight: 700; margin-bottom: 1rem; text-align: center;">Sayın <span id="email-sim-body-name">Caner Yılmaz</span>,</h2>
+          
+          <p style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1.5rem; text-align: center;">
+            Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
+          </p>
+
+          <!-- Email Info Table -->
+          <div style="background: var(--color-bg-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--color-primary);">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; font-weight: 700; border: none; padding: 0;">Başvuru Detayları</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+              <div><strong style="color: var(--color-text-dark);">Takip Numarası:</strong> <span id="email-sim-info-code" style="color: var(--color-primary); font-weight: 700;">PE-2026-X9A3</span></div>
+              <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span id="email-sim-info-plate" style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">34CAN88</span></div>
+              <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span id="email-sim-info-location">Lens Yaşam Merkezi – Pendik</span></div>
+              <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span id="email-sim-info-type">Bireysel</span></div>
+              <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span id="email-sim-info-date">05.06.2026</span></div>
+              <div><strong style="color: var(--color-text-dark);">Araç Modeli:</strong> <span id="email-sim-info-model">Audi A4</span></div>
+            </div>
+          </div>
+
+          <div style="background: rgba(255, 208, 0, 0.1); border: 1px dashed var(--color-accent-gold); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+            <i data-lucide="info" style="color: var(--color-primary); width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+            <p style="font-size: 0.8rem; line-height: 1.5; color: var(--color-primary-dark); margin: 0; text-align: left;">
+              Başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktif edilecek ve tarafınıza <strong>SMS</strong> ile bilgilendirme yapılacaktır. Takip numaranız ile istediğiniz an durum sorgulaması yapabilirsiniz.
+            </p>
+          </div>
+
+          <div style="border-top: 1px solid var(--color-border-light); padding-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--color-text-muted);">
+            <p style="margin-bottom: 0.25rem;">Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.</p>
+            <p style="font-weight: 700; color: var(--color-primary-dark);">PARKEXPERT Müşteri Hizmetleri</p>
+            <p style="margin-top: 0.25rem;"><a href="mailto:destek@parkexpert.net" style="color: var(--color-primary); text-decoration: none;">destek@parkexpert.net</a> | 0216 504 47 22</p>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: space-between; align-items: center; padding: 1rem 1.5rem; display: flex;">
+        <span style="font-size: 0.75rem; color: #25d366; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> E-posta Güvenli SSL ile İletildi</span>
+        <button class="btn btn-primary" onclick="closeModal('modal-email-simulation')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simüle WhatsApp Bildirimi Modal -->
+  <div class="modal-overlay" id="modal-whatsapp-simulation" onclick="closeModalOnOverlay(event)" style="z-index: 1300;">
+    <div class="modal-window" role="dialog" aria-labelledby="whatsapp-sim-title" aria-modal="true" style="max-width: 500px;">
+      <div class="modal-header" style="background: #075e54; color: #ffffff; border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <i data-lucide="message-circle" style="width: 20px; height: 20px; fill: #ffffff;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="whatsapp-sim-title" style="font-size: 0.95rem; font-weight: 700; margin: 0; color: #ffffff;">PARKEXPERT Destek Hattı</h3>
+            <p style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); margin: 0;">Sistem tarafından gönderilen resmi WhatsApp teyidi</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-whatsapp-simulation')" aria-label="Kapat" style="color: #ffffff; opacity: 0.8; font-size: 1.5rem; background: none; border: none; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #ece5dd; padding: 1.5rem; overflow-y: auto; background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\' viewBox=\'0 0 80 80\'%3E%3Cg fill=\'%23d8d1c9\' fill-opacity=\'0.3\'%3E%3Cpath d=\'M50 50c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10zm-20 0c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10z\'/%3E%3C/g%3E%3C/svg%3E'); min-height: 350px;">
+        
+        <!-- Today timestamp divider -->
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(255, 255, 255, 0.85); color: #4a4a4a; padding: 0.25rem 0.6rem; border-radius: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.05); text-transform: uppercase;">Bugün</span>
+        </div>
+
+        <!-- Chat Bubble (Received Message from Company) -->
+        <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 1rem; width: 100%;">
+          <div id="whatsapp-bubble-container" style="max-width: 85%; background: #ffffff; border-radius: 0 10px 10px 10px; padding: 0.75rem 1rem 0.5rem; position: relative; box-shadow: 0 1.5px 2px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 0.35rem;">
+            
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+              Merhaba Sayın <strong id="whatsapp-sim-name">Ahmet Yılmaz</strong>, 🌟
+            </p>
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+              Abonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce <strong>kontrol edilmek üzere başarıyla teslim alınmıştır!</strong> Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:
+            </p>
+
+            <div style="background: rgba(7, 94, 84, 0.05); border-left: 3px solid #075e54; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: sans-serif;">
+              <div><strong>📦 Başvuru Kodu:</strong> <span id="whatsapp-sim-code" style="color: #075e54; font-weight: 700;">PE-2026-X9A3</span></div>
+              <div><strong>🚗 Araç Plakası:</strong> <span id="whatsapp-sim-plate" style="text-transform: uppercase; font-weight: 700;">34ABC123</span></div>
+              <div><strong>📍 Otopark Konumu:</strong> <span id="whatsapp-sim-location">Birlik Sanayi Sitesi - Beylikdüzü</span></div>
+              <div><strong>💸 Personel / Harici Fiyatı:</strong> <span id="whatsapp-sim-price">1200 TL</span></div>
+              <div><strong>📞 Destek Telefonu:</strong> <span id="whatsapp-sim-phone">0212 875 34 58</span></div>
+            </div>
+
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+              💳 <strong>Ödeme ve Dekont Bilgilendirmesi:</strong>
+            </p>
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+              Yüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz <strong>en geç 1 saat içerisinde</strong> onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.
+            </p>
+            
+            <!-- IBAN info in chat bubble -->
+            <div style="background: #fdf6e2; border: 1px dashed #d5a229; border-radius: 4px; padding: 0.5rem; font-size: 0.75rem; color: #7d6015; text-align: left; font-family: monospace; word-break: break-word;">
+              <strong>Banka:</strong> <span id="whatsapp-sim-bank">Vakıfbank</span><br>
+              <strong>IBAN:</strong> <span id="whatsapp-sim-iban">TR23 0001 5001 5800 7302 9104 88</span>
+            </div>
+
+            <!-- Time bubble info -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.2rem; font-size: 0.65rem; color: #949494; margin-top: 0.15rem; width: 100%;">
+              <span id="whatsapp-sim-time">14:15</span>
+              <span style="color: #4fc3f7; font-weight: 700; display: inline-flex; align-items: center;">✓✓</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: space-between; align-items: center; padding: 1rem 1.5rem; display: flex;">
+        <span style="font-size: 0.75rem; color: #25d366; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> WhatsApp Business Uyumlu Gönderim</span>
+        <button class="btn btn-primary" onclick="closeModal('modal-whatsapp-simulation')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-notification" id="email-toast">
+    <div class="toast-icon">
+      <i data-lucide="mail"></i>
+    </div>
+    <div class="toast-content">
+      <h4 id="toast-title">E-posta Bildirimi</h4>
+      <p id="toast-message">E-posta gönderiliyor...</p>
+    </div>
+  </div>
+
+  <div class="toast-notification" id="whatsapp-toast">
+    <div class="toast-icon">
+      <i data-lucide="message-circle" style="fill: #25d366; color: #ffffff;"></i>
+    </div>
+    <div class="toast-content">
+      <h4 id="whatsapp-toast-title">WhatsApp Bildirimi</h4>
+      <p id="whatsapp-toast-message">WhatsApp mesajı gönderiliyor...</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       LOGIN OVERLAY FOR ROLE AUTHENTICATION
+       ========================================================================== -->
+  <div class="modal-overlay" id="modal-login-overlay" style="z-index: 9999; backdrop-filter: blur(12px); background: rgba(15, 23, 42, 0.85); display: none; align-items: center; justify-content: center;">
+    <div class="modal-window" style="max-width: 400px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.95); box-shadow: var(--shadow-xl); border-radius: var(--radius-lg); overflow: hidden;">
+      <div style="background: var(--color-primary-dark); padding: 2rem 1.5rem; text-align: center; color: #ffffff; position: relative;">
+        <!-- Logo -->
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.15); border-radius: 50%; margin-bottom: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.25);">
+          <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--color-accent-orange);"></i>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: 0.5px;">PARKEXPERT</h2>
+        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.7); margin: 0.25rem 0 0 0; font-weight: 600;">Yönetici Giriş Paneli</p>
+      </div>
+      <div style="padding: 2rem 2.25rem;">
+        <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="login-username" style="font-weight: 700; font-size: 0.825rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Kullanıcı Adı</label>
+              <div style="position: relative;">
+                <i data-lucide="user" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted);"></i>
+                <input type="text" id="login-username" required placeholder="Kullanıcı adınızı girin..." style="border: 1px solid var(--color-border-light); padding: 0.65rem 0.75rem 0.65rem 2.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; font-weight: 600; outline: none; transition: border-color var(--transition-fast);">
+              </div>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="login-password" style="font-weight: 700; font-size: 0.825rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Şifre</label>
+              <div style="position: relative;">
+                <i data-lucide="lock" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted);"></i>
+                <input type="password" id="login-password" required placeholder="Şifrenizi girin..." style="border: 1px solid var(--color-border-light); padding: 0.65rem 0.75rem 0.65rem 2.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; font-weight: 600; outline: none; transition: border-color var(--transition-fast);">
+              </div>
+            </div>
+            
+            <div id="login-error-msg" style="display: none; color: #ef4444; font-size: 0.775rem; font-weight: 700; background: rgba(239, 68, 68, 0.05); padding: 0.5rem 0.75rem; border-radius: var(--radius-xs); border: 1px solid rgba(239, 68, 68, 0.15); text-align: center;">
+              Hatalı şifre veya kullanıcı adı!
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 700; margin-top: 0.5rem;">
+              <i data-lucide="log-in" style="width: 16px; height: 16px;"></i> Güvenli Giriş Yap
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Vector Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Global & Interface Scripts -->
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PARKEXPERT Otopark ve AVM Dijital Abonelik Başvuru Portalı. Hızlı, güvenli ve 3 adımda kolay abonelik başvurusu yapın.">
+  <title>PARKEXPERT | Dijital Abonelik Başvuru Sistemi</title>
+  
+  <!-- Favicon Mock -->
+  <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
+  
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Ticker Bar (Active Locations) -->
+  <div class="top-ticker-bar">
+    <div class="ticker-content">
+      <span class="ticker-span">Yükleniyor...</span>
+      <span class="ticker-span">Yükleniyor...</span>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <header class="header">
+    <div class="nav-container">
+      <a href="index.html" class="logo-link" id="nav-logo" aria-label="PARKEXPERT Ana Sayfa">
+        <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 50px; width: auto; display: block;">
+      </a>
+      
+      <!-- Mobile Navigation Hamburger -->
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-expanded="false" aria-label="Menüyü Aç/Kapat">
+        <i data-lucide="menu"></i>
+      </button>
+      
+      <!-- Navigation Menu -->
+      <nav aria-label="Ana Menü">
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item"><a href="index.html" class="active">Ana Sayfa</a></li>
+          <li class="nav-item"><a href="basvuru.html">Abonelik Başvurusu</a></li>
+          <li class="nav-item"><a href="basvuru.html" class="nav-cta">Hemen Başvur</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Welcome Banner for newly integrated sites (Birlik Sanayi Sitesi) -->
+    <div class="welcome-banner-container">
+      <div class="welcome-banner">
+        <span class="welcome-badge">
+          <i data-lucide="sparkles" style="width: 11px; height: 11px;"></i>
+          Yeni Üye
+        </span>
+        <div class="welcome-text">
+          <span>Aramıza Hoş Geldin <strong>BİRLİK SANAYİ SİTESİ</strong>!</span> 
+          <span class="welcome-subtext">HGS Geçiş ve Dijital Abonelik Sisteminiz Başarıyla Kuruldu.</span>
+        </div>
+        <a href="basvuru.html?otopark=birlik-sanayi" class="welcome-cta">
+          <span>Hemen Başvur</span>
+          <i data-lucide="arrow-right"></i>
+        </a>
+        <button class="welcome-close-btn" onclick="this.parentElement.parentElement.remove()" aria-label="Kapat">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid-overlay"></div>
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="hero-tag">
+            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+            <span>Yeni Nesil Dijital Otopark Çözümü</span>
+          </div>
+          <h1 class="hero-title" id="hero-title">
+            PARKEXPERT <br><span>Abonelik Sistemi</span>
+          </h1>
+          <p class="hero-description">
+            AVM, rezidans ve ticari otoparklarımızda abonelik süreçlerini tamamen dijitalleştirdik. Sıra beklemeden, evrak taşımadan 5 dakikada hızlı başvurunuzu tamamlayın, plaka tanıma sistemi ile temassız geçişin keyfini çıkarın.
+          </p>
+          <div class="hero-actions">
+            <a href="basvuru.html" class="btn btn-primary" id="btn-hero-apply">
+              <span>Hızlı Abonelik Başvurusu</span>
+              <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+            </a>
+            <a href="#avantajlar" class="btn btn-secondary" id="btn-hero-learn-more">
+              <span>Daha Fazla Bilgi</span>
+            </a>
+          </div>
+          
+          <!-- Trust Indicators / Stats Bar -->
+          <div class="hero-stats" style="display: flex; gap: 2rem; margin-top: 3rem; border-top: 1px solid rgba(15, 59, 162, 0.08); padding-top: 1.5rem; flex-wrap: wrap;">
+            <div class="stat-item" style="display: flex; align-items: center; gap: 0.6rem;">
+              <div style="background: rgba(255, 208, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="clock" style="color: #ff9f00; width: 18px; height: 18px;"></i>
+              </div>
+              <div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: var(--color-primary-dark); line-height: 1.2;">5 Dakikada</div>
+                <div style="font-size: 0.725rem; color: var(--color-text-muted); font-weight: 500;">Hızlı Başvuru</div>
+              </div>
+            </div>
+            
+            <div class="stat-item" style="display: flex; align-items: center; gap: 0.6rem;">
+              <div style="background: rgba(15, 59, 162, 0.06); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="shield-check" style="color: var(--color-accent-red); width: 18px; height: 18px;"></i>
+              </div>
+              <div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: var(--color-primary-dark); line-height: 1.2;">%100 Güvenli</div>
+                <div style="font-size: 0.725rem; color: var(--color-text-muted); font-weight: 500;">KVKK & SSL Korumalı</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Hero Right: Premium Glassmorphic Badge -->
+        <div class="hero-badge-container">
+          <div class="glass-badge">
+            <div class="glass-badge-icon">
+              <i data-lucide="shield-check"></i>
+            </div>
+            <h2 class="glass-badge-title">Güvenli & Hızlı</h2>
+            <p class="glass-badge-subtitle">Başvurunuz anında onay sırasında</p>
+            <ul class="glass-badge-list">
+              <li class="glass-badge-item">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                <span>%100 Kağıtsız Dijital Onay</span>
+              </li>
+              <li class="glass-badge-item">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                <span>KVKK Uyumlu Şifreli Altyapı</span>
+              </li>
+              <li class="glass-badge-item">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                <span>Plaka Tanıma ile Otomatik Geçiş</span>
+              </li>
+            </ul>
+
+            <!-- Canlı HGS Entegrasyon Simülasyonu -->
+            <div class="live-sim-widget" style="margin-top: 1.75rem; border-top: 1px solid rgba(15, 59, 162, 0.08); padding-top: 1.5rem; text-align: left;">
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-accent-red); text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.75rem;">
+                <span class="pulse-dot"></span> Canlı Entegrasyon
+              </span>
+              <div class="live-camera-frame" style="position: relative; background: #0a1424; border-radius: var(--radius-sm); padding: 0.75rem 1rem; border: 1px solid rgba(15, 59, 162, 0.3); display: flex; align-items: center; justify-content: space-between; overflow: hidden; height: 52px; box-shadow: inset 0 0 12px rgba(15, 59, 162, 0.25);">
+                <!-- Laser Scanline -->
+                <div class="scanline"></div>
+                
+                <div style="display: flex; align-items: center; gap: 0.4rem; z-index: 2;">
+                  <i data-lucide="video" style="color: #ff9f00; width: 16px; height: 16px; animation: pulseGlow 1.5s infinite;"></i>
+                  <span id="live-sim-plate" style="font-family: monospace; font-size: 1.1rem; font-weight: 700; color: #ffffff; letter-spacing: 1px;">34 PE 2026</span>
+                </div>
+                
+                <div id="live-sim-status" style="font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.5rem; border-radius: 4px; background: rgba(37, 211, 102, 0.15); color: #25d366; display: flex; align-items: center; gap: 0.25rem; z-index: 2; transition: all 0.25s ease;">
+                  <i data-lucide="unlock" style="width: 11px; height: 11px;"></i>
+                  <span>GEÇİŞ AKTİF</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Legacy Google Forms Section -->
+    <section class="legacy-forms-section" aria-labelledby="legacy-forms-title">
+      <div class="container">
+        <div class="section-header" style="margin-bottom: 2.5rem;">
+          <span class="section-subtitle">Hızlı Google Forms Bağlantıları</span>
+          <h2 class="section-title" id="legacy-forms-title" style="font-size: 1.75rem;">Mevcut Aktif Başvuru Sistemleri</h2>
+          <p class="section-lead" style="max-width: 680px; margin: 0.5rem auto 0 auto; font-size: 0.9rem;">
+            Maltepe Piazza ve Maltepe Park otopark abonelerimiz, geçiş süreci tamamlanana kadar aşağıdaki butonları kullanarak mevcut Google Forms altyapısı üzerinden başvurularını yapmaya devam edebilirler.
+          </p>
+        </div>
+        
+        <div class="legacy-grid">
+          <!-- Card 1: Maltepe Piazza -->
+          <div class="legacy-card piazza-theme">
+            <div class="legacy-card-icon">
+              <i data-lucide="compass"></i>
+            </div>
+            <div class="legacy-card-content">
+              <h3>Maltepe Piazza AVM</h3>
+              <p>Mevcut Google Forms üzerinden eski sistem başvurusunu hızlıca yapın.</p>
+            </div>
+            <a href="https://forms.gle/rg4WE4KXwz7Z2kAM7" target="_blank" rel="noopener noreferrer" class="btn legacy-btn">
+              <span>Google Forms ile Başvur</span>
+              <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+            </a>
+          </div>
+
+          <!-- Card 2: Maltepe Park -->
+          <div class="legacy-card park-theme">
+            <div class="legacy-card-icon">
+              <i data-lucide="parking-square"></i>
+            </div>
+            <div class="legacy-card-content">
+              <h3>Maltepe Park AVM</h3>
+              <p>Mevcut Google Forms üzerinden eski sistem başvurusunu hızlıca yapın.</p>
+            </div>
+            <a href="https://forms.gle/mV6bf4j4pQMVXUfi8" target="_blank" rel="noopener noreferrer" class="btn legacy-btn">
+              <span>Google Forms ile Başvur</span>
+              <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Advantages Section -->
+    <section id="avantajlar" class="advantages" aria-labelledby="advantages-title">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">Neden ParkExpert?</span>
+          <h2 class="section-title" id="advantages-title">Dijital Aboneliğin Ayrıcalıkları</h2>
+        </div>
+        
+        <div class="advantages-grid">
+          <!-- Card 1: Hızlı Başvuru -->
+          <article class="advantage-card" id="adv-card-speed">
+            <div class="advantage-icon">
+              <i data-lucide="zap"></i>
+            </div>
+            <h3 class="advantage-title">Hızlı Başvuru</h3>
+            <p class="advantage-description">
+              Formu doldurup, ruhsat ve kimlik belgelerinizi saniyeler içinde yükleyerek dakikalar içinde aboneliğinizi oluşturun.
+            </p>
+          </article>
+          
+          <!-- Card 2: Dijital Onay -->
+          <article class="advantage-card" id="adv-card-digital">
+            <div class="advantage-icon">
+              <i data-lucide="file-check-2"></i>
+            </div>
+            <h3 class="advantage-title">Dijital Onay</h3>
+            <p class="advantage-description">
+              Bürokratik süreçleri geride bırakın. Tüm sözleşmeleri, KVKK metinlerini ve onayları tek tıkla dijital olarak verin.
+            </p>
+          </article>
+          
+          <!-- Card 3: Güvenli Veri -->
+          <article class="advantage-card" id="adv-card-security">
+            <div class="advantage-icon">
+              <i data-lucide="lock"></i>
+            </div>
+            <h3 class="advantage-title">Güvenli Veri</h3>
+            <p class="advantage-description">
+              Kişisel bilgileriniz ve yüklediğiniz resmi belgeler yüksek güvenlikli sunucularda KVKK standartlarına uygun şifrelenir.
+            </p>
+          </article>
+          
+          <!-- Card 4: Kolay Takip -->
+          <article class="advantage-card" id="adv-card-tracking">
+            <div class="advantage-icon">
+              <i data-lucide="bell"></i>
+            </div>
+            <h3 class="advantage-title">Kolay Takip</h3>
+            <p class="advantage-description">
+              Başvurunuzun durumundaki her güncellemeyi SMS ve E-posta yoluyla anlık bildirimlerle zahmetsizce takip edin.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Section: How it Works -->
+    <section class="advantages" style="background-color: #f1f5f9; border-top: 1px solid var(--color-border-light);" aria-labelledby="steps-title">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">Nasıl Çalışır?</span>
+          <h2 class="section-title" id="steps-title">3 Kolay Adımda Abonelik</h2>
+        </div>
+        
+        <div class="advantages-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+          <!-- Step 1 -->
+          <div class="advantage-card" style="position: relative;">
+            <span style="position: absolute; top: 1.5rem; right: 2rem; font-size: 3rem; font-weight: 800; color: rgba(249, 115, 22, 0.1); font-family: var(--font-heading);">01</span>
+            <div class="advantage-icon" style="background: rgba(249, 115, 22, 0.05); color: var(--color-accent-orange);">
+              <i data-lucide="edit-3"></i>
+            </div>
+            <h3 class="advantage-title">Bilgileri Doldurun</h3>
+            <p class="advantage-description">
+              Abonelik yapılacak lokasyonu seçip plaka, telefon ve araç bilgilerinizi sisteme girin.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="advantage-card" style="position: relative;">
+            <span style="position: absolute; top: 1.5rem; right: 2rem; font-size: 3rem; font-weight: 800; color: rgba(249, 115, 22, 0.1); font-family: var(--font-heading);">02</span>
+            <div class="advantage-icon" style="background: rgba(249, 115, 22, 0.05); color: var(--color-accent-orange);">
+              <i data-lucide="file-up"></i>
+            </div>
+            <h3 class="advantage-title">Belgeleri Yükleyin</h3>
+            <p class="advantage-description">
+              Ruhsat, kimlik, ödeme dekontu ve çalışma belgenizi sisteme yükleyip onayları işaretleyin.
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="advantage-card" style="position: relative;">
+            <span style="position: absolute; top: 1.5rem; right: 2rem; font-size: 3rem; font-weight: 800; color: rgba(249, 115, 22, 0.1); font-family: var(--font-heading);">03</span>
+            <div class="advantage-icon" style="background: rgba(249, 115, 22, 0.05); color: var(--color-accent-orange);">
+              <i data-lucide="check-circle"></i>
+            </div>
+            <h3 class="advantage-title">Onay & Aktivasyon</h3>
+            <p class="advantage-description">
+              Yöneticilerimiz başvurunuzu inceler. Plakanız otopark HGS geçiş sistemine otomatik tanımlanır.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Call to Action Banner -->
+    <section class="cta-banner" aria-labelledby="cta-title">
+      <div class="container cta-container">
+        <div class="cta-text">
+          <h2 id="cta-title">Hemen Şimdi Başvurunuzu Başlatın</h2>
+          <p>Otopark kuyruklarına veda edin, ParkExpert ayrıcalığıyla kesintisiz geçiş yapın.</p>
+        </div>
+        <a href="basvuru.html" class="btn btn-primary" style="background: #ffffff; color: var(--color-primary-dark); box-shadow: var(--shadow-lg);" id="btn-cta-apply">
+          <span>Abonelik Başvurusu Yap</span>
+          <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer Section -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo-link">
+            <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 42px; width: auto; display: block;">
+          </a>
+          <p class="footer-description">
+            PARKEXPERT, AVM, OSB ve ticaret merkezi otoparkları için dijital abonelik yönetimi, plaka tanıma entegrasyonu ve kullanıcı odaklı erişim çözümleri sunar.
+          </p>
+        </div>
+        
+        <div>
+          <h4 class="footer-title">Hızlı Bağlantılar</h4>
+          <ul class="footer-links">
+            <li><a href="index.html">Ana Sayfa</a></li>
+            <li><a href="basvuru.html">Abonelik Başvurusu</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="footer-title">İletişim & Destek</h4>
+          <ul class="footer-links">
+            <li><a href="mailto:destek@parkexpert.net">destek@parkexpert.net</a></li>
+            <li><a href="tel:02165044722">0216 504 47 22</a></li>
+            <li><a href="#">Sıkça Sorulan Sorular</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 PARKEXPERT. Tüm Hakları Saklıdır.</p>
+        <p><a href="#" onclick="openModal('modal-kvkk', event)" style="color: inherit; text-decoration: underline;">KVKK Politikası</a> &bull; <a href="#" onclick="openModal('modal-terms', event)" style="color: inherit; text-decoration: underline;">Kullanım Şartları</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- KVKK Aydınlatma Metni Modal -->
+  <div class="modal-overlay" id="modal-kvkk" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="kvkk-title" aria-modal="true">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="kvkk-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">KVKK Aydınlatma Metni</h3>
+        <button class="modal-close" onclick="closeModal('modal-kvkk')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; text-align: left; max-height: 50vh; overflow-y: auto;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 0.75rem;">Abonelik Sözleşmesi ve KVKK Aydınlatma Metni</h4>
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Başvurunuz kapsamında kişisel verileriniz 6698 sayılı KVKK ve ilgili mevzuat çerçevesinde işlenecektir. ParkExpert, abonelik sürecinde kişisel verilerinizi yalnızca hizmet sağlama, faturalandırma, yasal yükümlülüklerin yerine getirilmesi ve müşteri memnuniyetinin sağlanması amacıyla işler.
+        </p>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          İşbu Talep Formunun uygulanması nedeniyle ve uygulanması sürecinde Abone tarafından Kuruma aktarılmış ya da bundan sonra aktarılacak olan kişisel verilere ilişkin olarak Kurum, kişisel verileri;
+        </p>
+
+        <ul style="list-style-type: disc; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li>6698 sayılı Kişisel Verilerin Korunması Kanununda yer alan veri işleme ilke ve şartlarına uygun olarak işlemek,</li>
+          <li>Bu verileri mevzuata uygun olarak saklamak,</li>
+          <li>Veri güvenliğini sağlamak ve bu konuda yeterli önlemi almak,</li>
+          <li>Veri sahibinin izni olmaksızın yurtiçinde ve yurtdışında bulunan üçüncü kişilere aktarmamak,</li>
+          <li>Aktarılan amacı dışında başka bir amaçla kullanmamak,</li>
+          <li>Kurum’un yetkisiz çalışanı ya da üçüncü kişiler ile paylaşmamak,</li>
+          <li>Sözleşme amacının gerçekleşmesi ve/veya sözleşmenin sona ermesi halinde kişisel verileri yasal süre içerisinde imha etmekle yükümlüdür.</li>
+        </ul>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Kurum, kendisine bu sözleşme kapsamında aktarılan/iletilen her türlü kişisel veriyi 6698 sayılı Kişisel Verilerin Korunması Kanununa uygun bir şekilde işlemeyi kabul ve taahhüt eder. Kurum, mevzuatın gerektirdiği şekilde tüm idari ve teknik önlemleri alır, bu kapsamda kişisel verilerin gizliliğini ve bütünlüğünü korur.
+        </p>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Abone, Kuruma aktardığı kişisel verilerin aşağıda sayılan amaçlar doğrultusunda aşağıda belirtilen kişi ve kurumlara aktarılmasına rıza göstermektedir. Buna göre:
+        </p>
+
+        <ul style="list-style-type: disc; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li>Kamu hizmetlerinin ve ticari faaliyetlerin yerine getirilebilmesi ve sürekliliğinin sağlanabilmesi amacıyla ilgili kamu kurum ve kuruluşları ile paylaşılabilir.</li>
+          <li>Kurum içi faaliyetlerin yürütülmesi, denetimlerin yapılması ve hizmet kalitesinin artırılması amacıyla Kurum’un iştirakleri, iş ortakları veya alt yüklenicileriyle paylaşılabilir.</li>
+          <li>Yasal yükümlülüklerin yerine getirilmesi amacıyla, yetkili kamu kurum ve kuruluşları ile paylaşılabilir.</li>
+          <li>Abonelik hizmetlerinin yürütülmesi, faturalandırma ve bilgilendirme faaliyetlerinin gerçekleştirilebilmesi amacıyla işlenebilir.</li>
+        </ul>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeModal('modal-kvkk')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abonelik Şartları ve Genel Hükümler Modal -->
+  <div class="modal-overlay" id="modal-terms" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="terms-title" aria-modal="true" style="max-width: 650px;">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="terms-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">Abonelik Sözleşmesi ve Genel Hükümler</h3>
+        <button class="modal-close" onclick="closeModal('modal-terms')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; text-align: left; max-height: 50vh; overflow-y: auto;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 0.75rem; border-bottom: 2px solid var(--color-primary); padding-bottom: 0.25rem; display: inline-block;">GENEL HÜKÜMLER</h4>
+        
+        <ol style="padding-left: 1.25rem; font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+          <li><strong>Abonelik Tanımı:</strong> Abonelik, PARK EXPERT uhdesinde işletilen alanların sadece araç parklanması olarak kullandırılması işlemidir.</li>
+          <li><strong>Abonelik Süreci:</strong> Abonelik süreci, şahısın/kurumun gerekli evraklarla müracaat etmesi, PARK EXPERT tarafından uygun görülmesi, ilgili formun düzenlenmesi ve yetkili onayları ile başlar.</li>
+          <li><strong>Belge Değişiklikleri:</strong> Abone, teslim ettiği belgelerde değişiklik olması halinde, PARK EXPERT’ne bildirmekle yükümlüdür. Değişikliğin bildirilmemesinden doğacak hukuki sorumluluk Aboneye aittir.</li>
+          <li><strong>Otopark Nizamı:</strong> Abone, park alanlarını otopark nizamına uygun kullanacağını taahhüt eder. Park düzenine uyulmaması halinde abonelik sonlandırılır.</li>
+          <li><strong>Amacı Dışında Kullanım Yasağı:</strong> Abone, ödeme yaptığı alanda park alanını dışında bahse konu alanı amacı dışında kullanamaz, kiraya veremez, ücret mukabil park ettiremez. Böyle bir durumda PARK EXPERT aboneliği haklı nedenle feshetme hakkına sahiptir.</li>
+          <li><strong>Yapı Tesis Etme Yasağı:</strong> Abone, niteliği ne olursa olsun (mobo, kabin, prefabrik, konteynır, mobil WC–duş, kulübe, büfe, duvar vs.) hiç bir yapı tesis edemez. Bütün idari, hukuki, mali ve cezai sorumluluk Aboneye aittir. PARK EXPERT aboneliği haklı nedenle feshetme hakkına sahiptir.</li>
+          <li><strong>Kabul ve Fesih Yetkisi:</strong> PARK EXPERT, herhangi bir gerekçe belirtmeksizin abonelik başvurusunu kabul etme veya etmeme veya dilediği an sona erdirme hususunda münhasıran yetkilidir.</li>
+          <li><strong>Değerli Eşya Sorumluluğu:</strong> Abone, park esnasında araç içerisinde değerli eşya bırakmamakla yükümlüdür. Araç içinde değerli eşya bırakılması halinde, bu eşyalar hırsızlık, gasp, zayi, doğal afet vs. sebeplerle bir zarar veya ziyana uğrarsa ABONE, değerli eşyalarla ilgili PARK EXPERT’nin herhangi bir sorumluluğu olmadığını ve PARK EXPERT ve personelinden herhangi bir tazminat talebinde bulunmayacağını kabul eder.</li>
+          <li><strong>Abonelik Bedeli ve Peşin Ödeme:</strong> Abonelik bedeli her ayın ilk 4 (dört) günü içinde peşin olarak PARK EXPERT’ne ödenir. Ücretin zamanında yatırılmaması halinde PARK EXPERT aboneliği tek taraflı olarak sona erdirme hakkına sahiptir.</li>
+          <li><strong>Gecikme Mazereti:</strong> Makul bir mazeret ile abonelik bedelini zamanında ödeyemeyen Abonenin, gerekçesini delillendirmek kaydıyla aboneliği, günlük tarife üzerinden bedel ödemeksizin aktif hale getirilir.</li>
+          <li><strong>Gereksiz İptaller:</strong> Gereksiz abonelik iptallerinde ücret iadesi söz konusu değildir.</li>
+          <li><strong>Mazeretli İptal ve Ücret İadesi:</strong> Makul bir mazeret ile iptal ve ücret iadesine başvuruda bulunan Aboneye, günlük tarife üzerinden kullandığı gün oranında ücretler aylık bedelden mahsup edilerek iade edilir.</li>
+          <li><strong>İdareden Kaynaklı İptaller:</strong> İdarenin lokasyonu kapatma kararı, bakım–onarım vb. idareden kaynaklanan sebepler ile iptal olan aboneliklerde, aylık abonelik bedeli, aylık abonelik tutarı üzerinden kullanılan gün oranında mahsup edilerek iade edilir.</li>
+          <li><strong>Parklanma Borçları:</strong> Parklanma borcu olan araçlar abone yapılmaz. Abonelik sonrası oluşacak parklanma borçları, periyodik kontroller sonrası ödenmediği takdirde abonelik iptal edilir.</li>
+          <li><strong>LPG'li Araç Yasağı:</strong> Kapalı ve katlı otoparklarda LPG’li araçların girmesi yasaktır.</li>
+          <li><strong>Abonelik Yetkisi:</strong> PARK EXPERT tarafından işletilen alanların her türlü aboneliğe açılması, idarenin tespit ve düzenlemesine tabidir.</li>
+          <li><strong>Yetkili Mahkeme ve İcra Daireleri:</strong> İşbu abonelik işlemlerinden doğan ihtilafların çözümü hususunda İstanbul Mahkeme ve İcra Daireleri yetkilidir.</li>
+          <li><strong>Yıllık Ödeme Avantajı:</strong> Yıllık ödeme yapmak isteyen abonelere yıl içerisinde yapılan zam oranı uygulanmaz.</li>
+          <li><strong>Mesai Saatleri ve İşletmecilik:</strong> 24 saat işletmecilik yapılmayan açık ve katlı otoparklarda aboneliklerde otoparkın mesai saatleri esastır. Mesai saatleri dışında yaşanacak olaylardan PARK EXPERT sorumlu değildir.</li>
+        </ol>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeModal('modal-terms')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Vector Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Global & Interface Scripts -->
+  <script src="script.js"></script>
+</body>
+</html>

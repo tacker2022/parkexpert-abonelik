@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PARKEXPERT Otopark ve AVM Dijital Abonelik Başvuru Formu. 5 adımda kolayca bilgilerinizi girin ve aboneliğinizi başlatın.">
+  <title>PARKEXPERT | Abonelik Başvurusu</title>
+  
+  <!-- Favicon Mock -->
+  <link class="brand-favicon" rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
+  
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Ticker Bar (Active Locations) -->
+  <div class="top-ticker-bar">
+    <div class="ticker-content">
+      <span class="ticker-span">Yükleniyor...</span>
+      <span class="ticker-span">Yükleniyor...</span>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <header class="header">
+    <div class="nav-container">
+      <a href="index.html" class="logo-link" id="nav-logo" aria-label="PARKEXPERT Ana Sayfa">
+        <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 50px; width: auto; display: block;">
+      </a>
+      
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-expanded="false" aria-label="Menüyü Aç/Kapat">
+        <i data-lucide="menu"></i>
+      </button>
+      
+      <nav aria-label="Ana Menü">
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item"><a href="index.html">Ana Sayfa</a></li>
+          <li class="nav-item"><a href="basvuru.html" class="active">Abonelik Başvurusu</a></li>
+          <li class="nav-item"><a href="basvuru.html" class="nav-cta">Hemen Başvur</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wizard-section" aria-label="Abonelik Başvuru Sihirbazı">
+      <div class="container">
+        
+        <!-- Multi-Step Card Wrapper -->
+        <div class="wizard-card">
+          
+          <!-- Wizard Navigation Progress Header -->
+          <nav class="wizard-progress" aria-label="Abonelik Başvuru Adımları">
+            <ul class="progress-steps" id="progress-steps-list">
+              <!-- Active Step 1 -->
+              <li class="step-indicator active" data-step="1" id="step-ind-1">
+                <span class="step-circle" aria-hidden="true">1</span>
+                <span class="step-label">Tercihler</span>
+              </li>
+              <!-- Step 2 -->
+              <li class="step-indicator" data-step="2" id="step-ind-2">
+                <span class="step-circle" aria-hidden="true">2</span>
+                <span class="step-label">Bilgiler</span>
+              </li>
+              <!-- Step 3 -->
+              <li class="step-indicator" data-step="3" id="step-ind-3">
+                <span class="step-circle" aria-hidden="true">3</span>
+                <span class="step-label">Belgeler</span>
+              </li>
+              <!-- Step 4 -->
+              <li class="step-indicator" data-step="4" id="step-ind-4">
+                <span class="step-circle" aria-hidden="true">4</span>
+                <span class="step-label">Onaylar</span>
+              </li>
+              <!-- Step 5 (Success) -->
+              <li class="step-indicator" data-step="5" id="step-ind-5">
+                <span class="step-circle" aria-hidden="true">5</span>
+                <span class="step-label">Sonuç</span>
+              </li>
+            </ul>
+            <!-- Active Fill Line -->
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </nav>
+
+          <!-- Form Area -->
+          <form id="subscription-apply-form" novalidate>
+            
+            <!-- STEP 1: Otopark ve Tarih Seçimi -->
+            <div class="wizard-form form-step active" data-step="1" id="form-step-1">
+              <div class="step-header">
+                <h2 class="step-title">Otopark ve Tarih Seçimi</h2>
+                <p class="step-description">Abonelik yapmak istediğiniz otopark konumunu seçin.</p>
+              </div>
+
+              <!-- Otopark & Tarih Grid -->
+              <div class="form-grid">
+                <!-- Location Selection -->
+                <div class="form-group">
+                  <label for="otopark-selection">
+                    <span>Abonelik Yapılacak Otopark / AVM</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <select id="otopark-selection" name="parking_location" required style="display: none;">
+                    <option value="" disabled selected>Lütfen bir otopark seçin...</option>
+                  </select>
+
+                  <!-- Premium Custom Dropdown UI component -->
+                  <div class="custom-select-container" id="custom-otopark-select-container">
+                    <button type="button" class="custom-select-trigger" id="custom-otopark-select-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Otopark seçimi">
+                      <span class="custom-select-trigger-text">Lütfen bir otopark seçin...</span>
+                      <i data-lucide="chevron-down" class="custom-select-chevron" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    
+                    <div class="custom-select-panel" id="custom-otopark-select-panel">
+                      <!-- Live Search Filter Box -->
+                      <div class="custom-select-search-container">
+                        <i data-lucide="search" class="custom-select-search-icon" style="width: 15px; height: 15px;"></i>
+                        <input type="text" class="custom-select-search-input" id="custom-otopark-select-search" placeholder="Otopark ara..." autocomplete="off">
+                      </div>
+                      
+                      <!-- Scrollable List of category groups and option items -->
+                      <div class="custom-select-options-list" id="custom-otopark-select-options" role="listbox">
+                        <!-- Populated dynamically via JS -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <span class="error-message" id="error-parking"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir konum seçin.</span>
+                </div>
+
+                <!-- Start Date -->
+                <div class="form-group">
+                  <label for="start-date">
+                    <span>Abonelik Başvuru Tarihi</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="date" id="start-date" name="start_date" required readonly style="pointer-events: none; background-color: #f8fafc; border-color: var(--color-border-light); cursor: not-allowed; opacity: 0.85;">
+                  <span class="error-message" id="error-date"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir tarih seçin.</span>
+                  <span class="form-hint">Başvuru tarihi otomatik olarak atanmıştır ve değiştirilemez.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 2: Kişisel ve Araç Bilgileri -->
+            <div class="wizard-form form-step" data-step="2" id="form-step-2">
+              <div class="step-header">
+                <h2 class="step-title">Kişisel ve Araç Bilgileri</h2>
+                <p class="step-description">Lütfen plaka okuma ve iletişim sistemlerimizin eşleşmesi için bilgileri eksiksiz girin.</p>
+              </div>
+
+              <div class="form-grid">
+                <!-- Çalıştığı Firma / Kurum Adı -->
+                <div class="form-group full-width" style="grid-column: span 2;">
+                  <label for="company-name">
+                    <span>Firma / Kurum Adı</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="company-name" name="company_name" placeholder="Örn: ABC Tekstil Ltd. Şti. veya Serbest Çalışan" required>
+                  <span class="error-message" id="error-company-name"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen çalıştığınız firma veya kurum adını girin.</span>
+                </div>
+
+                <!-- Ad Soyad -->
+                <div class="form-group">
+                  <label for="full-name">
+                    <span>Ad Soyad</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="full-name" name="full_name" placeholder="Örn: Ahmet Yılmaz" required autocomplete="name">
+                  <span class="error-message" id="error-name"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen en az iki isim kelimesinden oluşan ad soyad girin.</span>
+                </div>
+
+                <!-- T.C. Kimlik No -->
+                <div class="form-group">
+                  <label for="tc-identity">
+                    <span>T.C. Kimlik Numarası</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="tc-identity" name="tc_no" maxlength="11" placeholder="11 haneli T.C. No" required inputmode="numeric" pattern="\d{11}">
+                  <span class="error-message" id="error-tc"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 11 haneli sayısal T.C. Kimlik No girin.</span>
+                </div>
+
+                <!-- Telefon -->
+                <div class="form-group">
+                  <label for="phone-number">
+                    <span>Telefon Numarası</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="tel" id="phone-number" name="phone" placeholder="0 (5XX) XXX XX XX" required autocomplete="tel" inputmode="tel">
+                  <span class="error-message" id="error-phone"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir cep telefonu girin.</span>
+                </div>
+
+                <!-- E-posta -->
+                <div class="form-group">
+                  <label for="email-address">
+                    <span>E-posta Adresi</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="email" id="email-address" name="email" placeholder="ahmet@example.com" required autocomplete="email">
+                  <span class="error-message" id="error-email"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir e-posta adresi yazın.</span>
+                </div>
+
+                <!-- Araç Plakası -->
+                <div class="form-group">
+                  <label for="license-plate">
+                    <span>Araç Plakası</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="license-plate" name="plate" placeholder="Örn: 34ABC123" required style="text-transform: uppercase;">
+                  <span class="error-message" id="error-plate"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir Türk plakası girin (örn: 34ABC123).</span>
+                  <span class="form-hint">Plaka tanıma sistemi bu veriyi kullanacaktır. Boşluksuz yazın.</span>
+                </div>
+
+                <!-- Araç Marka / Model -->
+                <div class="form-group">
+                  <label for="car-model">
+                    <span>Araç Marka ve Model</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="car-model" name="car_model" placeholder="Örn: Volkswagen Golf" required>
+                  <span class="error-message" id="error-model"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Araç marka/model alanını doldurun.</span>
+                </div>
+
+                <!-- Şoför Ad Soyad -->
+                <div class="form-group">
+                  <label for="driver-name">
+                    <span>Şoför Ad Soyad</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <input type="text" id="driver-name" name="driver_name" placeholder="Örn: Ahmet Yılmaz" required autocomplete="name">
+                  <span class="error-message" id="error-driver"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen şoför ad soyadını girin.</span>
+                </div>
+
+                <!-- İşyeri Adresi -->
+                <div class="form-group full-width">
+                  <label for="home-address">
+                    <span>İşyeri Adresi</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <textarea id="home-address" name="home_address" placeholder="İşyerinizin açık adresi..." required style="min-height: 80px;"></textarea>
+                  <span class="error-message" id="error-home-address"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen işyeri adresinizi girin.</span>
+                </div>
+
+                <!-- Not Alanı -->
+                <div class="form-group full-width">
+                  <label for="application-notes">Başvuru Notu (Opsiyonel)</label>
+                  <textarea id="application-notes" name="notes" placeholder="Belirtmek istediğiniz ek talepler veya detaylar varsa buraya yazabilirsiniz."></textarea>
+                </div>
+
+                <!-- Fatura Detayları Panel (Doğrudan Görünür & Entegre) -->
+                <div class="billing-details-panel full-width" id="billing-panel" style="display: block; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.5rem; margin-top: 1.5rem; width: 100%; grid-column: span 2;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; border: none; padding: 0;">
+                    <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+                    <span>Fatura Bilgileri</span>
+                  </h4>
+                  
+                  <!-- Fatura Tipi Seçimi (Sermaye, Şahıs Şirketi, Şahıs/Bireysel) -->
+                  <div class="billing-type-selector" style="display: flex; gap: 1.5rem; margin-bottom: 1.5rem; background: var(--color-bg-light); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border-light); flex-wrap: wrap;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.25rem;">
+                      <i data-lucide="file-text" style="width: 14px; height: 14px; color: var(--color-primary);"></i> Fatura Tipi:
+                    </span>
+                    <label class="radio-container" style="margin: 0; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--color-text-dark);">
+                      <input type="radio" id="billing-corp-type-sermaye" name="billing_corp_type" value="sermaye" onchange="handleBillingCorpTypeChange()" style="width: 16px; height: 16px; accent-color: var(--color-accent-orange); cursor: pointer;">
+                      <span>Sermaye Şirketi (LTD. / A.Ş.)</span>
+                    </label>
+                    <label class="radio-container" style="margin: 0; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--color-text-dark);">
+                      <input type="radio" id="billing-corp-type-sahis" name="billing_corp_type" value="sahis" onchange="handleBillingCorpTypeChange()" style="width: 16px; height: 16px; accent-color: var(--color-accent-orange); cursor: pointer;">
+                      <span>Şahıs Şirketi</span>
+                    </label>
+                    <label class="radio-container" style="margin: 0; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--color-text-dark);">
+                      <input type="radio" id="billing-corp-type-bireysel" name="billing_corp_type" value="bireysel" checked onchange="handleBillingCorpTypeChange()" style="width: 16px; height: 16px; accent-color: var(--color-accent-orange); cursor: pointer;">
+                      <span>Şahıs (Bireysel)</span>
+                    </label>
+                  </div>
+
+                  <!-- Fatura Bilgilerim Kişisel Bilgilerimle Aynı Olsun Checkbox -->
+                  <div class="form-group full-width" id="use-personal-info-wrapper" style="margin-bottom: 1.25rem;">
+                    <label class="checkbox-container" style="margin: 0; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--color-primary-dark);">
+                      <input type="checkbox" id="use-personal-info" checked onchange="toggleUsePersonalInfo()" style="width: 18px; height: 18px; cursor: pointer;">
+                      <span>Fatura bilgilerim kişisel bilgilerimle aynı olsun</span>
+                    </label>
+                  </div>
+                  
+                  <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; border: none; padding: 0;">
+                    <!-- Şirket Unvanı / Firma Sahibi -->
+                    <div class="form-group full-width" id="group-billing-company" style="grid-column: span 2;">
+                      <label for="billing-company">
+                        <span id="lbl-billing-company">Firma Unvanı (Şirket Tam Adı)</span>
+                        <span class="required-indicator" aria-hidden="true">*</span>
+                      </label>
+                      <input type="text" id="billing-company" name="billing_company" placeholder="Örn: ABC Tekstil Sanayi ve Ticaret A.Ş.">
+                      <span class="error-message" id="error-billing-company"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen firma unvanını girin.</span>
+                    </div>
+
+                    <!-- Vergi Dairesi -->
+                    <div class="form-group" id="group-billing-tax-office">
+                      <label for="billing-tax-office">
+                        <span>Vergi Dairesi</span>
+                        <span class="required-indicator" aria-hidden="true">*</span>
+                      </label>
+                      <input type="text" id="billing-tax-office" name="billing_tax_office" placeholder="Örn: Kadıköy">
+                      <span class="error-message" id="error-billing-tax-office"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen vergi dairesini girin.</span>
+                    </div>
+
+                    <!-- Vergi Numarası / TCKN -->
+                    <div class="form-group" id="group-billing-tax-no">
+                      <label for="billing-tax-no">
+                        <span id="lbl-billing-tax-no">Vergi Numarası</span>
+                        <span class="required-indicator" aria-hidden="true">*</span>
+                      </label>
+                      <input type="text" id="billing-tax-no" name="billing_tax_no" maxlength="10" placeholder="10 haneli Vergi No" inputmode="numeric">
+                      <span class="error-message" id="error-billing-tax-no"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen 10 haneli vergi numarasını girin.</span>
+                    </div>
+
+                    <!-- Fatura Adresi -->
+                    <div class="form-group full-width" id="group-billing-address" style="grid-column: span 2; margin-bottom: 0;">
+                      <label for="billing-address">
+                        <span>Fatura Adresi</span>
+                        <span class="required-indicator" aria-hidden="true">*</span>
+                      </label>
+                      <textarea id="billing-address" name="billing_address" placeholder="Faturanın kesileceği yasal adres..." style="min-height: 80px;"></textarea>
+                      <span class="error-message" id="error-billing-address"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen fatura adresini girin.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 3: Belge Yükleme -->
+            <div class="wizard-form form-step" data-step="3" id="form-step-3">
+              <div class="step-header">
+                <h2 class="step-title">Belge Yükleme</h2>
+                <p class="step-description">Başvurunuzun doğrulanması için gerekli resmi belgelerin dijital kopyalarını yükleyin.</p>
+              </div>
+
+              <!-- Dinamik Ödeme ve Şirket Bilgileri Paneli -->
+              <div id="payment-info-panel" style="margin-bottom: 2rem;"></div>
+
+              <div class="upload-container">
+                <!-- Ruhsat Yükleme -->
+                <div class="form-group">
+                  <label>
+                    <span>Araç Ruhsat Görseli veya PDF</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <!-- Drag and Drop Zone -->
+                  <div class="upload-zone" id="zone-ruhsat" onclick="triggerFileInput('file-ruhsat')">
+                    <input type="file" id="file-ruhsat" name="file_ruhsat" accept=".pdf,.png,.jpg,.jpeg" required style="display:none;" onchange="handleFileSelect(this, 'ruhsat')">
+                    <i data-lucide="file-up" class="upload-zone-icon"></i>
+                    <p class="upload-text">Ruhsat belgesini buraya <span>sürükleyip bırakın</span> veya tıklayın</p>
+                    <p class="upload-specs">Desteklenen: PDF, JPG, PNG (Maks 5MB)</p>
+                  </div>
+                  <span class="error-message" id="error-file-ruhsat"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Araç ruhsat belgesi zorunludur.</span>
+                  
+                  <!-- Selected File Preview Container -->
+                  <ul class="file-list" id="preview-list-ruhsat"></ul>
+                </div>
+
+                <!-- Kimlik/Ehliyet Yükleme -->
+                <div class="form-group">
+                  <label>
+                    <span>Nüfus Cüzdanı veya Ehliyet Görseli</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <div class="upload-zone" id="zone-kimlik" onclick="triggerFileInput('file-kimlik')">
+                    <input type="file" id="file-kimlik" name="file_kimlik" accept=".pdf,.png,.jpg,.jpeg" required style="display:none;" onchange="handleFileSelect(this, 'kimlik')">
+                    <i data-lucide="file-up" class="upload-zone-icon"></i>
+                    <p class="upload-text">Kimlik veya Ehliyet belgesini buraya <span>sürükleyip bırakın</span> veya tıklayın</p>
+                    <p class="upload-specs">Desteklenen: PDF, JPG, PNG (Maks 5MB)</p>
+                  </div>
+                  <span class="error-message" id="error-file-kimlik"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Kimlik belgesi zorunludur.</span>
+                  
+                  <ul class="file-list" id="preview-list-kimlik"></ul>
+                </div>
+
+                <!-- Vergi Levhası Yükleme (Zorunlu) -->
+                <div class="form-group" style="margin-top: 1.5rem;">
+                  <label>
+                    <span>Vergi Levhası Görseli veya PDF</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <div class="upload-zone" id="zone-vergi" onclick="triggerFileInput('file-vergi')">
+                    <input type="file" id="file-vergi" name="file_vergi" accept=".pdf,.png,.jpg,.jpeg" required style="display:none;" onchange="handleFileSelect(this, 'vergi')">
+                    <i data-lucide="file-text" class="upload-zone-icon"></i>
+                    <p class="upload-text">Vergi Levhasını buraya <span>sürükleyip bırakın</span> veya tıklayın</p>
+                    <p class="upload-specs">Desteklenen: PDF, JPG, PNG (Maks 5MB)</p>
+                  </div>
+                  <span class="error-message" id="error-file-vergi"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Vergi Levhası belgesi zorunludur.</span>
+                  
+                  <ul class="file-list" id="preview-list-vergi"></ul>
+                </div>
+
+                <!-- Firmada Çalıştığına Dair Belge Yükleme (Zorunlu) -->
+                <div class="form-group" style="margin-top: 1.5rem;">
+                  <label>
+                    <span>Firmada Çalıştığına Dair Belge (SGK İşe Giriş veya Çalışma Belgesi)</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <div class="upload-zone" id="zone-calisma" onclick="triggerFileInput('file-calisma')">
+                    <input type="file" id="file-calisma" name="file_calisma" accept=".pdf,.png,.jpg,.jpeg" required style="display:none;" onchange="handleFileSelect(this, 'calisma')">
+                    <i data-lucide="file-check-2" class="upload-zone-icon"></i>
+                    <p class="upload-text">Çalışma belgesini buraya <span>sürükleyip bırakın</span> veya tıklayın</p>
+                    <p class="upload-specs">Desteklenen: PDF, JPG, PNG (Maks 5MB)</p>
+                  </div>
+                  <span class="error-message" id="error-file-calisma"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Firmada çalıştığınıza dair belge zorunludur.</span>
+                  
+                  <ul class="file-list" id="preview-list-calisma"></ul>
+                </div>
+
+                <!-- Ödeme Dekontu Yükleme (Zorunlu) -->
+                <div class="form-group" style="margin-top: 1.5rem;">
+                  <label>
+                    <span>Ödeme Dekontu Görseli veya PDF</span>
+                    <span class="required-indicator" aria-hidden="true">*</span>
+                  </label>
+                  <div class="upload-zone" id="zone-dekont" onclick="triggerFileInput('file-dekont')">
+                    <input type="file" id="file-dekont" name="file_dekont" accept=".pdf,.png,.jpg,.jpeg" required style="display:none;" onchange="handleFileSelect(this, 'dekont')">
+                    <i data-lucide="receipt" class="upload-zone-icon"></i>
+                    <p class="upload-text">Ödeme dekontunu buraya <span>sürükleyip bırakın</span> veya tıklayın</p>
+                    <p class="upload-specs">Desteklenen: PDF, JPG, PNG (Maks 5MB)</p>
+                  </div>
+                  <span class="error-message" id="error-file-dekont"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Ödeme dekont belgesi zorunludur.</span>
+                  
+                  <ul class="file-list" id="preview-list-dekont"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 4: KVKK ve Onaylar -->
+            <div class="wizard-form form-step" data-step="4" id="form-step-4">
+              <div class="step-header">
+                <h2 class="step-title">Yasal Onaylar ve Rızalar</h2>
+                <p class="step-description">Kişisel verilerinizin işlenmesi ve abonelik koşulları için yasal rızalarınızı verin.</p>
+              </div>
+
+              <!-- Premium KVKK & Güvenlik Bilgi Kartı -->
+              <div class="security-info-card" style="display: flex; gap: 1rem; padding: 1.25rem; background: rgba(15, 59, 162, 0.04); border: 1px solid rgba(15, 59, 162, 0.15); border-radius: var(--radius-md); margin-bottom: 1.5rem; align-items: flex-start;">
+                <div class="security-card-icon" style="background: rgba(15, 59, 162, 0.1); padding: 0.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;">
+                  <i data-lucide="shield-check" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="security-card-content">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin: 0 0 0.25rem 0;">Yasal Güvenlik ve Veri Koruma Bilgilendirmesi</h4>
+                  <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
+                    KVKK yasal mevzuatları gereği, onay kutucuğunu işaretlemeden önce ilgili yasal sözleşmeleri açarak <strong>sonuna kadar okumanız gerekmektedir.</strong> Okunmayan belgeler için onay kutucuğu etkinleştirilmeyecektir.
+                  </p>
+                </div>
+              </div>
+
+              <div class="checklist-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Checkbox 1: Zorunlu Onay -->
+                <!-- Checkbox 1: Zorunlu Onay -->
+                <div class="checklist-item-wrapper" style="border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.25rem; background: #ffffff; transition: all var(--transition-fast);">
+                  <!-- Document status widgets on TOP -->
+                  <div class="doc-status-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <!-- Doc 1 Badge -->
+                    <div class="doc-badge unread" id="doc-badge-terms" onclick="openModal('modal-terms', event)" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.03); cursor: pointer; transition: all var(--transition-fast);">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="file-text" style="width: 18px; height: 18px; color: #ef4444;" id="doc-icon-terms"></i>
+                        <span style="font-size: 0.825rem; font-weight: 600; color: var(--color-text-dark);">Abonelik Sözleşmesi & Genel Hükümler</span>
+                      </div>
+                      <span class="status-label" id="status-label-terms" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #ef4444;">
+                        <i data-lucide="eye-off" style="width: 14px; height: 14px;"></i> Okunmadı
+                      </span>
+                    </div>
+
+                    <!-- Doc 2 Badge -->
+                    <div class="doc-badge unread" id="doc-badge-kvkk" onclick="openModal('modal-kvkk', event)" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.03); cursor: pointer; transition: all var(--transition-fast);">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="shield" style="width: 18px; height: 18px; color: #ef4444;" id="doc-icon-kvkk"></i>
+                        <span style="font-size: 0.825rem; font-weight: 600; color: var(--color-text-dark);">KVKK Aydınlatma Metni</span>
+                      </div>
+                      <span class="status-label" id="status-label-kvkk" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #ef4444;">
+                        <i data-lucide="eye-off" style="width: 14px; height: 14px;"></i> Okunmadı
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Checkbox item at the BOTTOM -->
+                  <div class="checklist-item" id="item-chk-kvkk-terms" style="display: flex; align-items: flex-start; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
+                    <input type="checkbox" id="chk-kvkk-terms" name="consent_kvkk_terms" required style="width: 20px; height: 20px; border-radius: var(--radius-sm); border: 2px solid var(--color-border-dark); cursor: not-allowed; accent-color: var(--color-primary); margin-top: 2px;" onclick="handleKvkkCheckboxClick(event)">
+                    <label for="chk-kvkk-terms" class="checklist-text" style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); cursor: not-allowed;">
+                      <span class="required-indicator" aria-hidden="true" style="color: var(--color-danger); font-weight: bold; margin-right: 2px;">*</span>
+                      Abonelik Sözleşmesi, Genel Hükümler ve KVKK Aydınlatma Metnini okudum, kabul ediyorum. Kişisel verilerimin belirtilen amaçlarla işlenmesine ve saklanmasına açık rızamla onay veriyorum.
+                    </label>
+                  </div>
+                </div>
+                <span class="error-message" id="error-chk-kvkk-terms" style="margin-top: -0.5rem; margin-bottom: 1rem;"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Devam etmek için her iki yasal metni de açıp sonuna kadar okumanız gerekmektedir.</span>
+
+                <!-- Checkbox 2: Opsiyonel Ticari İleti Onayı (SMS/E-posta/WhatsApp) -->
+                <div class="checklist-item-wrapper" style="border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.25rem; background: #ffffff; transition: all var(--transition-fast);">
+                  <!-- Marketing Doc status widgets on TOP -->
+                  <div class="doc-status-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <!-- Marketing Doc Badge -->
+                    <div class="doc-badge unread" id="doc-badge-consent" onclick="openModal('modal-consent', event)" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.03); cursor: pointer; transition: all var(--transition-fast);">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="mail" style="width: 18px; height: 18px; color: #ef4444;" id="doc-icon-consent"></i>
+                        <span style="font-size: 0.825rem; font-weight: 600; color: var(--color-text-dark);">Ticari Elektronik İleti Onayı ve Aydınlatma Metni</span>
+                      </div>
+                      <span class="status-label" id="status-label-consent" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #ef4444;">
+                        <i data-lucide="eye-off" style="width: 14px; height: 14px;"></i> Okunmadı
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Checkbox item at the BOTTOM -->
+                  <div class="checklist-item" id="item-chk-marketing" style="display: flex; align-items: flex-start; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
+                    <input type="checkbox" id="chk-marketing" name="consent_marketing" disabled style="width: 20px; height: 20px; border-radius: var(--radius-sm); border: 2px solid var(--color-border-dark); cursor: not-allowed; accent-color: var(--color-primary); margin-top: 2px;" onclick="handleMarketingCheckboxClick(event)">
+                    <label for="chk-marketing" class="checklist-text" style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); cursor: not-allowed;">
+                      Tarafıma bilgilendirme ve duyuru amacıyla SMS, E-posta ve WhatsApp mesajları gönderilmesine izin veriyorum.
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 5: Sonuç Ekranı -->
+            <div class="wizard-form form-step" data-step="5" id="form-step-5">
+              <div class="success-screen">
+                <div class="success-icon-container">
+                  <i data-lucide="check"></i>
+                </div>
+                <h2 class="success-heading">Başvurunuz Alınmıştır!</h2>
+                <p class="success-lead">Abonelik başvuru kaydınız başarıyla oluşturulmuştur. Belgeleriniz doğrulanmak üzere inceleme sırasına alınmıştır.</p>
+                
+                <!-- Display Dynamically Generated App Code -->
+                <div class="application-badge">
+                  <div class="application-badge-label">Başvuru Takip Numarası</div>
+                  <div class="application-badge-number" id="success-app-code">PE-2026-X9A3</div>
+                </div>
+
+                <!-- Automatic notification log info card for customer reassurance -->
+                <div class="success-alert-card" style="margin-top: 2rem; background: var(--color-bg-light); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.5rem; text-align: left; box-shadow: var(--shadow-sm); width: 100%; max-width: 480px; margin-left: auto; margin-right: auto;">
+                  <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.85rem; color: var(--color-primary-dark); font-weight: 700; font-size: 0.95rem;">
+                    <i data-lucide="bell" style="width: 18px; height: 18px; color: var(--color-accent-gold);"></i>
+                    <span>Otomatik Başvuru Bilgilendirmesi</span>
+                  </div>
+                  <p style="font-size: 0.85rem; line-height: 1.5; color: var(--color-text-dark); margin: 0; margin-bottom: 1rem;">
+                    Abonelik ön kayıt bilgileriniz ve ödeme detaylarınız sistemimiz tarafından e-posta adresinize ve telefon numaranıza otomatik olarak iletilmiştir:
+                  </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.8rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #047857; font-weight: 600;">
+                      <i data-lucide="check-circle" style="width: 16px; height: 16px; fill: rgba(16, 185, 129, 0.1); color: #10b981;"></i>
+                      <span>WhatsApp teyit mesajı otomatik olarak iletildi.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #047857; font-weight: 600;">
+                      <i data-lucide="check-circle" style="width: 16px; height: 16px; fill: rgba(16, 185, 129, 0.1); color: #10b981;"></i>
+                      <span>Onay ve takip e-postası başarıyla gönderildi.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; margin-top: 2rem; width: 100%;">
+                  <a href="index.html" class="btn btn-primary" style="padding: 0.75rem 2.5rem; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; width: auto; font-weight: 700;">Ana Sayfaya Dön</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Wizard Controls Action Footer -->
+            <div class="wizard-footer" id="wizard-footer">
+              <button type="button" class="btn btn-secondary" id="btn-wizard-prev" onclick="navigateStep(-1)" style="visibility: hidden;">
+                <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                <span>Geri</span>
+              </button>
+              <button type="button" class="btn btn-primary" id="btn-wizard-next" onclick="navigateStep(1)">
+                <span>Devam Et</span>
+                <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       MODALS FOR LEGAL PAPERS & AGREEMENTS
+       ========================================================================== */ -->
+
+  <!-- KVKK Aydınlatma Metni Modal -->
+  <div class="modal-overlay" id="modal-kvkk" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="kvkk-title" aria-modal="true">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="kvkk-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">KVKK Aydınlatma Metni</h3>
+        <button class="modal-close" onclick="closeModal('modal-kvkk')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body-kvkk" style="padding: 1.5rem; text-align: left; max-height: 50vh; overflow-y: auto;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 0.75rem;">Abonelik Sözleşmesi ve KVKK Aydınlatma Metni</h4>
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Başvurunuz kapsamında kişisel verileriniz 6698 sayılı KVKK ve ilgili mevzuat çerçevesinde işlenecektir. ParkExpert, abonelik sürecinde kişisel verilerinizi yalnızca hizmet sağlama, faturalandırma, yasal yükümlülüklerin yerine getirilmesi ve müşteri memnuniyetinin sağlanması amacıyla işler.
+        </p>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          İşbu Talep Formunun uygulanması nedeniyle ve uygulanması sürecinde Abone tarafından Kuruma aktarılmış ya da bundan sonra aktarılacak olan kişisel verilere ilişkin olarak Kurum, kişisel verileri;
+        </p>
+
+        <ul style="list-style-type: disc; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li>6698 sayılı Kişisel Verilerin Korunması Kanununda yer alan veri işleme ilke ve şartlarına uygun olarak işlemek,</li>
+          <li>Bu verileri mevzuata uygun olarak saklamak,</li>
+          <li>Veri güvenliğini sağlamak ve bu konuda yeterli önlemi almak,</li>
+          <li>Veri sahibinin izni olmaksızın yurtiçinde ve yurtdışında bulunan üçüncü kişilere aktarmamak,</li>
+          <li>Aktarılan amacı dışında başka bir amaçla kullanmamak,</li>
+          <li>Kurum’un yetkisiz çalışanı ya da üçüncü kişiler ile paylaşmamak,</li>
+          <li>Sözleşme amacının gerçekleşmesi ve/veya sözleşmenin sona ermesi halinde kişisel verileri yasal süre içerisinde imha etmekle yükümlüdür.</li>
+        </ul>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Kurum, kendisine bu sözleşme kapsamında aktarılan/iletilen her türlü kişisel veriyi 6698 sayılı Kişisel Verilerin Korunması Kanununa uygun bir şekilde işlemeyi kabul ve taahhüt eder. Kurum, mevzuatın gerektirdiği şekilde tüm idari ve teknik önlemleri alır, bu kapsamda kişisel verilerin gizliliğini ve bütünlüğünü korur.
+        </p>
+
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Abone, Kuruma aktardığı kişisel verilerin aşağıda sayılan amaçlar doğrultusunda aşağıda belirtilen kişi ve kurumlara aktarılmasına rıza göstermektedir. Buna göre:
+        </p>
+
+        <ul style="list-style-type: disc; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li>Kamu hizmetlerinin ve ticari faaliyetlerin yerine getirilebilmesi ve sürekliliğinin sağlanabilmesi amacıyla ilgili kamu kurum ve kuruluşları ile paylaşılabilir.</li>
+          <li>Kurum içi faaliyetlerin yürütülmesi, denetimlerin yapılması ve hizmet kalitesinin artırılması amacıyla Kurum’un iştirakleri, iş ortakları veya alt yüklenicileriyle paylaşılabilir.</li>
+          <li>Yasal yükümlülüklerin yerine getirilmesi amacıyla, yetkili kamu kurum ve kuruluşları ile paylaşılabilir.</li>
+          <li>Abonelik hizmetlerinin yürütülmesi, faturalandırma ve bilgilendirme faaliyetlerinin gerçekleştirilebilmesi amacıyla işlenebilir.</li>
+        </ul>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+        <div class="scroll-indicator-container" id="scroll-indicator-kvkk" style="width: 100%; justify-content: flex-end; display: flex;">
+          <i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i>
+          <span>Kabul etmek için lütfen metni sonuna kadar okuyunuz.</span>
+        </div>
+        <button class="btn btn-primary btn-approve-disabled" id="btn-approve-kvkk" disabled onclick="approveDocument('kvkk')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; cursor: not-allowed;">Okudum, Onaylıyorum</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticari Elektronik İleti Onayı ve Aydınlatma Metni Modal -->
+  <div class="modal-overlay" id="modal-consent" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="consent-title" aria-modal="true">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="consent-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">Ticari Elektronik İleti Onayı ve Aydınlatma Metni</h3>
+        <button class="modal-close" onclick="closeModal('modal-consent')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body-consent" style="padding: 1.5rem; text-align: left; max-height: 50vh; overflow-y: auto;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 0.75rem;">PUSULA AKILLI ŞEHİRCİLİK VE BİLGİ TEKNOLOJİLERİ A.Ş.</h4>
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          PUSULA AKILLI ŞEHİRCİLİK VE BİLGİ TEKNOLOJİLERİ A.Ş. (bundan sonra “Şirket” olarak anılacaktır), 6698 sayılı Kişisel Verilerin Korunması Kanunu ve 6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun kapsamında, kişisel verilerimin toplanması, işlenmesi ve saklanması konusunda bilgilendirme yapmıştır.
+        </p>
+        <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1rem;">
+          Şirket tarafından gönderilecek bilgilendirme, duyuru, kampanya, memnuniyet anketi ve tanıtım içerikli elektronik iletilerin e-posta, SMS veya diğer dijital kanallar (WhatsApp vb.) aracılığıyla tarafıma gönderilmesine açık rızamla onay veriyorum.
+        </p>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+        <div class="scroll-indicator-container" id="scroll-indicator-consent" style="width: 100%; justify-content: flex-end; display: flex;">
+          <i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i>
+          <span>Kabul etmek için lütfen metni sonuna kadar okuyunuz.</span>
+        </div>
+        <button class="btn btn-primary btn-approve-disabled" id="btn-approve-consent" disabled onclick="approveDocument('consent')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; cursor: not-allowed;">Okudum, Onaylıyorum</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abonelik Şartları ve Genel Hükümler Modal -->
+  <div class="modal-overlay" id="modal-terms" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="terms-title" aria-modal="true" style="max-width: 650px;">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="terms-title" style="font-weight: 700; font-size: 1.1rem; margin: 0;">Abonelik Sözleşmesi ve Genel Hükümler</h3>
+        <button class="modal-close" onclick="closeModal('modal-terms')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body-terms" style="padding: 1.5rem; text-align: left; max-height: 50vh; overflow-y: auto;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 0.75rem; border-bottom: 2px solid var(--color-primary); padding-bottom: 0.25rem; display: inline-block;">GENEL HÜKÜMLER</h4>
+        
+        <ol style="padding-left: 1.25rem; font-size: 0.88rem; line-height: 1.6; color: var(--color-text-dark); display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+          <li><strong>Abonelik Tanımı:</strong> Abonelik, PARK EXPERT uhdesinde işletilen alanların sadece araç parklanması olarak kullandırılması işlemidir.</li>
+          <li><strong>Abonelik Süreci:</strong> Abonelik süreci, şahısın/kurumun gerekli evraklarla müracaat etmesi, PARK EXPERT tarafından uygun görülmesi, ilgili formun düzenlenmesi ve yetkili onayları ile başlar.</li>
+          <li><strong>Belge Değişiklikleri:</strong> Abone, teslim ettiği belgelerde değişiklik olması halinde, PARK EXPERT’ne bildirmekle yükümlüdür. Değişikliğin bildirilmemesinden doğacak hukuki sorumluluk Aboneye aittir.</li>
+          <li><strong>Otopark Nizamı:</strong> Abone, park alanlarını otopark nizamına uygun kullanacağını taahhüt eder. Park düzenine uyulmaması halinde abonelik sonlandırılır.</li>
+          <li><strong>Amacı Dışında Kullanım Yasağı:</strong> Abone, ödeme yaptığı alanda park alanını dışında bahse konu alanı amacı dışında kullanamaz, kiraya veremez, ücret mukabil park ettiremez. Böyle bir durumda PARK EXPERT aboneliği haklı nedenle feshetme hakkına sahiptir.</li>
+          <li><strong>Yapı Tesis Etme Yasağı:</strong> Abone, niteliği ne olursa olsun (mobo, kabin, prefabrik, konteynır, mobil WC–duş, kulübe, büfe, duvar vs.) hiç bir yapı tesis edemez. Bu yükümlülüğünü ihlal etmesi halinde bütün idari, hukuki, mali ve cezai sorumluluk Aboneye aittir. Böyle bir durumda PARK EXPERT aboneliği haklı nedenle feshetme hakkına sahiptir.</li>
+          <li><strong>Kabul ve Fesih Yetkisi:</strong> PARK EXPERT, herhangi bir gerekçe belirtmeksizin abonelik başvurusunu kabul etme veya etmeme veya dilediği an sona erdirme hususunda münhasıran yetkilidir.</li>
+          <li><strong>Değerli Eşya Sorumluluğu:</strong> Abone, park esnasında araç içerisinde değerli eşya bırakmamakla yükümlüdür. Araç içinde değerli eşya bırakılması halinde, bu eşyalar hırsızlık, gasp, zayi, doğal afet vs. sebeplerle bir zarar veya ziyana uğrarsa ABONE, değerli eşyalarla ilgili PARK EXPERT’nin herhangi bir sorumluluğu olmadığını ve PARK EXPERT ve personelinden herhangi bir tazminat talebinde bulunmayacağını kabul eder.</li>
+          <li><strong>Abonelik Bedeli ve Peşin Ödeme:</strong> Abonelik bedeli her ayın ilk 4 (dört) günü içinde peşin olarak PARK EXPERT’ne ödenir. Ücretin zamanında yatırılmaması halinde PARK EXPERT herhangi bir ihbar ve ihtara gerek duyulmaksızın işbu aboneliği tek taraflı olarak sona erdirme hakkına sahiptir. Abonelik iptalinde, takip eden aya kadar yeniden abone yapılmaz. Parklanma, günlük tarife üzerinden ücretlendirilir.</li>
+          <li><strong>Gecikme Mazereti:</strong> Makul bir mazeret ile abonelik bedelini zamanında ödeyemeyen Abonenin, gerekçesini delillendirmek kaydıyla aboneliği, günlük tarife üzerinden bedel ödemeksizin aktif hale getirilir.</li>
+          <li><strong>Gereksiz İptaller:</strong> Gereksiz abonelik iptallerinde ücret iadesi söz konusu değildir.</li>
+          <li><strong>Mazeretli İptal ve Ücret İadesi:</strong> Makul bir mazeret ile iptal ve ücret iadesine başvuruda bulunan Aboneye, günlük tarife üzerinden kullandığı gün oranında ücretler aylık bedelden mahsup edilerek iade edilir.</li>
+          <li><strong>İdareden Kaynaklı İptaller:</strong> İdarenin lokasyonu kapatma kararı, bakım–onarım vb. idareden kaynaklanan sebepler ile iptal olan aboneliklerde, aylık abonelik bedeli, aylık abonelik tutarı üzerinden kullanılan gün oranında mahsup edilerek iade edilir.</li>
+          <li><strong>Parklanma Borçları:</strong> Parklanma borcu olan araçlar abone yapılmaz. Abonelik sonrası oluşacak parklanma borçları, periyodik kontroller sonrası ödenmediği takdirde abonelik iptal edilir.</li>
+          <li><strong>LPG'li Araç Yasağı:</strong> Kapalı ve katlı otoparklarda LPG’li araçların girmesi yasaktır.</li>
+          <li><strong>Abonelik Yetkisi:</strong> PARK EXPERT tarafından işletilen alanların her türlü aboneliğe açılması, idarenin tespit ve düzenlemesine tabidir.</li>
+          <li><strong>Yetkili Mahkeme ve İcra Daireleri:</strong> İşbu abonelik işlemlerinden doğan ihtilafların çözümü hususunda İstanbul Mahkeme ve İcra Daireleri yetkilidir.</li>
+          <li><strong>Yıllık Ödeme Avantajı:</strong> Yıllık ödeme yapmak isteyen abonelere yıl içerisinde yapılan zam oranı uygulanmaz.</li>
+          <li><strong>Mesai Saatleri ve İşletmecilik:</strong> 24 saat işletmecilik yapılmayan açık ve katlı otoparklarda aboneliklerde otoparkın mesai saatleri esastır. Mesai saatleri dışında yaşanacak olaylardan PARK EXPERT sorumlu değildir.</li>
+        </ol>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+        <div class="scroll-indicator-container" id="scroll-indicator-terms" style="width: 100%; justify-content: flex-end; display: flex;">
+          <i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i>
+          <span>Kabul etmek için lütfen metni sonuna kadar okuyunuz.</span>
+        </div>
+        <button class="btn btn-primary btn-approve-disabled" id="btn-approve-terms" disabled onclick="approveDocument('terms')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; cursor: not-allowed;">Kabul Ediyorum</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fatura Teyit Modalı -->
+  <div class="modal-overlay" id="modal-billing-confirm" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="billing-confirm-title" aria-modal="true" style="max-width: 480px;">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <h3 class="modal-title" id="billing-confirm-title" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.1rem; margin: 0;">
+          <i data-lucide="receipt" style="color: var(--color-primary); width: 22px; height: 22px;"></i>
+          <span>Fatura Bilgileri Teyidi</span>
+        </h3>
+        <button class="modal-close" onclick="closeModal('modal-billing-confirm')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; background: #ffffff;">
+        <p style="font-size: 0.88rem; line-height: 1.5; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+          Ödemeniz sonrasında kesilecek yasal faturanıza ait detaylar aşağıdadır. Lütfen fatura tipinizi ve yasal bilgilerinizi kontrol edip onaylayın.
+        </p>
+
+        <!-- Confirmed billing details display -->
+        <div id="billing-confirm-content" style="background: var(--color-bg-light); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+          <!-- Dynamically populated inside script.js -->
+        </div>
+
+        <div style="background: rgba(15, 59, 162, 0.05); padding: 0.85rem; border-radius: var(--radius-sm); border-left: 3px solid var(--color-primary); display: flex; gap: 0.5rem; align-items: flex-start;">
+          <i data-lucide="info" style="color: var(--color-primary); width: 18px; height: 18px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+          <p style="font-size: 0.78rem; line-height: 1.4; color: var(--color-primary-dark); margin: 0; text-align: left;">
+            Fatura kesildikten sonra yasal olarak firma adı, fatura tipi veya vergi no değişikliği yapılamamaktadır.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 1rem; padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light);">
+        <button class="btn btn-secondary" onclick="closeModal('modal-billing-confirm')" style="flex: 1; min-height: 44px; font-size: 0.85rem; border-color: var(--color-border-light); color: var(--color-primary-dark); cursor: pointer;">Bilgileri Düzenle</button>
+        <button class="btn btn-primary" onclick="confirmBillingAndContinue()" style="flex: 1; min-height: 44px; font-size: 0.85rem; cursor: pointer;">Doğru, Devam Et</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="border-top: none; padding-top: 0;">
+        <p>&copy; 2026 PARKEXPERT. Tüm Hakları Saklıdır.</p>
+        <p>Güvenli SSL Altyapısı &bull; <a href="#" onclick="openModal('modal-kvkk', event)" style="color: inherit; text-decoration: underline;">KVKK Politikası</a> &bull; <a href="#" onclick="openModal('modal-terms', event)" style="color: inherit; text-decoration: underline;">Kullanım Şartları</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-notification" id="email-toast">
+    <div class="toast-icon">
+      <i data-lucide="mail"></i>
+    </div>
+    <div class="toast-content">
+      <h4 id="toast-title">E-posta Bildirimi</h4>
+      <p id="toast-message">E-posta gönderiliyor...</p>
+    </div>
+  </div>
+
+  <!-- Simüle WhatsApp Bildirimi (Toast) -->
+  <div class="toast-notification" id="whatsapp-toast">
+    <div class="toast-icon">
+      <i data-lucide="message-circle" style="fill: #25d366; color: #ffffff;"></i>
+    </div>
+    <div class="toast-content">
+      <h4 id="whatsapp-toast-title">WhatsApp Bildirimi</h4>
+      <p id="whatsapp-toast-message">WhatsApp mesajı gönderiliyor...</p>
+    </div>
+  </div>
+
+  <!-- Simüle E-posta Bildirimi Modal -->
+  <div class="modal-overlay" id="modal-email-simulation" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="email-sim-title" aria-modal="true" style="max-width: 650px;">
+      <div class="modal-header" style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(15, 59, 162, 0.1); display: flex; align-items: center; justify-content: center; color: var(--color-primary-dark);">
+            <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="email-sim-title" style="font-size: 1rem; font-weight: 700; margin: 0;">Simüle Edilmiş E-posta</h3>
+            <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">Sistem tarafından gönderilen onay e-postasının önizlemesidir.</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-email-simulation')" aria-label="Kapat">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #f8fafc; padding: 1.5rem; overflow-y: auto;">
+        
+        <!-- Mail Client Header -->
+        <div style="background: #ffffff; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 1.25rem; border: 1px solid var(--color-border-light); border-bottom: none;">
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Kimden:</strong> PARKEXPERT Sistem <span style="color: var(--color-text-muted); font-size: 0.8rem;">&lt;destek@parkexpert.net&gt;</span></div>
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Kime:</strong> <span id="email-sim-to-name">Caner Yılmaz</span> <span id="email-sim-to-addr" style="color: var(--color-text-muted); font-size: 0.8rem;">&lt;caner.yilmaz@gmail.com&gt;</span></div>
+          <div style="margin-bottom: 0.5rem; font-size: 0.85rem;"><strong style="color: var(--color-text-dark);">Konu:</strong> 🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: <span id="email-sim-subject-code" style="font-weight: 700; color: var(--color-primary);">PE-2026-X9A3</span>)</div>
+        </div>
+
+        <!-- Mail Template Body -->
+        <div style="background: #ffffff; padding: 2rem; border: 1px solid var(--color-border-light); border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-sm);">
+          
+          <!-- Logo in Email -->
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 45px; object-fit: contain;">
+            <div style="width: 40px; height: 3px; background: var(--color-accent-gold); margin: 0.5rem auto 0 auto; border-radius: var(--radius-full);"></div>
+          </div>
+
+          <h2 style="font-size: 1.25rem; color: var(--color-primary-dark); font-weight: 700; margin-bottom: 1rem; text-align: center;">Sayın <span id="email-sim-body-name">Caner Yılmaz</span>,</h2>
+          
+          <p style="font-size: 0.9rem; line-height: 1.6; color: var(--color-text-dark); margin-bottom: 1.5rem; text-align: center;">
+            Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
+          </p>
+
+          <!-- Email Info Table -->
+          <div style="background: var(--color-bg-light); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid var(--color-primary);">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; font-weight: 700; border: none; padding: 0;">Başvuru Detayları</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+              <div><strong style="color: var(--color-text-dark);">Takip Numarası:</strong> <span id="email-sim-info-code" style="color: var(--color-primary); font-weight: 700;">PE-2026-X9A3</span></div>
+              <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span id="email-sim-info-plate" style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">34CAN88</span></div>
+              <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span id="email-sim-info-location">Lens Yaşam Merkezi – Pendik</span></div>
+              <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span id="email-sim-info-type">Bireysel</span></div>
+              <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span id="email-sim-info-date">05.06.2026</span></div>
+              <div><strong style="color: var(--color-text-dark);">Araç Modeli:</strong> <span id="email-sim-info-model">Audi A4</span></div>
+            </div>
+          </div>
+
+          <div style="background: rgba(255, 208, 0, 0.1); border: 1px dashed var(--color-accent-gold); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 2rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+            <i data-lucide="info" style="color: var(--color-primary); width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.1rem;"></i>
+            <p style="font-size: 0.8rem; line-height: 1.5; color: var(--color-primary-dark); margin: 0; text-align: left;">
+              Başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktif edilecek ve tarafınıza <strong>SMS</strong> ile bilgilendirme yapılacaktır. Takip numaranız ile istediğiniz an durum sorgulaması yapabilirsiniz.
+            </p>
+          </div>
+
+          <div style="border-top: 1px solid var(--color-border-light); padding-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--color-text-muted);">
+            <p style="margin-bottom: 0.25rem;">Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.</p>
+            <p style="font-weight: 700; color: var(--color-primary-dark);">PARKEXPERT Müşteri Hizmetleri</p>
+            <p style="margin-top: 0.25rem;"><a href="mailto:destek@parkexpert.net" style="color: var(--color-primary); text-decoration: none;">destek@parkexpert.net</a> | 0216 504 47 22</p>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: space-between; align-items: center; padding: 1rem 1.5rem; display: flex;">
+        <span style="font-size: 0.75rem; color: #25d366; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> E-posta Güvenli SSL ile İletildi</span>
+        <button class="btn btn-primary" onclick="closeModal('modal-email-simulation')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simüle WhatsApp Bildirimi Modal -->
+  <div class="modal-overlay" id="modal-whatsapp-simulation" onclick="closeModalOnOverlay(event)">
+    <div class="modal-window" role="dialog" aria-labelledby="whatsapp-sim-title" aria-modal="true" style="max-width: 500px;">
+      <div class="modal-header" style="background: #075e54; color: #ffffff; border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; color: #ffffff;">
+            <i data-lucide="message-circle" style="width: 20px; height: 20px; fill: #ffffff;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="whatsapp-sim-title" style="font-size: 0.95rem; font-weight: 700; margin: 0; color: #ffffff;">PARKEXPERT Destek Hattı</h3>
+            <p style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); margin: 0;">Sistem tarafından gönderilen resmi WhatsApp teyidi</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-whatsapp-simulation')" aria-label="Kapat" style="color: #ffffff; opacity: 0.8; font-size: 1.5rem; background: none; border: none; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #ece5dd; padding: 1.5rem; overflow-y: auto; background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\' viewBox=\'0 0 80 80\'%3E%3Cg fill=\'%23d8d1c9\' fill-opacity=\'0.3\'%3E%3Cpath d=\'M50 50c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10zm-20 0c0-5.5 4.5-10 10-10s10 4.5 10 10-4.5 10-10 10-10-4.5-10-10z\'/%3E%3C/g%3E%3C/svg%3E'); min-height: 350px;">
+        
+        <!-- Today timestamp divider -->
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(255, 255, 255, 0.85); color: #4a4a4a; padding: 0.25rem 0.6rem; border-radius: 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.05); text-transform: uppercase;">Bugün</span>
+        </div>
+
+        <!-- Chat Bubble (Received Message from Company) -->
+        <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 1rem; width: 100%;">
+          <div style="max-width: 85%; background: #ffffff; border-radius: 0 10px 10px 10px; padding: 0.75rem 1rem 0.5rem; position: relative; box-shadow: 0 1.5px 2px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 0.35rem;">
+            
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+              Merhaba Sayın <strong id="whatsapp-sim-name">Ahmet Yılmaz</strong>, 🌟
+            </p>
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+              Abonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce <strong>kontrol edilmek üzere başarıyla teslim alınmıştır!</strong> Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:
+            </p>
+
+            <div style="background: rgba(7, 94, 84, 0.05); border-left: 3px solid #075e54; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: sans-serif;">
+              <div><strong>📦 Başvuru Kodu:</strong> <span id="whatsapp-sim-code" style="color: #075e54; font-weight: 700;">PE-2026-X9A3</span></div>
+              <div><strong>🚗 Araç Plakası:</strong> <span id="whatsapp-sim-plate" style="text-transform: uppercase; font-weight: 700;">34ABC123</span></div>
+              <div><strong>📍 Otopark Konumu:</strong> <span id="whatsapp-sim-location">Birlik Sanayi Sitesi - Beylikdüzü</span></div>
+              <div><strong>💸 Personel / Harici Fiyatı:</strong> <span id="whatsapp-sim-price">1200 TL</span></div>
+              <div><strong>📞 Destek Telefonu:</strong> <span id="whatsapp-sim-phone">0212 875 34 58</span></div>
+            </div>
+
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 500;">
+              💳 <strong>Ödeme ve Dekont Bilgilendirmesi:</strong>
+            </p>
+            <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+              Yüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz <strong>en geç 1 saat içerisinde</strong> onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.
+            </p>
+            
+            <!-- IBAN info in chat bubble -->
+            <div style="background: #fdf6e2; border: 1px dashed #d5a229; border-radius: 4px; padding: 0.5rem; font-size: 0.75rem; color: #7d6015; text-align: left; font-family: monospace; word-break: break-word;">
+              <strong>Banka:</strong> <span id="whatsapp-sim-bank">Vakıfbank</span><br>
+              <strong>IBAN:</strong> <span id="whatsapp-sim-iban">TR23 0001 5001 5800 7302 9104 88</span>
+            </div>
+
+            <!-- Time bubble info -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.2rem; font-size: 0.65rem; color: #949494; margin-top: 0.15rem; width: 100%;">
+              <span id="whatsapp-sim-time">14:15</span>
+              <span style="color: #4fc3f7; font-weight: 700; display: inline-flex; align-items: center;">✓✓</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: space-between; align-items: center; padding: 1rem 1.5rem; display: flex;">
+        <span style="font-size: 0.75rem; color: #25d366; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> WhatsApp Business Uyumlu Gönderim</span>
+        <button class="btn btn-primary" onclick="closeModal('modal-whatsapp-simulation')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Vector Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Global & Interface Scripts -->
+  <script src="script.js"></script>
+</body>
+</html>
