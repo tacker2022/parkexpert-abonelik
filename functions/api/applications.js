@@ -42,7 +42,8 @@ export async function onRequest(context) {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
   };
 
   if (context.request.method === "OPTIONS") {

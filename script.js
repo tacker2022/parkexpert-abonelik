@@ -2264,7 +2264,7 @@ async function loadApplications() {
   if (!token) return;
 
   try {
-    const response = await fetch("/api/applications", {
+    const response = await fetch(`/api/applications?_t=${Date.now()}`, {
       headers: {
         "Authorization": `Bearer ${token}`
       }
