@@ -39,7 +39,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
   }
 
-  const supabaseUrl = context.env.SUPABASE_URL;
+  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "");
   const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
   const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
   const rootPassword = context.env.SUPERADMIN_PASSWORD || "admin123";

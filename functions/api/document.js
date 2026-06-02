@@ -55,7 +55,7 @@ export async function onRequest(context) {
     });
   }
 
-  const supabaseUrl = context.env.SUPABASE_URL;
+  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "");
   const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
   const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
   const bucket = context.env.BUCKET;
