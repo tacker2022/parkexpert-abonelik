@@ -1,3 +1,13 @@
+// Helper for safe base64 encoding (supports Unicode)
+function base64Encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binString = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binString += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binString);
+}
+
 // Helper to sign token using HMAC-SHA256
 async function signToken(data, secret) {
   const encoder = new TextEncoder();
@@ -20,7 +30,7 @@ async function signToken(data, secret) {
   const signatureArray = Array.from(new Uint8Array(signatureBuffer));
   const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-  return btoa(payloadStr) + "." + signatureHex;
+  return base64Encode(payloadStr) + "." + signatureHex;
 }
 
 export async function onRequest(context) {

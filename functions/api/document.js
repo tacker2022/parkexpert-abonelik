@@ -1,9 +1,19 @@
+// Helper for safe base64 decoding (supports Unicode)
+function base64Decode(base64) {
+  const binString = atob(base64);
+  const bytes = new Uint8Array(binString.length);
+  for (let i = 0; i < binString.length; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 // Helper to verify JWT token using HMAC-SHA256
 async function verifyToken(token, secret) {
   try {
     const parts = token.split(".");
     if (parts.length !== 2) return null;
-    const payloadStr = atob(parts[0]);
+    const payloadStr = base64Decode(parts[0]);
     const signatureHex = parts[1];
 
     const encoder = new TextEncoder();
