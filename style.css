@@ -2185,11 +2185,22 @@ textarea.is-invalid {
   }
   
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+  
+  .form-grid > * {
+    grid-column: span 1 !important;
   }
   
   .form-group.full-width {
-    grid-column: span 1;
+    grid-column: span 1 !important;
+  }
+  
+  input[type="date"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
   }
   
   .selection-card-grid {
