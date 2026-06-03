@@ -38,7 +38,8 @@ Mesaj: ${message}`);
     return { success: false, error: "Invalid phone number" };
   }
 
-  const url = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
+  const apiHost = env.GREENAPI_API_URL || "https://api.green-api.com";
+  const url = `${apiHost.replace(/\/+$/, "")}/waInstance${instanceId}/sendMessage/${apiToken}`;
 
   try {
     const res = await fetch(url, {
