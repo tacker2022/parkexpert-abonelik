@@ -1,4 +1,5 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
+import { sendEmail } from "./email_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -205,8 +206,67 @@ export async function onRequest(context) {
               if (message) {
                 await sendWhatsApp(phone, message, context.env);
               }
+
+              // Send email notification based on status
+              if (status === "Onaylandı" || status === "Reddedildi") {
+                let emailSubject = "";
+                let emailHtml = "";
+
+                if (status === "Onaylandı") {
+                  emailSubject = `🎉 PARKEXPERT Abonelik Başvurunuz ONAYLANDI! (Takip No: ${id})`;
+                  emailHtml = `
+                    <h2 style="font-size: 1.25rem; color: #10b981; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+                    
+                    <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+                      Abonelik başvuru evraklarınız ve ödeme dekontunuz ekiplerimiz tarafından doğrulanmış ve <strong>ONAYLANMIŞTIR</strong>. Plaka tanıma sistemimiz aktif edilmiştir.
+                    </p>
+
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #10b981; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                      <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Onaylanan Abonelik Detayları</h4>
+                      <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                        <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${updatedApp.subscription_type}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #10b981; font-weight: 700;">Aktif / Onaylandı</span></div>
+                      </div>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed #10b981; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #065f46;">
+                      <strong>HGS / Otomatik Geçiş Bilgilendirmesi:</strong><br>
+                      Otopark giriş ve çıkışlarında plaka tanıma HGS (Hızlı Geçiş Sistemi) plakanızı otomatik olarak okuyacak ve geçiş izni verecektir. Bilet almanıza veya kart kullanmanıza gerek yoktur. Keyifli sürüşler dileriz!
+                    </div>
+                  `;
+                } else if (status === "Reddedildi") {
+                  emailSubject = `⚠️ PARKEXPERT Abonelik Başvurunuz Hakkında (Takip No: ${id})`;
+                  emailHtml = `
+                    <h2 style="font-size: 1.25rem; color: #ef4444; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+                    
+                    <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+                      Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun uyuşmaması nedeniyle <strong>REDDEDİLMİŞTİR</strong>.
+                    </p>
+
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #ef4444; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                      <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Reddedilen Başvuru Detayları</h4>
+                      <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                        <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
+                        <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #ef4444; font-weight: 700;">Reddedildi / Evrak Eksikliği</span></div>
+                      </div>
+                    </div>
+
+                    <div style="background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #991b1b;">
+                      <strong>Nasıl Düzeltebilirsiniz?</strong><br>
+                      Lütfen belgelerinizi, plaka numaranızı veya dekont bilgilerinizi kontrol ederek doğru belgelerle yeni bir abonelik başvurusu oluşturunuz ya da destek hattımız ile iletişime geçiniz: <strong>${supportPhone}</strong>
+                    </div>
+                  `;
+                }
+
+                await sendEmail({ to: updatedApp.email, subject: emailSubject, html: emailHtml, env: context.env });
+              }
             } catch (waErr) {
-              console.error("Failed to send WhatsApp message on status change:", waErr);
+              console.error("Failed to send WhatsApp/Email message on status change:", waErr);
             }
           })()
         );

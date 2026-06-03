@@ -1,4 +1,5 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
+import { sendEmail } from "./email_helper.js";
 
 export async function onRequest(context) {
   const headers = {
@@ -159,8 +160,46 @@ export async function onRequest(context) {
           const message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}`;
 
           await sendWhatsApp(phone, message, context.env);
+
+          // Trigger email notification
+          const emailSubject = `🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: ${appId})`;
+          const emailHtml = `
+            <h2 style="font-size: 1.25rem; color: #0f3ba2; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+            
+            <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+              Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
+            </p>
+
+            <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #0f3ba2; border: 1px solid #e2e8f0; border-left-width: 4px;">
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Başvuru Detayları</h4>
+              <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${appId}</span></div>
+                <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+                <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${parkingLocation}</span></div>
+                <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${subscriptionType}</span></div>
+                <div style="margin-bottom: 0.25rem;"><strong>Ücret:</strong> <span>${price}</span></div>
+                <div style="margin-bottom: 0.25rem;"><strong>Araç Modeli:</strong> <span>${carModel || 'Belirtilmedi'}</span></div>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #eab308; border: 1px solid #e2e8f0; border-left-width: 4px;">
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Ödeme ve Dekont Bilgileri</h4>
+              <p style="font-size: 0.875rem; margin: 0 0 0.5rem 0; color: #334155;">Aboneliğinizin aktifleşmesi için aşağıdaki IBAN adresine havale/EFT yapıp dekontunuzu yüklediğinizden emin olunuz:</p>
+              <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                <div><strong>Banka:</strong> ${bankName}</div>
+                <div><strong>IBAN:</strong> <code style="background: #e2e8f0; padding: 0.1rem 0.3rem; border-radius: 4px; font-family: monospace;">${iban}</code></div>
+                <div style="margin-top: 0.5rem; font-weight: 600; color: #b45309;">AÇIKLAMA KISMINA PLAKA VE ABONE BİLGİSİ YAZMAYI UNUTMAYINIZ!</div>
+              </div>
+            </div>
+
+            <div style="background: rgba(15, 59, 162, 0.05); border: 1px dashed #0f3ba2; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #1e3a8a;">
+              Başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktif edilecek ve tarafınıza <strong>E-posta</strong> ve <strong>WhatsApp</strong> ile bilgilendirme yapılacaktır. Takip numaranız ile istediğiniz an durum sorgulaması yapabilirsiniz.
+            </div>
+          `;
+
+          await sendEmail({ to: email, subject: emailSubject, html: emailHtml, env: context.env });
         } catch (waErr) {
-          console.error("Failed to send WhatsApp message on apply:", waErr);
+          console.error("Failed to send WhatsApp/Email message on apply:", waErr);
         }
       })()
     );
