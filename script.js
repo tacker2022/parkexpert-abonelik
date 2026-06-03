@@ -4288,9 +4288,9 @@ function editAdmin(adminId) {
   document.getElementById('edit-admin-id').value = adminObj.id;
   document.getElementById('edit-admin-name').value = adminObj.name;
   document.getElementById('edit-admin-username').value = adminObj.username;
-  document.getElementById('edit-admin-username').readOnly = true;
-  document.getElementById('edit-admin-username').style.backgroundColor = '#f1f5f9';
-  document.getElementById('edit-admin-username').style.cursor = 'not-allowed';
+  document.getElementById('edit-admin-username').readOnly = false;
+  document.getElementById('edit-admin-username').style.backgroundColor = '#ffffff';
+  document.getElementById('edit-admin-username').style.cursor = 'text';
   document.getElementById('admin-edit-title').textContent = 'Yönetici Bilgilerini Düzenle';
 
   const passInput = document.getElementById('edit-admin-password');

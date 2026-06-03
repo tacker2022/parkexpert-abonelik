@@ -114,9 +114,27 @@ export async function onRequest(context) {
       }
 
       if (id) {
+        // If username is provided, check if it's taken by another user
+        if (username) {
+          const checkRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${username.toLowerCase()}&id=neq.${id}&select=id`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+
+          if (checkRes.ok) {
+            const matched = await checkRes.json();
+            if (matched.length > 0 || username.toLowerCase() === "superadmin") {
+              return new Response(JSON.stringify({ error: "Bu kullanıcı adı sistemde zaten kayıtlı!" }), { status: 400, headers });
+            }
+          }
+        }
+
         // UPDATE existing admin
         const updatePayload = {
           name,
+          username: username.toLowerCase(),
           otoparks
         };
         // Only update password if provided
