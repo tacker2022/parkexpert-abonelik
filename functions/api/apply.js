@@ -156,7 +156,7 @@ export async function onRequest(context) {
             : (park.price_employee || "1200 TL");
           const supportPhone = park.support_phone || "0212 875 34 56";
 
-          const message = `Merhaba Sayın ${fullName}, 🌟\n\nPARKEXPERT abonelik başvurunuz alınmıştır. Başvuru kodunuz: ${appId}.\n\nÜyelik işlemlerinizin tamamlanması için havale/EFT yapmanız gereken banka bilgileri aşağıdadır:\n\n📌 Şirket: ${park.company_title || 'PARKEXPERT İŞLETMECİLİĞİ'}\n🏦 Banka: ${bankName}\n💳 IBAN: ${iban}\n💸 Tutar: ${price}\n🚗 Araç Plakası: ${plateNumber}\n\n⚠️ ÖNEMLİ: Lütfen transfer açıklama kısmına sadece araç plakanızı (${plateNumber}) yazınız.\n\nSorularınız için destek hattımız: ${supportPhone}\n\nİyi günler dileriz!`;
+          const message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}`;
 
           await sendWhatsApp(phone, message, context.env);
         } catch (waErr) {

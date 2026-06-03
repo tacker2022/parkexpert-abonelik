@@ -197,9 +197,9 @@ export async function onRequest(context) {
 
               let message = "";
               if (status === "Onaylandı") {
-                message = `Sayın ${fullName}, 🌟\n\n${id} kodlu PARKEXPERT otopark abonelik başvurunuz onaylanmıştır! Araç plakanız (${plateNumber}) sisteme başarıyla tanımlanmış olup otopark giriş-çıkış geçişleriniz aktif edilmiştir.\n\nKeyifli sürüşler dileriz!`;
+                message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve ONAYLANMIŞTIR. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n💸 Abonelik Tipi: ${updatedApp.subscription_type}\n📞 Destek Telefonu: ${supportPhone}\n\n🚗 HGS Otomatik Geçiş Bilgilendirmesi:\nPlaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!`;
               } else if (status === "Reddedildi") {
-                message = `Sayın ${fullName}, ⚠️\n\n${id} kodlu PARKEXPERT otopark abonelik başvurunuz maalesef onaylanamamıştır.\n\nDetaylı bilgi almak için lütfen destek hattımız (${supportPhone}) ile iletişime geçiniz.`;
+                message = `Merhaba Sayın ${fullName}, ⚠️\n\nAbonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle REDDEDİLMİŞTİR.\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n⚠️ Durum: Belge Eksikliği / Dekont Hatası\n\n💬 Nasıl Düzeltebilirsiniz?\nLütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: ${supportPhone}`;
               }
 
               if (message) {
