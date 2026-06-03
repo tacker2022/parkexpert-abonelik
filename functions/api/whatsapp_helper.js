@@ -1,4 +1,4 @@
-// WhatsApp helper module for Green API
+// WhatsApp helper module for Green API - Active Config
 
 export function formatWhatsAppNumber(phone) {
   if (!phone) return null;
