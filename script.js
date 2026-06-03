@@ -449,6 +449,15 @@ async function populateOtoparkSelection() {
     otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
   }
 
+  // Sort: active (isActive !== false) first, then alphabetically by name
+  otoparks.sort((a, b) => {
+    const aActive = a.isActive !== false;
+    const bActive = b.isActive !== false;
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+    return a.name.localeCompare(b.name, 'tr-TR');
+  });
+
   // 1. Populate native hidden select (helps keep validation & submit working)
   const firstOption = otoparkSelect.options[0];
   otoparkSelect.innerHTML = '';
