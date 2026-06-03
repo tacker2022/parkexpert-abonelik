@@ -2459,8 +2459,8 @@ function applyFilters() {
     // 3. Company match
     const matchesCompany = !company || app.company_name === company;
 
-    // 4. Status match
-    const matchesStatus = !status || app.status === status;
+    // 4. Status match (Map 'Yeni' filter selection to 'Beklemede' DB value)
+    const matchesStatus = !status || app.status === status || (status === 'Yeni' && app.status === 'Beklemede');
 
     // 5. Date match
     const matchesDate = !dateVal || app.date_applied === dateVal;
@@ -2478,7 +2478,7 @@ function applyFilters() {
 
 function updateMetrics(apps) {
   const total = apps.length;
-  const countNew = apps.filter(a => a.status === 'Yeni').length;
+  const countNew = apps.filter(a => a.status === 'Yeni' || a.status === 'Beklemede').length;
   const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
   const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
 
