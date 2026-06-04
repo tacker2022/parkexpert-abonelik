@@ -3378,6 +3378,139 @@ function exportToExcel() {
   }
 }
 
+function exportToParkExpertExcel() {
+  if (filteredApplications.length === 0) {
+    alert("Dışa aktarılacak herhangi bir başvuru bulunmamaktadır.");
+    return;
+  }
+
+  const btn = document.getElementById('btn-parkexpert-export');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 14px; height: 14px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i> Yükleniyor...';
+  btn.disabled = true;
+
+  const styleNode = document.createElement('style');
+  styleNode.innerHTML = `
+    @keyframes spinner-border {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(styleNode);
+
+  const loadSheetJS = (callback) => {
+    if (window.XLSX) {
+      callback();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    script.onload = () => {
+      callback();
+    };
+    script.onerror = () => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      alert("Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.");
+    };
+    document.head.appendChild(script);
+  };
+
+  loadSheetJS(() => {
+    try {
+      const wsData = [
+        [
+          "Abone Adı",
+          "Abone Grubu",
+          "Tip (COMPANY/INDIVIDUAL)",
+          "Kimlik No",
+          "Vergi No",
+          "Telefon",
+          "E-posta",
+          "Abonelik Tip Adı",
+          "Başlangıç Zamanı",
+          "Plaka",
+          "Sürücü Adı",
+          "Marka",
+          "Model"
+        ]
+      ];
+
+      filteredApplications.forEach(app => {
+        let phone = app.phone || "";
+        let cleanPhone = phone.replace(/\D/g, "");
+        if (cleanPhone.startsWith("90")) cleanPhone = cleanPhone.substring(2);
+        if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.substring(1);
+
+        let marka = "";
+        let model = "";
+        if (app.car_model) {
+          const parts = app.car_model.trim().split(/\s+/);
+          if (parts.length > 0) {
+            marka = parts[0];
+            if (parts.length > 1) {
+              model = parts.slice(1).join(" ");
+            }
+          }
+        }
+
+        const dateStr = app.created_at || app.date_applied;
+        let parsedDate = null;
+        if (dateStr) {
+          parsedDate = new Date(dateStr);
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = new Date();
+          }
+        } else {
+          parsedDate = new Date();
+        }
+
+        const cleanPlate = (app.plate || "").replace(/\s+/g, "").toUpperCase();
+
+        wsData.push([
+          app.company_name || app.full_name,
+          app.company_name || "",
+          "COMPANY",
+          app.tc_no || "",
+          app.tax_number || (app.billing ? app.billing.tax_no : "") || "",
+          cleanPhone,
+          app.email || "",
+          "Dış Abonelikler (3.750)",
+          parsedDate,
+          cleanPlate,
+          app.driver_name || app.full_name,
+          marka,
+          model
+        ]);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(wsData, { cellDates: true });
+
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let r = 1; r <= range.e.r; ++r) {
+        const cellRef = XLSX.utils.encode_cell({ r: r, c: 8 });
+        const cell = ws[cellRef];
+        if (cell && cell.v instanceof Date) {
+          cell.z = 'dd.mm.yyyy hh:mm:ss';
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, "Abonelikler");
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `ParkExpert_Yazilim_Aboneler_${dateStr}.xlsx`;
+      XLSX.writeFile(wb, filename);
+
+    } catch (err) {
+      console.error(err);
+      alert("Excel dosyası oluşturulurken bir hata oluştu: " + err.message);
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
+}
+
 function renderOtoparksTable() {
   const gridContainer = document.getElementById('otoparks-grid-container');
   const countEl = document.getElementById('otoparks-results-count');

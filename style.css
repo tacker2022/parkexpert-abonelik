@@ -1751,6 +1751,22 @@ textarea.is-invalid {
   border-color: var(--color-text-muted);
 }
 
+.btn-parkexpert-export {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white !important;
+}
+
+.btn-parkexpert-export:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: white !important;
+}
+
+.btn-parkexpert-export svg {
+  stroke: white;
+}
+
 /* Sliding Detailed Drawer (Slide-Over Panel) */
 .drawer-overlay {
   display: none; /* Controlled via JS */

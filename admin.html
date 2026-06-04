@@ -249,10 +249,16 @@
           <!-- Applications Data Table header controls -->
           <section class="admin-actions-bar">
             <h3>Başvuru Listesi <span id="table-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 sonuç)</span></h3>
-            <button class="btn-export" onclick="exportToExcel()" id="btn-excel-export">
-              <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-              <span>Excel Dışa Aktar</span>
-            </button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn-export" onclick="exportToExcel()" id="btn-excel-export">
+                <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                <span>Standart Excel</span>
+              </button>
+              <button class="btn-export btn-parkexpert-export" onclick="exportToParkExpertExcel()" id="btn-parkexpert-export">
+                <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
+                <span>ParkExpert Yazılım Excel</span>
+              </button>
+            </div>
           </section>
 
           <!-- Datatable Card -->
