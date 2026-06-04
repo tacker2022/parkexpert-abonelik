@@ -4999,6 +4999,9 @@ function updateAnalyticsCharts(apps) {
     return;
   }
 
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
   // 1. Calculate summary metrics (only Approved ones contribute to Revenue)
   let totalRevenue = 0;
   let bireyselRevenue = 0;
@@ -5160,8 +5163,8 @@ function updateAnalyticsCharts(apps) {
           legend: {
             position: 'top',
             labels: {
-              color: '#e2e8f0',
-              font: { family: 'Outfit, Inter, sans-serif', size: 11 }
+              color: '#0f172a',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11, weight: '500' }
             }
           },
           tooltip: {
@@ -5180,17 +5183,17 @@ function updateAnalyticsCharts(apps) {
         scales: {
           x: {
             stacked: true,
-            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { family: 'Outfit, Inter, sans-serif' }
             }
           },
           y: {
             stacked: true,
-            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { family: 'Outfit, Inter, sans-serif' },
               callback: function(value) {
                 return formatCurrencyTR(value);
@@ -5226,7 +5229,7 @@ function updateAnalyticsCharts(apps) {
         datasets: [{
           data: [countBireysel, countKurumsal],
           backgroundColor: ['#ffd000', '#3b82f6'],
-          borderColor: ['#0a1424', '#0a1424'],
+          borderColor: ['#ffffff', '#ffffff'],
           borderWidth: 2
         }]
       },
@@ -5237,8 +5240,8 @@ function updateAnalyticsCharts(apps) {
           legend: {
             position: 'bottom',
             labels: {
-              color: '#e2e8f0',
-              font: { family: 'Outfit, Inter, sans-serif', size: 12 },
+              color: '#0f172a',
+              font: { family: 'Outfit, Inter, sans-serif', size: 12, weight: '500' },
               padding: 15
             }
           },
@@ -5299,7 +5302,7 @@ function updateAnalyticsCharts(apps) {
             label: 'Toplam Başvuru',
             data: dataTotalLine,
             borderColor: '#94a3b8',
-            backgroundColor: 'rgba(148, 163, 184, 0.1)',
+            backgroundColor: 'rgba(148, 163, 184, 0.05)',
             borderWidth: 2,
             tension: 0.3,
             fill: true
@@ -5308,7 +5311,7 @@ function updateAnalyticsCharts(apps) {
             label: 'Onaylanan Başvuru',
             data: dataApprovedLine,
             borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            backgroundColor: 'rgba(16, 185, 129, 0.05)',
             borderWidth: 2.5,
             tension: 0.3,
             fill: true
@@ -5322,23 +5325,23 @@ function updateAnalyticsCharts(apps) {
           legend: {
             position: 'top',
             labels: {
-              color: '#e2e8f0',
-              font: { family: 'Outfit, Inter, sans-serif', size: 11 }
+              color: '#0f172a',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11, weight: '500' }
             }
           }
         },
         scales: {
           x: {
-            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { family: 'Outfit, Inter, sans-serif' }
             }
           },
           y: {
-            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { family: 'Outfit, Inter, sans-serif' },
               precision: 0
             }
