@@ -2530,6 +2530,10 @@ function applyFilters() {
   renderTable(filteredApplications);
   renderCompaniesTable(filteredApplications);
   
+  if (currentAdminTab === 'analytics') {
+    updateAnalyticsCharts(filteredApplications);
+  }
+  
   // Recalculate and update metrics
   updateMetrics(allApplications);
 }
@@ -3842,10 +3846,13 @@ function switchAdminTab(tabName) {
   const tabComp = document.getElementById('tab-companies');
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
+  const tabAnalytic = document.getElementById('tab-analytics');
+  
   const panelApp = document.getElementById('panel-applications');
   const panelComp = document.getElementById('panel-companies');
   const panelOto = document.getElementById('panel-otoparks');
   const panelAdm = document.getElementById('panel-admins');
+  const panelAnalytic = document.getElementById('panel-analytics');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -3854,12 +3861,14 @@ function switchAdminTab(tabName) {
   tabComp.classList.remove('active');
   if (tabOto) tabOto.classList.remove('active');
   if (tabAdm) tabAdm.classList.remove('active');
+  if (tabAnalytic) tabAnalytic.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
   panelComp.style.display = 'none';
   if (panelOto) panelOto.style.display = 'none';
   if (panelAdm) panelAdm.style.display = 'none';
+  if (panelAnalytic) panelAnalytic.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
@@ -3876,6 +3885,10 @@ function switchAdminTab(tabName) {
     if (tabAdm) tabAdm.classList.add('active');
     if (panelAdm) panelAdm.style.display = 'block';
     renderAdminsTable();
+  } else if (tabName === 'analytics') {
+    if (tabAnalytic) tabAnalytic.classList.add('active');
+    if (panelAnalytic) panelAnalytic.style.display = 'block';
+    updateAnalyticsCharts(filteredApplications);
   }
 
   if (typeof lucide !== 'undefined') {
@@ -4948,6 +4961,391 @@ function triggerBrowserNotification(app) {
 function initBrowserNotifications() {
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission();
+  }
+}
+
+/* ==========================================================================
+   ADMIN PREMIUM ANALYTICS CHARTS & SUMMARY CONTROLLERS
+   ========================================================================== */
+
+let chartRevenueOtopark = null;
+let chartSubscriptionDistribution = null;
+let chartTrendApplications = null;
+
+function getAppDate(app) {
+  const val = app.created_at || app.date_applied;
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parsePrice(priceStr) {
+  if (!priceStr) return 0;
+  if (typeof priceStr === 'number') return priceStr;
+  let clean = priceStr.replace('TL', '').trim();
+  clean = clean.replace(/[,.]00$/, '');
+  clean = clean.replace(/[^0-9]/g, '');
+  const val = parseInt(clean, 10);
+  return isNaN(val) ? 0 : val;
+}
+
+function formatCurrencyTR(val) {
+  return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(val) + ' TL';
+}
+
+function updateAnalyticsCharts(apps) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js library is not loaded yet.");
+    return;
+  }
+
+  // 1. Calculate summary metrics (only Approved ones contribute to Revenue)
+  let totalRevenue = 0;
+  let bireyselRevenue = 0;
+  let kurumsalRevenue = 0;
+
+  let totalApprovedCount = 0;
+  let bireyselApprovedCount = 0;
+  let kurumsalApprovedCount = 0;
+
+  apps.forEach(app => {
+    if (app.status === 'Onaylandı') {
+      const park = otoparks.find(p => p.name === app.parking_location) || {};
+      const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+      const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
+      const price = parsePrice(priceStr);
+
+      totalRevenue += price;
+      totalApprovedCount++;
+      if (isKurumsal) {
+        kurumsalRevenue += price;
+        kurumsalApprovedCount++;
+      } else {
+        bireyselRevenue += price;
+        bireyselApprovedCount++;
+      }
+    }
+  });
+
+  // Update DOM values
+  const totalRevenueEl = document.getElementById('analytics-total-revenue');
+  const indivRevenueEl = document.getElementById('analytics-individual-revenue');
+  const indivCountEl = document.getElementById('analytics-individual-count');
+  const corpRevenueEl = document.getElementById('analytics-corporate-revenue');
+  const corpCountEl = document.getElementById('analytics-corporate-count');
+
+  if (totalRevenueEl) totalRevenueEl.textContent = formatCurrencyTR(totalRevenue);
+  if (indivRevenueEl) indivRevenueEl.textContent = formatCurrencyTR(bireyselRevenue);
+  if (corpRevenueEl) corpRevenueEl.textContent = formatCurrencyTR(kurumsalRevenue);
+
+  const bireyselPct = totalApprovedCount > 0 ? Math.round((bireyselApprovedCount / totalApprovedCount) * 100) : 0;
+  const kurumsalPct = totalApprovedCount > 0 ? Math.round((kurumsalApprovedCount / totalApprovedCount) * 100) : 0;
+
+  if (indivCountEl) indivCountEl.textContent = `${bireyselApprovedCount} onaylı abonelik (%${bireyselPct})`;
+  if (corpCountEl) corpCountEl.textContent = `${kurumsalApprovedCount} onaylı abonelik (%${kurumsalPct})`;
+
+  // 2. Identify chronological month keys present in the filtered/all apps
+  const monthKeys = new Set();
+  apps.forEach(app => {
+    const d = getAppDate(app);
+    if (d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      monthKeys.add(`${year}-${month}`);
+    }
+  });
+
+  const sortedMonthKeys = Array.from(monthKeys).sort();
+
+  // Handle empty state gracefully
+  if (sortedMonthKeys.length === 0) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    sortedMonthKeys.push(`${year}-${month}`);
+  }
+
+  const turkishMonths = {
+    "01": "Ocak", "02": "Şubat", "03": "Mart", "04": "Nisan", "05": "Mayıs", "06": "Haziran",
+    "07": "Temmuz", "08": "Ağustos", "09": "Eylül", "10": "Ekim", "11": "Kasım", "12": "Aralık"
+  };
+  const monthLabels = sortedMonthKeys.map(key => {
+    const [year, month] = key.split("-");
+    return `${turkishMonths[month]} ${year}`;
+  });
+
+  // 3. Compile Chart 1: Revenue per Otopark stacked by Month
+  const otoparkNames = new Set(otoparks.map(p => p.name));
+  apps.forEach(app => {
+    if (app.parking_location) otoparkNames.add(app.parking_location);
+  });
+  const sortedOtoparks = Array.from(otoparkNames).sort();
+
+  const otoparkRevenues = {};
+  sortedOtoparks.forEach(name => {
+    otoparkRevenues[name] = {};
+    sortedMonthKeys.forEach(mKey => {
+      otoparkRevenues[name][mKey] = 0;
+    });
+  });
+
+  apps.forEach(app => {
+    if (app.status === 'Onaylandı') {
+      const d = getAppDate(app);
+      if (d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const mKey = `${year}-${month}`;
+        const name = app.parking_location;
+
+        const park = otoparks.find(p => p.name === name) || {};
+        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+        const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
+        const price = parsePrice(priceStr);
+
+        if (otoparkRevenues[name] && otoparkRevenues[name][mKey] !== undefined) {
+          otoparkRevenues[name][mKey] += price;
+        }
+      }
+    }
+  });
+
+  const colorsPalette = [
+    '#3b82f6', // Bright Blue
+    '#f59e0b', // Amber/Gold
+    '#10b981', // Emerald Green
+    '#ec4899', // Pink
+    '#8b5cf6', // Violet
+    '#ef4444', // Red
+    '#06b6d4', // Cyan
+    '#f97316', // Orange
+    '#14b8a6', // Teal
+    '#a855f7', // Purple
+    '#6366f1', // Indigo
+    '#84cc16'  // Lime
+  ];
+
+  const datasetsRevenue = sortedOtoparks.map((name, index) => {
+    const color = colorsPalette[index % colorsPalette.length];
+    const data = sortedMonthKeys.map(mKey => otoparkRevenues[name][mKey]);
+    return {
+      label: name,
+      data: data,
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 1,
+      borderRadius: 4,
+      stack: 'Stack 0'
+    };
+  });
+
+  // Filter out otoparks with no revenue to avoid legend clutter, but show all if total revenue is 0
+  const datasetsRevenueFiltered = datasetsRevenue.filter(ds => ds.data.reduce((a, b) => a + b, 0) > 0);
+  const finalDatasetsRevenue = datasetsRevenueFiltered.length > 0 ? datasetsRevenueFiltered : datasetsRevenue;
+
+  const canvasOtopark = document.getElementById('chart-revenue-otopark');
+  if (canvasOtopark) {
+    const ctxRevenue = canvasOtopark.getContext('2d');
+    if (chartRevenueOtopark) chartRevenueOtopark.destroy();
+    chartRevenueOtopark = new Chart(ctxRevenue, {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: finalDatasetsRevenue
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: '#e2e8f0',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) label += ': ';
+                if (context.parsed.y !== null) {
+                  label += formatCurrencyTR(context.parsed.y);
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Outfit, Inter, sans-serif' }
+            }
+          },
+          y: {
+            stacked: true,
+            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Outfit, Inter, sans-serif' },
+              callback: function(value) {
+                return formatCurrencyTR(value);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 4. Compile Chart 2: Subscription Distribution (Doughnut)
+  let countBireysel = 0;
+  let countKurumsal = 0;
+
+  apps.forEach(app => {
+    const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+    if (isKurumsal) {
+      countKurumsal++;
+    } else {
+      countBireysel++;
+    }
+  });
+
+  const canvasSub = document.getElementById('chart-subscription-distribution');
+  if (canvasSub) {
+    const ctxSub = canvasSub.getContext('2d');
+    if (chartSubscriptionDistribution) chartSubscriptionDistribution.destroy();
+    chartSubscriptionDistribution = new Chart(ctxSub, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bireysel Abonelik', 'Kurumsal Abonelik'],
+        datasets: [{
+          data: [countBireysel, countKurumsal],
+          backgroundColor: ['#ffd000', '#3b82f6'],
+          borderColor: ['#0a1424', '#0a1424'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#e2e8f0',
+              font: { family: 'Outfit, Inter, sans-serif', size: 12 },
+              padding: 15
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const total = countBireysel + countKurumsal;
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return ` ${context.label}: ${value} adet (%${percentage})`;
+              }
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+  }
+
+  // 5. Compile Chart 3: Monthly Application Trend (Line Chart)
+  const monthlyTotalCounts = {};
+  const monthlyApprovedCounts = {};
+
+  sortedMonthKeys.forEach(mKey => {
+    monthlyTotalCounts[mKey] = 0;
+    monthlyApprovedCounts[mKey] = 0;
+  });
+
+  apps.forEach(app => {
+    const d = getAppDate(app);
+    if (d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const mKey = `${year}-${month}`;
+
+      if (monthlyTotalCounts[mKey] !== undefined) {
+        monthlyTotalCounts[mKey]++;
+        if (app.status === 'Onaylandı') {
+          monthlyApprovedCounts[mKey]++;
+        }
+      }
+    }
+  });
+
+  const dataTotalLine = sortedMonthKeys.map(mKey => monthlyTotalCounts[mKey]);
+  const dataApprovedLine = sortedMonthKeys.map(mKey => monthlyApprovedCounts[mKey]);
+
+  const canvasTrend = document.getElementById('chart-trend-applications');
+  if (canvasTrend) {
+    const ctxTrend = canvasTrend.getContext('2d');
+    if (chartTrendApplications) chartTrendApplications.destroy();
+    chartTrendApplications = new Chart(ctxTrend, {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          {
+            label: 'Toplam Başvuru',
+            data: dataTotalLine,
+            borderColor: '#94a3b8',
+            backgroundColor: 'rgba(148, 163, 184, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Onaylanan Başvuru',
+            data: dataApprovedLine,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2.5,
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: '#e2e8f0',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11 }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Outfit, Inter, sans-serif' }
+            }
+          },
+          y: {
+            grid: { color: 'rgba(29, 50, 95, 0.2)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Outfit, Inter, sans-serif' },
+              precision: 0
+            }
+          }
+        }
+      }
+    });
   }
 }
 

@@ -244,6 +244,10 @@
             <i data-lucide="building-2" style="width: 16px; height: 16px;"></i>
             <span>Firma ve Kümelenme Analizi</span>
           </button>
+          <button class="admin-tab-btn" id="tab-analytics" onclick="switchAdminTab('analytics')">
+            <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i>
+            <span>Analiz & İstatistik 📊</span>
+          </button>
           <button class="admin-tab-btn" id="tab-otoparks" onclick="switchAdminTab('otoparks')">
             <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i>
             <span>Otopark İşletmeleri</span>
@@ -302,6 +306,80 @@
           <!-- Companies Grid Container -->
           <div class="companies-grid" id="companies-grid-container">
             <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Panel 5: Analytics & Charts -->
+        <div id="panel-analytics" style="display: none;">
+          <!-- Header controls -->
+          <section class="admin-actions-bar">
+            <h3>Analiz & İstatistik Raporları 📊</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <span class="stats-badge" style="background: var(--color-primary-light); color: var(--color-accent-gold); padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; border: 1px solid var(--color-primary-border);">
+                Filtrelenmiş Verilere Göredir
+              </span>
+            </div>
+          </section>
+
+          <!-- Analytics Summary Cards -->
+          <div class="analytics-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- Toplam Ciro -->
+            <div class="metric-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+              <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em;">Toplam Gelir (Ciro)</span>
+              <span id="analytics-total-revenue" style="font-size: 2rem; font-weight: 800; color: #10b981;">0 TL</span>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted);">Onaylanmış aboneliklerin toplamı</span>
+              <i data-lucide="wallet" style="position: absolute; right: 1rem; bottom: 1rem; width: 40px; height: 40px; opacity: 0.1; color: var(--color-text-light);"></i>
+            </div>
+            <!-- Bireysel Ciro -->
+            <div class="metric-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+              <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em;">Bireysel Abonelikler</span>
+              <span id="analytics-individual-revenue" style="font-size: 2rem; font-weight: 800; color: var(--color-accent-gold);">0 TL</span>
+              <span id="analytics-individual-count" style="font-size: 0.75rem; color: var(--color-text-muted);">0 abonelik (%0)</span>
+              <i data-lucide="user" style="position: absolute; right: 1rem; bottom: 1rem; width: 40px; height: 40px; opacity: 0.1; color: var(--color-text-light);"></i>
+            </div>
+            <!-- Kurumsal Ciro -->
+            <div class="metric-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+              <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em;">Kurumsal Abonelikler</span>
+              <span id="analytics-corporate-revenue" style="font-size: 2rem; font-weight: 800; color: #3b82f6;">0 TL</span>
+              <span id="analytics-corporate-count" style="font-size: 0.75rem; color: var(--color-text-muted);">0 abonelik (%0)</span>
+              <i data-lucide="building-2" style="position: absolute; right: 1rem; bottom: 1rem; width: 40px; height: 40px; opacity: 0.1; color: var(--color-text-light);"></i>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="analytics-charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Chart 1: Revenue by Otopark -->
+            <div class="chart-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md); grid-column: span 2;">
+              <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-light); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px; color: var(--color-accent-gold);"></i>
+                <span>Otopark Bazlı Aylık Gelir Performansı (Ciro)</span>
+              </h4>
+              <div style="position: relative; height: 350px; width: 100%;">
+                <canvas id="chart-revenue-otopark"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Subscription Distribution -->
+            <div class="chart-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md);">
+              <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-light); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="pie-chart" style="width: 18px; height: 18px; color: var(--color-accent-gold);"></i>
+                <span>Abonelik Türü Dağılımı (Başvuru Sayısı)</span>
+              </h4>
+              <div style="position: relative; height: 280px; width: 100%; display: flex; justify-content: center; align-items: center;">
+                <canvas id="chart-subscription-distribution"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 3: Application Trend Over Time -->
+            <div class="chart-card" style="background: var(--color-gradient-card); border: 1px solid var(--color-primary-border); padding: 1.5rem; border-radius: var(--radius-md);">
+              <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-light); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="trending-up" style="width: 18px; height: 18px; color: var(--color-accent-gold);"></i>
+                <span>Başvuru Trendi (Aylara Göre Dağılım)</span>
+              </h4>
+              <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="chart-trend-applications"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -796,7 +874,9 @@
 
   <!-- Lucide Vector Icons Library -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260605_1"></script>
+  <script src="script.js?v=20260605_2"></script>
 </body>
 </html>
