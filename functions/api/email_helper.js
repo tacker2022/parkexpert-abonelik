@@ -1,8 +1,8 @@
-// Email helper module for Resend API - Active Config
+// Email helper module for Brevo API - Active Config
 
 export async function sendEmail({ to, subject, html, env }) {
-  const apiKey = env.RESEND_API_KEY;
-  const fromEmail = env.RESEND_FROM_EMAIL || "PARKEXPERT <no-reply@parkexpertabonelik.net>";
+  const apiKey = env.BREVO_API_KEY;
+  const fromEmail = env.BREVO_FROM_EMAIL || "PARKEXPERT <no-reply@parkexpertabonelik.net>";
 
   // Premium HTML wrapper template
   const wrappedHtml = `
@@ -28,42 +28,62 @@ export async function sendEmail({ to, subject, html, env }) {
   `;
 
   if (!apiKey) {
-    console.log(`[E-posta Simüle Gönderim] (Env Değişkeni RESEND_API_KEY Eksik)
+    console.log(`[E-posta Simüle Gönderim] (Env Değişkeni BREVO_API_KEY Eksik)
 Gönderen: ${fromEmail}
 Alıcı: ${to}
 Konu: ${subject}
 İçerik: (HTML şablonu loglandı)`);
-    return { success: true, simulated: true, reason: "Missing RESEND_API_KEY" };
+    return { success: true, simulated: true, reason: "Missing BREVO_API_KEY" };
   }
 
-  const url = "https://api.resend.com/emails";
+  // Parse fromEmail into name and email address
+  let senderName = "PARKEXPERT";
+  let senderEmail = "no-reply@parkexpertabonelik.net";
+
+  const match = fromEmail.match(/^(.*?)\s*<(.*?)>$/);
+  if (match) {
+    senderName = match[1].trim();
+    senderEmail = match[2].trim();
+  } else {
+    senderEmail = fromEmail.trim();
+  }
+
+  const url = "https://api.brevo.com/v3/smtp/email";
 
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
       },
       body: JSON.stringify({
-        from: fromEmail,
-        to: [to],
+        sender: {
+          name: senderName,
+          email: senderEmail
+        },
+        to: [
+          {
+            email: to
+          }
+        ],
         subject: subject,
-        html: wrappedHtml
+        htmlContent: wrappedHtml
       })
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error(`[Resend API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
+      console.error(`[Brevo API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
       return { success: false, status: res.status, error: errText };
     }
 
     const data = await res.json();
-    console.log(`[Resend API Başarılı] Alıcı: ${to}, MesajID: ${data.id || "N/A"}`);
+    console.log(`[Brevo API Başarılı] Alıcı: ${to}, MesajID: ${data.messageId || "N/A"}`);
     return { success: true, data };
   } catch (err) {
-    console.error(`[Resend API Çökme Hatası]:`, err);
+    console.error(`[Brevo API Çökme Hatası]:`, err);
     return { success: false, error: err.message };
   }
 }
