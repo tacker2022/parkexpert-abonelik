@@ -3467,7 +3467,7 @@ function exportToParkExpertExcel() {
         const cleanPlate = (app.plate || "").replace(/\s+/g, "").toUpperCase();
 
         wsData.push([
-          app.company_name || app.full_name,
+          app.full_name,
           app.company_name || "",
           "COMPANY",
           app.tc_no || "",
