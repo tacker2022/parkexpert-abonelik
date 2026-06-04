@@ -123,9 +123,10 @@ export async function onRequest(context) {
     // PATCH: Update application status (Approved / Rejected)
     // ----------------------------------------------------
     if (method === "PATCH") {
-      const { id, status } = await context.request.json();
-      if (!id || !status) {
-        return new Response(JSON.stringify({ error: "Missing id or status" }), { status: 400, headers });
+      const requestData = await context.request.json();
+      const { id, status, plate_number, company_name } = requestData;
+      if (!id) {
+        return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers });
       }
 
       // Check access: Fetch application first
@@ -152,7 +153,13 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: "Bu otoparkın verisini güncelleme yetkiniz yok!" }), { status: 403, headers });
       }
 
-      // Update status
+      // Build dynamic update body
+      const updateBody = {};
+      if (status !== undefined) updateBody.status = status;
+      if (plate_number !== undefined) updateBody.plate_number = plate_number;
+      if (company_name !== undefined) updateBody.company_name = company_name;
+
+      // Update in Supabase
       const updateRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}`, {
         method: "PATCH",
         headers: {
@@ -161,7 +168,7 @@ export async function onRequest(context) {
           "Content-Type": "application/json",
           "Prefer": "return=representation"
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify(updateBody)
       });
 
       if (!updateRes.ok) {

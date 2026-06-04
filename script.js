@@ -7,6 +7,10 @@ const STORAGE_KEY = 'parkexpert_applications';
 const ADMIN_USERS_KEY = 'parkexpert_admin_users';
 let currentAdminUser = 'superadmin';
 
+// OCR Integration States
+let ocrCache = {};
+let currentRotation = {};
+
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
   if (typeof lucide !== 'undefined') {
@@ -2717,6 +2721,13 @@ function openDrawer(appId) {
 
         <span class="detail-label">Marka / Model:</span>
         <span class="detail-value">${app.car_model}</span>
+
+        <span class="detail-label">Ruhsat Eşleştirme (AI):</span>
+        <span class="detail-value" id="ocr-status-container">
+          <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+            <span class="ocr-spinner"></span> Başlatılıyor...
+          </span>
+        </span>
       </div>
     </div>
 
@@ -2796,6 +2807,16 @@ function openDrawer(appId) {
   document.body.style.overflow = 'hidden';
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // OCR Integration
+  if (app.files && app.files.ruhsat) {
+    initRuhsatOCR(app, currentRotation[app.id] || 0);
+  } else {
+    const ocrStatusContainer = document.getElementById('ocr-status-container');
+    if (ocrStatusContainer) {
+      ocrStatusContainer.innerHTML = `<span style="font-size: 0.8rem; color: var(--color-text-muted);">Tarama Yapılamadı (Ruhsat Belgesi Yok)</span>`;
+    }
+  }
 }
 
 function adminOpenWhatsAppSimulation(appId) {
@@ -4153,7 +4174,7 @@ function toggleNewCompanyField() {
   }
 }
 
-function saveQuickEdit(event) {
+async function saveQuickEdit(event) {
   event.preventDefault();
   const appId = document.getElementById('quick-edit-app-id').value;
   const type = document.getElementById('quick-edit-type').value;
@@ -4161,40 +4182,68 @@ function saveQuickEdit(event) {
   const appIndex = allApplications.findIndex(a => a.id === appId);
   if (appIndex === -1) return;
 
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  let updatePayload = { id: appId };
+  let inputVal = '';
+  let targetCompany = '';
+
   if (type === 'plate') {
-    const inputVal = document.getElementById('edit-plate-input').value.trim().toUpperCase();
+    inputVal = document.getElementById('edit-plate-input').value.trim().toUpperCase();
     if (!inputVal) return;
-    
-    allApplications[appIndex].plate = inputVal;
-    
+    updatePayload.plate_number = inputVal;
   } else if (type === 'company') {
     const selectVal = document.getElementById('edit-company-select').value;
-    let targetCompany = '';
-    
     if (selectVal === '__NEW__') {
       targetCompany = document.getElementById('edit-company-new-input').value.trim().toLocaleUpperCase('tr-TR');
     } else {
       targetCompany = selectVal === 'SERBEST ÇALIŞAN' ? '' : selectVal;
     }
-    
-    allApplications[appIndex].company_name = targetCompany;
+    updatePayload.company_name = targetCompany;
   }
 
-  // 1. Save to LocalStorage
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(allApplications));
+  try {
+    const res = await fetch("/api/applications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(updatePayload)
+    });
 
-  // 2. Close modal
-  closeModal('modal-quick-edit');
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Güncelleme sırasında hata oluştu.");
+    }
 
-  // 3. Refresh interface dropdown, table rendering and stats
-  populateCompanyFilter();
-  applyFilters();
+    // Update locally
+    if (type === 'plate') {
+      allApplications[appIndex].plate = inputVal;
+      allApplications[appIndex].plate_number = inputVal;
+    } else if (type === 'company') {
+      allApplications[appIndex].company_name = targetCompany;
+    }
 
-  // 4. If detail drawer is open for this application, refresh its content!
-  openDrawer(appId);
+    // Close modal
+    closeModal('modal-quick-edit');
 
-  // 5. Success Alert
-  alert("Değişiklikler başarıyla kaydedildi.");
+    // Refresh interface filters, tables, and stats
+    populateCompanyFilter();
+    applyFilters();
+
+    // Reopen drawer to refresh values
+    openDrawer(appId);
+
+    alert("Değişiklikler başarıyla kaydedildi.");
+  } catch (err) {
+    console.error("Failed to save quick edit:", err);
+    alert("Kaydedilemedi: " + err.message);
+  }
 }
 
 async function deleteCurrentApplication() {
@@ -5349,6 +5398,349 @@ function updateAnalyticsCharts(apps) {
         }
       }
     });
+  }
+}
+
+/* ==========================================================================
+   ADMIN PANEL RUHSAT OCR & PLAKA DOĞRULAMA ENTEGRASYONU (AI)
+   ========================================================================== */
+
+function loadTesseractScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = () => {
+      if (window.Tesseract) {
+        resolve();
+      } else {
+        reject(new Error("Tesseract loaded but window.Tesseract not found"));
+      }
+    };
+    script.onerror = () => {
+      reject(new Error("Tesseract.js yüklenemedi. İnternet bağlantınızı kontrol edin."));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+function rotateImage(imageUrl, degrees) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const rads = (degrees * Math.PI) / 180;
+      
+      if (degrees === 90 || degrees === 270) {
+        canvas.width = img.height;
+        canvas.height = img.width;
+      } else {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      }
+      
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rads);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(URL.createObjectURL(blob));
+        } else {
+          reject(new Error("Canvas toBlob error"));
+        }
+      }, 'image/jpeg', 0.9);
+    };
+    img.onerror = () => reject(new Error("Görsel yüklenemedi"));
+    img.src = imageUrl;
+  });
+}
+
+function normalizePlate(plate) {
+  if (!plate) return '';
+  return plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function findPlatesInText(text) {
+  if (!text) return [];
+  
+  // Normalize character variations and uppercase
+  let cleanedText = text.toUpperCase()
+    .replace(/O/g, '0') // Common OCR confusion: letter O instead of digit 0
+    .replace(/I/g, '1') // Common OCR confusion: letter I instead of digit 1
+    .replace(/[^A-Z0-9\s]/g, ' '); // Clean punctuation and special chars
+  
+  // Regex: 2 digits (city code), 1 to 3 letters, 2 to 4 digits
+  const regex = /\b(\d{2})\s*([A-Z]{1,3})\s*(\d{2,4})\b/g;
+  let matches = [];
+  let match;
+  while ((match = regex.exec(cleanedText)) !== null) {
+    const plate = match[1] + match[2] + match[3];
+    const cityCode = parseInt(match[1], 10);
+    if (cityCode >= 1 && cityCode <= 81) {
+      matches.push(plate);
+    }
+  }
+  return matches;
+}
+
+async function initRuhsatOCR(app, rotateDegrees = 0) {
+  const ocrStatusContainer = document.getElementById('ocr-status-container');
+  if (!ocrStatusContainer) return;
+
+  const userPlateNormalized = normalizePlate(app.plate);
+
+  // 1. Check cache if not rotating
+  if (rotateDegrees === 0 && ocrCache[app.id]) {
+    const cached = ocrCache[app.id];
+    renderOcrResult(app, cached.candidates, userPlateNormalized);
+    return;
+  }
+
+  try {
+    // Show spinner and download status
+    ocrStatusContainer.innerHTML = `
+      <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+        <span class="ocr-spinner"></span> Görsel indiriliyor...
+      </span>
+    `;
+
+    // 2. Fetch the document image with Bearer token
+    const token = localStorage.getItem('parkexpert_token');
+    if (!token) {
+      ocrStatusContainer.innerHTML = `<span style="font-size: 0.8rem; color: var(--color-accent-red);">Erişim Yetkisi Yok</span>`;
+      return;
+    }
+
+    const res = await fetch(`/api/document?path=${encodeURIComponent(app.files.ruhsat)}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      throw new Error("Ruhsat dosyası güvenli depodan çekilemedi.");
+    }
+
+    const blob = await res.blob();
+    if (!blob.type.startsWith('image/')) {
+      ocrStatusContainer.innerHTML = `<span style="font-size: 0.8rem; color: var(--color-text-muted);">Uyumsuz Format (PDF/Diğer)</span>`;
+      return;
+    }
+
+    let imageSrc = URL.createObjectURL(blob);
+
+    // 3. Apply rotation if requested
+    if (rotateDegrees !== 0) {
+      ocrStatusContainer.innerHTML = `
+        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+          <span class="ocr-spinner"></span> Görsel döndürülüyor...
+        </span>
+      `;
+      try {
+        const rotatedSrc = await rotateImage(imageSrc, rotateDegrees);
+        URL.revokeObjectURL(imageSrc);
+        imageSrc = rotatedSrc;
+      } catch (err) {
+        console.error("Rotation failed:", err);
+      }
+    }
+
+    // 4. Load Tesseract.js script if not loaded
+    if (!window.Tesseract) {
+      ocrStatusContainer.innerHTML = `
+        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+          <span class="ocr-spinner"></span> OCR motoru yükleniyor...
+        </span>
+      `;
+      await loadTesseractScript();
+    }
+
+    // 5. Run Tesseract.js OCR
+    ocrStatusContainer.innerHTML = `
+      <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+        <span class="ocr-spinner"></span> Ruhsat taranıyor... <span id="ocr-progress-percent">0%</span>
+      </span>
+    `;
+
+    const result = await Tesseract.recognize(
+      imageSrc,
+      'eng',
+      {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            const pct = Math.round(m.progress * 100);
+            const progressEl = document.getElementById('ocr-progress-percent');
+            if (progressEl) {
+              progressEl.textContent = `${pct}%`;
+            }
+          }
+        }
+      }
+    );
+
+    // Revoke URL since scan is complete
+    URL.revokeObjectURL(imageSrc);
+
+    const detectedText = result.data.text || '';
+    const candidates = findPlatesInText(detectedText);
+
+    // Cache the result
+    ocrCache[app.id] = {
+      text: detectedText,
+      candidates: candidates
+    };
+
+    renderOcrResult(app, candidates, userPlateNormalized);
+
+  } catch (err) {
+    console.error("OCR initialization failed:", err);
+    ocrStatusContainer.innerHTML = `
+      <span style="font-size: 0.8rem; color: #ef4444; display: inline-flex; align-items: center; gap: 0.4rem;">
+        <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> OCR Başlatılamadı
+      </span>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
+function renderOcrResult(app, candidates, userPlateNormalized) {
+  const ocrStatusContainer = document.getElementById('ocr-status-container');
+  if (!ocrStatusContainer) return;
+
+  let bestCandidate = null;
+  let isMatch = false;
+
+  if (candidates && candidates.length > 0) {
+    const matched = candidates.find(c => c === userPlateNormalized);
+    if (matched) {
+      bestCandidate = matched;
+      isMatch = true;
+    } else {
+      bestCandidate = candidates[0];
+    }
+  }
+
+  if (isMatch) {
+    ocrStatusContainer.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <span class="ocr-badge ocr-badge-success" title="Ruhsattaki plaka ile beyan edilen plaka uyuşuyor.">
+          <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Uyumlu: Plaka Doğrulandı ✅
+        </span>
+      </div>
+    `;
+  } else if (bestCandidate) {
+    ocrStatusContainer.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span class="ocr-badge ocr-badge-warning" title="Ruhsattaki plaka ile beyan edilen plaka farklı.">
+            <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Uyuşmazlık! ⚠️
+          </span>
+        </div>
+        <span style="font-size: 0.8rem; color: var(--color-text-dark);">
+          Ruhsatta Okunan: <strong style="color: var(--color-accent-orange); font-family: monospace; font-size: 0.9rem;">${formatPlateSpacing(bestCandidate)}</strong>
+        </span>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; width: 100%;">
+          <button onclick="applyOcrPlate('${app.id}', '${bestCandidate}')" class="btn btn-ocr-apply">
+            Okunan Plakayı Uygula ⚡
+          </button>
+          <button onclick="rotateAndReScan('${app.id}', 90)" class="btn-ocr-rotate" title="90 Derece Sağa Döndür">
+            <i data-lucide="rotate-cw" style="width: 13px; height: 13px;"></i> Döndür & Yeniden Tara
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    ocrStatusContainer.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span class="ocr-badge ocr-badge-danger" title="Ruhsat görselinden plaka okunamadı.">
+            <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Plaka Okunamadı 🔍
+          </span>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.3;">
+          Görsel yan veya ters ise döndürerek tekrar tarayabilirsiniz:
+        </span>
+        <div style="display: flex; gap: 0.35rem; margin-top: 0.2rem; width: 100%;">
+          <button onclick="rotateAndReScan('${app.id}', 90)" class="btn-ocr-rotate" style="flex: 1; justify-content: center;">
+            <i data-lucide="rotate-cw" style="width: 13px; height: 13px;"></i> Sağa Döndür ↻
+          </button>
+          <button onclick="rotateAndReScan('${app.id}', 270)" class="btn-ocr-rotate" style="flex: 1; justify-content: center;">
+            <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i> Sola Döndür ↺
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function applyOcrPlate(appId, ocrPlate) {
+  const appIndex = allApplications.findIndex(a => a.id === appId);
+  if (appIndex === -1) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  const ocrStatusContainer = document.getElementById('ocr-status-container');
+  if (ocrStatusContainer) {
+    ocrStatusContainer.innerHTML = `
+      <span style="font-size: 0.8rem; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+        <span class="ocr-spinner"></span> Güncelleniyor...
+      </span>
+    `;
+  }
+
+  try {
+    const res = await fetch("/api/applications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id: appId,
+        plate_number: ocrPlate
+      })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Güncelleme sırasında hata oluştu.");
+    }
+
+    // Update locally
+    allApplications[appIndex].plate = ocrPlate;
+    allApplications[appIndex].plate_number = ocrPlate;
+
+    // Refresh UI
+    applyFilters();
+
+    // Reopen/refresh drawer to show updated state
+    openDrawer(appId);
+  } catch (err) {
+    console.error("OCR plaka uygulanamadı:", err);
+    alert("Hata: " + err.message);
+    openDrawer(appId);
+  }
+}
+
+async function rotateAndReScan(appId, degrees) {
+  const newRotation = ((currentRotation[appId] || 0) + degrees) % 360;
+  currentRotation[appId] = newRotation;
+  
+  // Clear cache for this app since we are re-scanning with rotation
+  delete ocrCache[appId];
+  
+  const app = allApplications.find(a => a.id === appId);
+  if (app) {
+    initRuhsatOCR(app, newRotation);
   }
 }
 

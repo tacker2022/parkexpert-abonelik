@@ -4014,3 +4014,98 @@ textarea.is-invalid {
     grid-column: span 1 !important;
   }
 }
+
+/* ==========================================================================
+   ADMIN PANEL RUHSAT OCR STYLES
+   ========================================================================== */
+
+.ocr-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(15, 59, 162, 0.15);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin-ocr 0.8s infinite linear;
+}
+
+@keyframes spin-ocr {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ocr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.775rem;
+  font-weight: 700;
+  border-radius: 30px;
+  line-height: 1;
+}
+
+.ocr-badge-success {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.ocr-badge-warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.ocr-badge-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-ocr-apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, var(--color-accent-orange), #f97316);
+  color: #ffffff;
+  border: none;
+  font-size: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
+}
+
+.btn-ocr-apply:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(249, 115, 22, 0.3);
+}
+
+.btn-ocr-apply:active {
+  transform: translateY(0);
+}
+
+.btn-ocr-rotate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border-light);
+  font-size: 0.725rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ocr-rotate:hover {
+  background-color: var(--color-border-light);
+  color: var(--color-primary-dark);
+}
