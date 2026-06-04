@@ -2840,7 +2840,8 @@ function adminOpenWhatsAppSimulation(appId) {
       <!-- IBAN info in chat bubble -->
       <div style="background: #fdf6e2; border: 1px dashed #d5a229; border-radius: 4px; padding: 0.5rem; font-size: 0.75rem; color: #7d6015; text-align: left; font-family: monospace; word-break: break-word;">
         <strong>Banka:</strong> <span>${park.bankName || 'Vakıfbank'}</span><br>
-        <strong>IBAN:</strong> <span>${park.iban || 'TR23 0001 5001 5800 7302 9104 88'}</span>
+        <strong>IBAN:</strong> <span>${park.iban || 'TR23 0001 5001 5800 7302 9104 88'}</span><br>
+        <strong>Alıcı:</strong> <span>${park.companyTitle || 'PARKEXPERT'}</span>
       </div>
       ` : ''}
 

@@ -152,12 +152,13 @@ export async function onRequest(context) {
 
           const bankName = park.bank_name || "Vakıfbank";
           const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
+          const companyTitle = park.company_title || "PARKEXPERT";
           const price = subscriptionType.includes("Kurumsal") 
             ? (park.price_external || "2400 TL") 
             : (park.price_employee || "1200 TL");
           const supportPhone = park.support_phone || "0212 875 34 56";
 
-          const message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}`;
+          const message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}\nAlıcı: ${companyTitle}`;
 
           await sendWhatsApp(phone, message, context.env);
 
@@ -188,6 +189,7 @@ export async function onRequest(context) {
               <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
                 <div><strong>Banka:</strong> ${bankName}</div>
                 <div><strong>IBAN:</strong> <code style="background: #e2e8f0; padding: 0.1rem 0.3rem; border-radius: 4px; font-family: monospace;">${iban}</code></div>
+                <div><strong>Alıcı:</strong> ${companyTitle}</div>
                 <div style="margin-top: 0.5rem; font-weight: 600; color: #b45309;">AÇIKLAMA KISMINA PLAKA VE ABONE BİLGİSİ YAZMAYI UNUTMAYINIZ!</div>
               </div>
             </div>
