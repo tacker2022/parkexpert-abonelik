@@ -2268,6 +2268,10 @@ async function initAdminController() {
   }
 }
 
+let liveTrackingInterval = null;
+const trackedAppIds = new Set();
+let isInitialLoad = true;
+
 async function loadApplications() {
   const token = localStorage.getItem('parkexpert_token');
   if (!token) return;
@@ -2284,6 +2288,20 @@ async function loadApplications() {
       throw new Error(errData.error || "Could not load applications");
     }
     allApplications = await response.json();
+    
+    // Track current IDs for live alerts
+    allApplications.forEach(app => {
+      if (!trackedAppIds.has(app.id)) {
+        trackedAppIds.add(app.id);
+      }
+    });
+    
+    if (isInitialLoad) {
+      isInitialLoad = false;
+      // Start live tracking after the initial load completes
+      startLiveTracking();
+      initBrowserNotifications();
+    }
     
     // Map database properties to frontend compatibility structure
     allApplications.forEach(app => {
@@ -4703,6 +4721,233 @@ async function submitTestNotification(event) {
   } finally {
     btn.innerHTML = originalHTML;
     btn.disabled = false;
+  }
+}
+
+// ==========================================================================
+// REAL-TIME AUDIO & BROWSER LIVE ALERTS SYSTEM
+// ==========================================================================
+
+function startLiveTracking() {
+  if (liveTrackingInterval) return;
+  
+  const dot = document.getElementById('live-tracking-dot');
+  const text = document.getElementById('live-tracking-text');
+  if (dot) {
+    dot.style.background = '#10b981';
+    dot.style.boxShadow = '0 0 8px #10b981';
+  }
+  if (text) text.textContent = 'Canlı Takip Aktif';
+
+  liveTrackingInterval = setInterval(async () => {
+    await pollApplications();
+  }, 15000); // Poll every 15 seconds
+}
+
+async function pollApplications() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const response = await fetch(`/api/applications?_t=${Date.now()}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) return;
+    const apps = await response.json();
+    
+    let hasNewApp = false;
+    apps.forEach(app => {
+      if (!trackedAppIds.has(app.id)) {
+        trackedAppIds.add(app.id);
+        if (!isInitialLoad) {
+          hasNewApp = true;
+          showLiveAlertToast(app);
+        }
+      }
+    });
+    
+    if (isInitialLoad) {
+      isInitialLoad = false;
+    }
+    
+    if (hasNewApp) {
+      allApplications = apps;
+      allApplications.forEach(app => {
+        app.plate = app.plate_number;
+        app.files = {
+          ruhsat: app.ruhsat_url,
+          kimlik: app.kimlik_url,
+          vergi: app.vergi_url || '',
+          calisma: app.calisma_url || '',
+          dekont: app.dekont_url,
+          sirkuler: app.sirkuler_url || ''
+        };
+        
+        const isSermaye = app.subscription_type === 'Kurumsal (LTD. / A.Ş.)';
+        const isSahis = app.subscription_type === 'Kurumsal (Şahıs Şirketi)';
+        const companyType = isSermaye ? 'sermaye' : (isSahis ? 'sahis' : 'bireysel');
+        
+        app.billing = {
+          company_type: companyType,
+          company: app.company_name || app.full_name,
+          tax_office: app.tax_office || '',
+          tax_no: app.tax_number || app.tc_no,
+          address: app.home_address || ''
+        };
+      });
+      
+      filteredApplications = [...allApplications];
+      populateCompanyFilter();
+      applyFilters();
+    }
+  } catch (err) {
+    console.error("Background polling failed:", err);
+  }
+}
+
+function showLiveAlertToast(app) {
+  let container = document.getElementById('live-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'live-toast-container';
+    container.style.position = 'fixed';
+    container.style.bottom = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '10px';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.style.background = '#ffffff';
+  toast.style.borderLeft = '5px solid #10b981';
+  toast.style.borderRadius = '8px';
+  toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+  toast.style.border = '1px solid rgba(16, 185, 129, 0.15)';
+  toast.style.padding = '1.25rem';
+  toast.style.width = '320px';
+  toast.style.display = 'flex';
+  toast.style.gap = '12px';
+  toast.style.alignItems = 'flex-start';
+  toast.style.transform = 'translateX(120%)';
+  toast.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+  
+  const iconDiv = document.createElement('div');
+  iconDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+  iconDiv.style.borderRadius = '50%';
+  iconDiv.style.padding = '8px';
+  iconDiv.style.display = 'flex';
+  iconDiv.style.alignItems = 'center';
+  iconDiv.style.justifyContent = 'center';
+  iconDiv.innerHTML = '<i data-lucide="bell" style="width: 18px; height: 18px; color: #10b981;"></i>';
+  toast.appendChild(iconDiv);
+  
+  const contentDiv = document.createElement('div');
+  contentDiv.style.flex = '1';
+  contentDiv.style.textAlign = 'left';
+  contentDiv.innerHTML = `
+    <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 800; color: var(--color-primary-dark);">YENİ BAŞVURU GELDİ! 🌟</h4>
+    <p style="margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); text-transform: uppercase;">🚗 ${app.plate_number || app.plate}</p>
+    <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--color-text-muted);">${app.full_name}</p>
+    <p style="margin: 2px 0 0 0; font-size: 0.7rem; color: var(--color-text-muted); font-style: italic;">📍 ${app.parking_location}</p>
+  `;
+  toast.appendChild(contentDiv);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.style.background = 'none';
+  closeBtn.style.border = 'none';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.color = '#94a3b8';
+  closeBtn.style.fontSize = '1.25rem';
+  closeBtn.style.padding = '0';
+  closeBtn.style.lineHeight = '1';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => {
+    toast.style.transform = 'translateX(120%)';
+    setTimeout(() => toast.remove(), 400);
+  };
+  toast.appendChild(closeBtn);
+
+  container.appendChild(toast);
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons({ node: toast });
+
+  setTimeout(() => {
+    toast.style.transform = 'translateX(0)';
+  }, 50);
+
+  playNotificationChime();
+  triggerBrowserNotification(app);
+
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.transform = 'translateX(120%)';
+      setTimeout(() => toast.remove(), 400);
+    }
+  }, 8000);
+}
+
+function playNotificationChime() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+    gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc1.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.4);
+    
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+    gain2.gain.setValueAtTime(0.12, audioCtx.currentTime + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc2.start(audioCtx.currentTime + 0.1);
+    osc2.stop(audioCtx.currentTime + 0.5);
+    
+    const osc3 = audioCtx.createOscillator();
+    const gain3 = audioCtx.createGain();
+    osc3.connect(gain3);
+    gain3.connect(audioCtx.destination);
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(1109.73, audioCtx.currentTime + 0.2);
+    gain3.gain.setValueAtTime(0.10, audioCtx.currentTime + 0.2);
+    gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+    osc3.start(audioCtx.currentTime + 0.2);
+    osc3.stop(audioCtx.currentTime + 0.7);
+
+  } catch (e) {
+    console.error("Audio playback error:", e);
+  }
+}
+
+function triggerBrowserNotification(app) {
+  if (!("Notification" in window)) return;
+  
+  if (Notification.permission === "granted") {
+    new Notification("Yeni Başvuru Geldi! 🚗", {
+      body: `${app.plate_number || app.plate} - ${app.full_name}\n📍 ${app.parking_location}`,
+      icon: "/assets/logo_square.png"
+    });
+  }
+}
+
+function initBrowserNotifications() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
   }
 }
 
