@@ -4628,3 +4628,43 @@ async function deleteOtopark(parkId) {
   }
 }
 
+async function sendTestNotification(event) {
+  if (event) event.preventDefault();
+  
+  const btn = document.getElementById('btn-test-notification');
+  if (!btn) return;
+  
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i> Gönderiliyor...';
+
+  try {
+    const res = await fetch('/api/send_test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Test gönderimi sırasında sunucu hatası oluştu.");
+    }
+
+    const data = await res.json();
+    
+    let statusMsg = `Mock Başvuru Kodu: ${data.mockAppId}\n\n`;
+    statusMsg += `📧 E-posta (talha.emre.calargun@parkexpert.net): ${data.email.success ? '✅ Gönderildi' : '❌ HATA: ' + data.email.error}\n`;
+    statusMsg += `💬 WhatsApp (+905372939874): ${data.whatsapp.success ? '✅ Gönderildi' : '❌ HATA: ' + data.whatsapp.error}`;
+
+    alert(`Test Sonucu:\n\n${statusMsg}`);
+
+  } catch (err) {
+    console.error(err);
+    alert(`Test Gönderimi Başarısız!\n\nHata: ${err.message}`);
+  } finally {
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+  }
+}
+

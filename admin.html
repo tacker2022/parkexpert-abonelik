@@ -99,6 +99,10 @@
               <p id="active-user-subtext" style="font-size: 0.7rem; color: var(--color-text-muted); margin: 0; font-weight: 600;">Sistem Sahibi (Tüm Yetkiler)</p>
             </div>
           </div>
+          <button onclick="sendTestNotification(event)" class="btn-test-notification" id="btn-test-notification" title="Test WP & Mail Gönder" style="background: none; border: 1px solid rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.04); color: #10b981; border-radius: var(--radius-lg); height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0 0.85rem; cursor: pointer; transition: all var(--transition-fast); font-size: 0.775rem; font-weight: 700; font-family: inherit; outline: none;">
+            <i data-lucide="send" style="width: 14px; height: 14px; stroke: #10b981;"></i>
+            <span>Test Gönder</span>
+          </button>
           <button onclick="handleAdminLogout()" class="btn-logout" title="Güvenli Çıkış Yap" style="background: none; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03); color: #ef4444; border-radius: var(--radius-lg); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast);">
             <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
           </button>
@@ -761,6 +765,6 @@
   <!-- Lucide Vector Icons Library -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260604_2"></script>
+  <script src="script.js?v=20260604_3"></script>
 </body>
 </html>
