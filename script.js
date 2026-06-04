@@ -2438,7 +2438,9 @@ function formatDateTR(dateStr) {
         const year = d.getFullYear();
         const hours = String(d.getHours()).padStart(2, '0');
         const minutes = String(d.getMinutes()).padStart(2, '0');
-        return `${day}.${month}.${year} ${hours}:${minutes}`;
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        const ms = String(d.getMilliseconds()).padStart(3, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}.${ms}`;
       }
     } catch (e) {
       // fallback
