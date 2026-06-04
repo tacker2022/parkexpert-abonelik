@@ -1905,7 +1905,7 @@ async function handleFormSubmit() {
     formData.append("driver_name", driverName);
     formData.append("home_address", homeAddress);
     formData.append("notes", notes);
-    formData.append("date_applied", new Date().toISOString().split('T')[0]);
+    formData.append("date_applied", new Date().toISOString());
 
     if (uploadedFiles.ruhsat) formData.append("ruhsat", uploadedFiles.ruhsat);
     if (uploadedFiles.kimlik) formData.append("kimlik", uploadedFiles.kimlik);
@@ -2403,7 +2403,7 @@ function renderTable(apps) {
       </td>
       <td><span class="col-plate">${plateFormatted}</span></td>
       <td><span class="col-otopark">${app.parking_location}</span></td>
-      <td>${formatDateTR(app.date_applied)}</td>
+      <td>${formatDateTR(app.created_at || app.date_applied)}</td>
       <td><span class="status-badge ${statusClass}">${app.status}</span></td>
       <td style="text-align: center;">
         <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Başvuru Detayını Gör">
@@ -2428,10 +2428,27 @@ function formatPlateSpacing(plate) {
 
 function formatDateTR(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return dateStr || '';
-  // Format: YYYY-MM-DD to DD.MM.YYYY
+  
+  if (dateStr.includes('T') || dateStr.includes(':')) {
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
   const pts = dateStr.split('-');
   if (pts.length === 3) {
-    return `${pts[2]}.${pts[1]}.${pts[0]}`;
+    const day = pts[2].substring(0, 2);
+    return `${day}.${pts[1]}.${pts[0]}`;
   }
   return dateStr;
 }
@@ -2463,7 +2480,28 @@ function applyFilters() {
     const matchesStatus = !status || app.status === status || (status === 'Yeni' && app.status === 'Beklemede');
 
     // 5. Date match
-    const matchesDate = !dateVal || app.date_applied === dateVal;
+    let matchesDate = true;
+    if (dateVal) {
+      const dateToCompare = app.created_at || app.date_applied;
+      if (dateToCompare) {
+        if (dateToCompare.includes('T') || dateToCompare.includes(':')) {
+          const localDate = new Date(dateToCompare);
+          if (!isNaN(localDate.getTime())) {
+            const localYear = localDate.getFullYear();
+            const localMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+            const localDay = String(localDate.getDate()).padStart(2, '0');
+            const localDateStr = `${localYear}-${localMonth}-${localDay}`;
+            matchesDate = localDateStr === dateVal;
+          } else {
+            matchesDate = dateToCompare.startsWith(dateVal);
+          }
+        } else {
+          matchesDate = dateToCompare.startsWith(dateVal);
+        }
+      } else {
+        matchesDate = false;
+      }
+    }
 
     return matchesQuery && matchesLocation && matchesCompany && matchesStatus && matchesDate;
   });
@@ -2602,7 +2640,7 @@ function openDrawer(appId) {
         <span class="detail-value">${app.parking_location}</span>
 
         <span class="detail-label">Başvuru Tarihi:</span>
-        <span class="detail-value">${formatDateTR(app.date_applied)}</span>
+        <span class="detail-value">${formatDateTR(app.created_at || app.date_applied)}</span>
       </div>
     </div>
 
@@ -2894,7 +2932,7 @@ function adminOpenEmailSimulation(appId) {
             <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">${app.plate}</span></div>
             <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
             <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span>${app.subscription_type}</span></div>
-            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.date_applied)}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.created_at || app.date_applied)}</span></div>
             <div><strong style="color: var(--color-text-dark);">Durum:</strong> <span style="color:#10b981; font-weight:700;">Aktif / Onaylandı</span></div>
           </div>
         </div>
@@ -2949,7 +2987,7 @@ function adminOpenEmailSimulation(appId) {
             <div><strong style="color: var(--color-text-dark);">Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: var(--color-text-dark);">${app.plate}</span></div>
             <div><strong style="color: var(--color-text-dark);">Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
             <div><strong style="color: var(--color-text-dark);">Abonelik Tipi:</strong> <span>${app.subscription_type}</span></div>
-            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.date_applied)}</span></div>
+            <div><strong style="color: var(--color-text-dark);">Başvuru Tarihi:</strong> <span>${formatDateTR(app.created_at || app.date_applied)}</span></div>
             <div><strong style="color: var(--color-text-dark);">Araç Modeli:</strong> <span>${app.car_model || 'Belirtilmedi'}</span></div>
           </div>
         </div>
@@ -3297,7 +3335,7 @@ function exportToExcel() {
     app.plate,
     app.car_model,
     app.home_address ? app.home_address.replace(/\r?\n/g, " ") : "",
-    formatDateTR(app.date_applied),
+    formatDateTR(app.created_at || app.date_applied),
     app.status,
     app.billing ? app.billing.company : "",
     app.billing ? app.billing.tax_office : "",

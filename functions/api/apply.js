@@ -49,7 +49,7 @@ export async function onRequest(context) {
     const driverName = formData.get("driver_name") || null;
     const homeAddress = formData.get("home_address") || null;
     const notes = formData.get("notes") || null;
-    const dateApplied = formData.get("date_applied") || null;
+    const dateApplied = formData.get("date_applied") || new Date().toISOString();
 
     if (!appId || !fullName || !email || !phone || !plateNumber || !parkingLocation || !subscriptionType) {
       return new Response(JSON.stringify({ error: "Missing required text fields" }), { status: 400, headers });
