@@ -26,7 +26,7 @@
   <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
   
   <!-- Global Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260605_3">
 </head>
 <body style="background-color: #f1f5f9;">
 
@@ -324,25 +324,37 @@
           <!-- Analytics Summary Cards -->
           <div class="analytics-metrics-grid">
             <!-- Toplam Ciro -->
-            <div class="metric-card card-revenue">
-              <span class="metric-title">Toplam Gelir (Ciro)</span>
-              <span id="analytics-total-revenue" class="metric-value value-revenue">0 TL</span>
-              <span class="metric-subtitle">Onaylanmış aboneliklerin toplamı</span>
-              <i data-lucide="wallet" class="metric-icon"></i>
+            <div class="analytics-metric-card card-revenue">
+              <div class="metric-info">
+                <span class="metric-title">Toplam Gelir (Ciro)</span>
+                <span id="analytics-total-revenue" class="metric-value value-revenue">0 TL</span>
+                <span class="metric-subtitle">Onaylanmış aboneliklerin toplamı</span>
+              </div>
+              <div class="metric-icon-wrapper wrapper-revenue">
+                <i data-lucide="wallet"></i>
+              </div>
             </div>
             <!-- Bireysel Ciro -->
-            <div class="metric-card card-individual">
-              <span class="metric-title">Bireysel Abonelikler</span>
-              <span id="analytics-individual-revenue" class="metric-value value-individual">0 TL</span>
-              <span id="analytics-individual-count" class="metric-subtitle">0 abonelik (%0)</span>
-              <i data-lucide="user" class="metric-icon"></i>
+            <div class="analytics-metric-card card-individual">
+              <div class="metric-info">
+                <span class="metric-title">Bireysel Abonelikler</span>
+                <span id="analytics-individual-revenue" class="metric-value value-individual">0 TL</span>
+                <span id="analytics-individual-count" class="metric-subtitle">4 onaylı abonelik (%100)</span>
+              </div>
+              <div class="metric-icon-wrapper wrapper-individual">
+                <i data-lucide="user"></i>
+              </div>
             </div>
             <!-- Kurumsal Ciro -->
-            <div class="metric-card card-corporate">
-              <span class="metric-title">Kurumsal Abonelikler</span>
-              <span id="analytics-corporate-revenue" class="metric-value value-corporate">0 TL</span>
-              <span id="analytics-corporate-count" class="metric-subtitle">0 abonelik (%0)</span>
-              <i data-lucide="building-2" class="metric-icon"></i>
+            <div class="analytics-metric-card card-corporate">
+              <div class="metric-info">
+                <span class="metric-title">Kurumsal Abonelikler</span>
+                <span id="analytics-corporate-revenue" class="metric-value value-corporate">0 TL</span>
+                <span id="analytics-corporate-count" class="metric-subtitle">0 onaylı abonelik (%0)</span>
+              </div>
+              <div class="metric-icon-wrapper wrapper-corporate">
+                <i data-lucide="building-2"></i>
+              </div>
             </div>
           </div>
 
