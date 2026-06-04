@@ -2,7 +2,7 @@
 
 export async function sendEmail({ to, subject, html, env }) {
   const apiKey = env.BREVO_API_KEY;
-  const fromEmail = env.BREVO_FROM_EMAIL || "PARKEXPERT <no-reply@parkexpertabonelik.net>";
+  const fromEmail = env.BREVO_FROM_EMAIL || "PARKEXPERT <bilgi@parkexpertabonelik.net>";
 
   // Premium HTML wrapper template
   const wrappedHtml = `
@@ -38,7 +38,7 @@ Konu: ${subject}
 
   // Parse fromEmail into name and email address
   let senderName = "PARKEXPERT";
-  let senderEmail = "no-reply@parkexpertabonelik.net";
+  let senderEmail = "bilgi@parkexpertabonelik.net";
 
   const match = fromEmail.match(/^(.*?)\s*<(.*?)>$/);
   if (match) {
