@@ -4631,7 +4631,42 @@ async function deleteOtopark(parkId) {
 async function sendTestNotification(event) {
   if (event) event.preventDefault();
   
-  const btn = document.getElementById('btn-test-notification');
+  const emailInput = document.getElementById('test-input-email');
+  const phoneInput = document.getElementById('test-input-phone');
+  
+  if (emailInput && !emailInput.value) {
+    emailInput.value = "talha.emre.calargun@parkexpert.net";
+  }
+  if (phoneInput && !phoneInput.value) {
+    phoneInput.value = "5372939874";
+  }
+  
+  const modal = document.getElementById('test-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeTestModal(event) {
+  if (event) event.preventDefault();
+  const modal = document.getElementById('test-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function submitTestNotification(event) {
+  if (event) event.preventDefault();
+  
+  const email = document.getElementById('test-input-email').value.trim();
+  const phone = document.getElementById('test-input-phone').value.trim();
+  
+  if (!email || !phone) {
+    alert("Lütfen tüm alanları doldurun.");
+    return;
+  }
+  
+  const btn = document.getElementById('btn-test-submit');
   if (!btn) return;
   
   const originalHTML = btn.innerHTML;
@@ -4643,7 +4678,8 @@ async function sendTestNotification(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ email, phone })
     });
 
     if (!res.ok) {
@@ -4654,10 +4690,12 @@ async function sendTestNotification(event) {
     const data = await res.json();
     
     let statusMsg = `Mock Başvuru Kodu: ${data.mockAppId}\n\n`;
-    statusMsg += `📧 E-posta (talha.emre.calargun@parkexpert.net): ${data.email.success ? '✅ Gönderildi' : '❌ HATA: ' + data.email.error}\n`;
-    statusMsg += `💬 WhatsApp (+905372939874): ${data.whatsapp.success ? '✅ Gönderildi' : '❌ HATA: ' + data.whatsapp.error}`;
+    statusMsg += `📧 E-posta (${email}): ${data.email.success ? '✅ Gönderildi' : '❌ HATA: ' + data.email.error}\n`;
+    statusMsg += `💬 WhatsApp (${phone}): ${data.whatsapp.success ? '✅ Gönderildi' : '❌ HATA: ' + data.whatsapp.error}`;
 
     alert(`Test Sonucu:\n\n${statusMsg}`);
+    
+    closeTestModal();
 
   } catch (err) {
     console.error(err);

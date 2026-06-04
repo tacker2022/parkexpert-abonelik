@@ -762,9 +762,35 @@
     </div>
   </div>
 
+  <!-- Test Notification Modal Overlay -->
+  <div id="test-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1200; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light); width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); position: relative; display: flex; flex-direction: column;">
+      <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.15rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="send" style="width: 20px; height: 20px; color: var(--color-primary); stroke: var(--color-primary);"></i>
+        Test Bildirimi Gönder
+      </h3>
+      <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.5rem; margin-top: 0;">E-posta ve WhatsApp üzerinden otomatik başvuru mesajlarını test edin.</p>
+      
+      <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <label for="test-input-email" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-dark); text-align: left;">E-posta Adresi</label>
+        <input type="email" id="test-input-email" class="form-control" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.875rem;" placeholder="örn: talha.emre.calargun@parkexpert.net">
+      </div>
+      
+      <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <label for="test-input-phone" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-dark); text-align: left;">Telefon Numarası</label>
+        <input type="text" id="test-input-phone" class="form-control" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.875rem;" placeholder="örn: 5372939874">
+      </div>
+      
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button onclick="closeTestModal(event)" style="background: none; border: 1px solid var(--color-border-light); color: var(--color-text-dark); padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast);">Vazgeç</button>
+        <button onclick="submitTestNotification(event)" id="btn-test-submit" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: inline-flex; align-items: center; gap: 0.4rem;">Gönder</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lucide Vector Icons Library -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260604_3"></script>
+  <script src="script.js?v=20260604_4"></script>
 </body>
 </html>

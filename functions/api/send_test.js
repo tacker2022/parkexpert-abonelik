@@ -32,8 +32,17 @@ export async function onRequest(context) {
   }
   const mockAppId = `PE-TEST-${randomCode}`;
   
-  const testEmail = "talha.emre.calargun@parkexpert.net";
-  const testPhone = "5372939874"; // +90 537 293 98 74
+  let testEmail = "talha.emre.calargun@parkexpert.net";
+  let testPhone = "5372939874"; // +90 537 293 98 74
+
+  try {
+    const body = await context.request.json();
+    if (body.email) testEmail = body.email.trim();
+    if (body.phone) testPhone = body.phone.trim();
+  } catch (e) {
+    // ignore, use defaults
+  }
+  
   const parkingLocation = "Birlik Sanayi Sitesi - Beylikdüzü";
   const fullName = "TEST KULLANICI (AHMET YILMAZ)";
   const plateNumber = "34TEST34";
