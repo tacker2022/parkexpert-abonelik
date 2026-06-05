@@ -2773,6 +2773,25 @@ function openDrawer(appId) {
       </div>
     </div>
 
+    <!-- Detail Section: Data Export (Excel Aktarımı) -->
+    <div class="detail-section" style="border: 1px solid rgba(15, 59, 162, 0.15); background: rgba(15, 59, 162, 0.02); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.25rem;">
+      <div class="detail-section-title" style="color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        <i data-lucide="download" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+        <span>Excel / Veri Aktarımı</span>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1rem; line-height: 1.4;">
+        Bu abonenin başvuru kaydını sisteme yüklemek veya arşivlemek için Excel formatında indirebilirsiniz.
+      </p>
+      <div style="display: flex; gap: 0.75rem; width: 100%;">
+        <button onclick="exportSingleApplicationExcel('${app.id}', 'standard')" class="btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: #ffffff; color: var(--color-text-dark); border: 1px solid var(--color-border-light); font-size: 0.8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; min-height: 38px; box-shadow: var(--shadow-sm); transition: all 0.2s ease;">
+          <i data-lucide="file-text" style="width: 14px; height: 14px; color: #10b981;"></i> Standart Excel
+        </button>
+        <button id="btn-single-parkexpert-export" onclick="exportSingleApplicationExcel('${app.id}', 'parkexpert')" class="btn" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: var(--color-primary); color: var(--color-primary-dark); border: none; font-size: 0.8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; min-height: 38px; box-shadow: 0 2px 6px rgba(15, 59, 162, 0.15); transition: all 0.2s ease;">
+          <i data-lucide="download-cloud" style="width: 14px; height: 14px;"></i> ParkExpert Excel
+        </button>
+      </div>
+    </div>
+
     <!-- Detail Section: Sent Notifications (Giden Bildirimler) -->
     <div class="detail-section" style="border: 1px solid rgba(16, 185, 129, 0.15); background: rgba(16, 185, 129, 0.02); border-radius: var(--radius-sm); padding: 1.25rem;">
       <div class="detail-section-title" style="color: #047857; display: flex; align-items: center; gap: 0.5rem;">
@@ -5781,6 +5800,197 @@ async function rotateAndReScan(appId, degrees) {
   const app = allApplications.find(a => a.id === appId);
   if (app) {
     initRuhsatOCR(app, newRotation);
+  }
+}
+
+function exportSingleApplicationExcel(appId, type) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  if (type === 'standard') {
+    // 1. Setup headers
+    const headers = [
+      "Başvuru No",
+      "Abonelik Tipi",
+      "Otopark Konumu",
+      "Ad Soyad",
+      "Şoför Adı",
+      "T.C. Kimlik No",
+      "Telefon",
+      "E-posta",
+      "Araç Plakası",
+      "Araç Marka Model",
+      "İşyeri Adresi",
+      "Başvuru Tarihi",
+      "Başvuru Durumu",
+      "Firma Unvanı",
+      "Vergi Dairesi",
+      "Vergi Numarası",
+      "Fatura Adresi"
+    ];
+
+    // 2. Setup row
+    const row = [
+      app.id,
+      app.subscription_type,
+      app.parking_location,
+      app.full_name,
+      app.driver_name || app.full_name,
+      `'${app.tc_no}`,
+      app.phone,
+      app.email,
+      app.plate,
+      app.car_model,
+      app.home_address ? app.home_address.replace(/\r?\n/g, " ") : "",
+      formatDateTR(app.created_at || app.date_applied),
+      app.status,
+      app.billing ? app.billing.company : "",
+      app.billing ? app.billing.tax_office : "",
+      app.billing ? `'${app.billing.tax_no}` : "",
+      app.billing ? app.billing.address.replace(/\r?\n/g, " ") : ""
+    ];
+
+    // 3. Assemble CSV string with semicolon delimiters
+    const csvContent = [
+      headers.join(";"),
+      row.map(cell => {
+        let cellStr = String(cell);
+        if (cellStr.includes(";") || cellStr.includes('"') || cellStr.includes("\n")) {
+          cellStr = `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      }).join(";")
+    ].join("\n");
+
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvContent], { type: "text/csv;charset=utf-8;" });
+    const filename = `Standart_Excel_${app.id}_${app.plate}.csv`;
+
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } else if (type === 'parkexpert') {
+    const btn = document.getElementById('btn-single-parkexpert-export');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i>...';
+      btn.disabled = true;
+    }
+
+    const loadSheetJS = (callback) => {
+      if (window.XLSX) {
+        callback();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.onload = () => {
+        callback();
+      };
+      script.onerror = () => {
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+        alert("Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.");
+      };
+      document.head.appendChild(script);
+    };
+
+    loadSheetJS(() => {
+      try {
+        const wsData = [
+          [
+            "Abone Adı",
+            "Abone Grubu",
+            "Tip (COMPANY/INDIVIDUAL)",
+            "Kimlik No",
+            "Vergi No",
+            "Telefon",
+            "E-posta",
+            "Abonelik Tip Adı",
+            "Başlangıç Zamanı",
+            "Plaka",
+            "Sürücü Adı",
+            "Marka",
+            "Model"
+          ]
+        ];
+
+        let phone = app.phone || "";
+        let cleanPhone = phone.replace(/\D/g, "");
+        if (cleanPhone.startsWith("90")) cleanPhone = cleanPhone.substring(2);
+        if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.substring(1);
+
+        let marka = "";
+        let model = "";
+        if (app.car_model) {
+          const parts = app.car_model.trim().split(/\s+/);
+          if (parts.length > 0) {
+            marka = parts[0];
+            if (parts.length > 1) {
+              model = parts.slice(1).join(" ");
+            }
+          }
+        }
+
+        const dateStr = app.created_at || app.date_applied;
+        let parsedDate = null;
+        if (dateStr) {
+          parsedDate = new Date(dateStr);
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = new Date();
+          }
+        } else {
+          parsedDate = new Date();
+        }
+
+        const cleanPlate = (app.plate || "").replace(/\s+/g, "").toUpperCase();
+
+        wsData.push([
+          app.full_name,
+          app.company_name || "",
+          "COMPANY",
+          app.tc_no || "",
+          app.tax_number || (app.billing ? app.billing.tax_no : "") || "",
+          cleanPhone,
+          app.email || "",
+          "Dış Abonelikler (3.750)",
+          parsedDate,
+          cleanPlate,
+          app.driver_name || app.full_name,
+          marka,
+          model
+        ]);
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData, { cellDates: true });
+
+        // Set date format on cell I2 (column index 8, row 1)
+        const cellRef = XLSX.utils.encode_cell({ r: 1, c: 8 });
+        if (ws[cellRef]) {
+          ws[cellRef].z = 'yyyy-mm-dd hh:mm:ss';
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, "Abone");
+        XLSX.writeFile(wb, `ParkExpert_Excel_${app.id}_${cleanPlate}.xlsx`);
+      } catch (err) {
+        console.error("Single ParkExpert excel export failed:", err);
+        alert("Excel oluşturulurken hata oluştu.");
+      } finally {
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      }
+    });
   }
 }
 
