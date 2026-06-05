@@ -3227,7 +3227,7 @@ function triggerAdminStatusToasts(app, status) {
    DOCUMENT VIEWING & DOWNLOAD SIMULATOR
    ========================================================================== */
 
-async function openDocPreview(docType, path) {
+async function openDocPreview(docType, path, overrideObjectUrl = null) {
   const modal = document.getElementById('modal-doc-preview');
   const titleEl = document.getElementById('preview-doc-title');
   const filenameEl = document.getElementById('preview-filename');
@@ -3238,6 +3238,22 @@ async function openDocPreview(docType, path) {
   if (titleEl) titleEl.textContent = `${docType} Önizleme`;
   if (filenameEl) filenameEl.textContent = path ? path.split('/').pop() : '';
   
+  if (overrideObjectUrl) {
+    modal.classList.add('active');
+    if (previewDocBox) {
+      previewDocBox.innerHTML = `
+        <img src="${overrideObjectUrl}" alt="${docType}" style="max-width: 100%; max-height: 350px; border-radius: var(--radius-sm); object-fit: contain; box-shadow: var(--shadow-sm);">
+        <div style="margin-top: 1.25rem;">
+          <a href="${overrideObjectUrl}" download="${path ? path.split('/').pop() : 'document.jpg'}" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; width: auto; display: inline-flex; justify-content: center; align-items: center; gap: 0.35rem;">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i> Dosyayı İndir
+          </a>
+        </div>
+      `;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    return;
+  }
+
   // Show loading indicator
   if (previewDocBox) {
     previewDocBox.innerHTML = `
@@ -5498,7 +5514,7 @@ async function initRuhsatOCR(app, rotateDegrees = 0) {
   // 1. Check cache if not rotating
   if (rotateDegrees === 0 && ocrCache[app.id]) {
     const cached = ocrCache[app.id];
-    renderOcrResult(app, cached.candidates, userPlateNormalized);
+    renderOcrResult(app, cached.candidates, userPlateNormalized, cached.imageSrc);
     return;
   }
 
@@ -5541,7 +5557,9 @@ async function initRuhsatOCR(app, rotateDegrees = 0) {
       `;
       try {
         const rotatedSrc = await rotateImage(imageSrc, rotateDegrees);
-        URL.revokeObjectURL(imageSrc);
+        if (imageSrc.startsWith('blob:')) {
+          URL.revokeObjectURL(imageSrc);
+        }
         imageSrc = rotatedSrc;
       } catch (err) {
         console.error("Rotation failed:", err);
@@ -5581,19 +5599,21 @@ async function initRuhsatOCR(app, rotateDegrees = 0) {
       }
     );
 
-    // Revoke URL since scan is complete
-    URL.revokeObjectURL(imageSrc);
-
     const detectedText = result.data.text || '';
     const candidates = findPlatesInText(detectedText);
 
-    // Cache the result
+    // Cache the result (revoke old cached URL if it exists and is different to avoid memory leaks)
+    if (ocrCache[app.id] && ocrCache[app.id].imageSrc && ocrCache[app.id].imageSrc !== imageSrc) {
+      URL.revokeObjectURL(ocrCache[app.id].imageSrc);
+    }
+    
     ocrCache[app.id] = {
       text: detectedText,
-      candidates: candidates
+      candidates: candidates,
+      imageSrc: imageSrc
     };
 
-    renderOcrResult(app, candidates, userPlateNormalized);
+    renderOcrResult(app, candidates, userPlateNormalized, imageSrc);
 
   } catch (err) {
     console.error("OCR initialization failed:", err);
@@ -5606,7 +5626,7 @@ async function initRuhsatOCR(app, rotateDegrees = 0) {
   }
 }
 
-function renderOcrResult(app, candidates, userPlateNormalized) {
+function renderOcrResult(app, candidates, userPlateNormalized, imageSrc = null) {
   const ocrStatusContainer = document.getElementById('ocr-status-container');
   if (!ocrStatusContainer) return;
 
@@ -5623,8 +5643,19 @@ function renderOcrResult(app, candidates, userPlateNormalized) {
     }
   }
 
+  const thumbnailHtml = imageSrc ? `
+    <div class="ocr-thumb-box" style="position: relative; flex-shrink: 0; width: 68px; height: 68px; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; background-color: #f8fafc; box-shadow: var(--shadow-sm); margin-top: 0.15rem;" onclick="openDocPreview('Ruhsat Belgesi (AI)', '${app.files.ruhsat}', '${imageSrc}')" title="Büyütmek için tıklayın">
+      <img src="${imageSrc}" style="width: 100%; height: 100%; object-fit: cover;">
+      <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 59, 162, 0.85); color: #ffffff; font-size: 0.55rem; text-align: center; padding: 0.1rem 0; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.1rem;">
+        <i data-lucide="zoom-in" style="width: 8px; height: 8px;"></i> Büyüt
+      </div>
+    </div>
+  ` : '';
+
+  let resultCardHtml = '';
+
   if (isMatch) {
-    ocrStatusContainer.innerHTML = `
+    resultCardHtml = `
       <div style="display: flex; align-items: center; gap: 0.4rem;">
         <span class="ocr-badge ocr-badge-success" title="Ruhsattaki plaka ile beyan edilen plaka uyuşuyor.">
           <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Uyumlu: Plaka Doğrulandı ✅
@@ -5632,38 +5663,38 @@ function renderOcrResult(app, candidates, userPlateNormalized) {
       </div>
     `;
   } else if (bestCandidate) {
-    ocrStatusContainer.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; width: 100%;">
+    resultCardHtml = `
+      <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; width: 100%; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 0.4rem;">
           <span class="ocr-badge ocr-badge-warning" title="Ruhsattaki plaka ile beyan edilen plaka farklı.">
             <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Uyuşmazlık! ⚠️
           </span>
         </div>
-        <span style="font-size: 0.8rem; color: var(--color-text-dark);">
-          Ruhsatta Okunan: <strong style="color: var(--color-accent-orange); font-family: monospace; font-size: 0.9rem;">${formatPlateSpacing(bestCandidate)}</strong>
+        <span style="font-size: 0.8rem; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">
+          Okunan: <strong style="color: var(--color-accent-orange); font-family: monospace; font-size: 0.9rem;">${formatPlateSpacing(bestCandidate)}</strong>
         </span>
-        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; width: 100%;">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; width: 100%;">
           <button onclick="applyOcrPlate('${app.id}', '${bestCandidate}')" class="btn btn-ocr-apply">
-            Okunan Plakayı Uygula ⚡
+            Uygula ⚡
           </button>
-          <button onclick="rotateAndReScan('${app.id}', 90)" class="btn-ocr-rotate" title="90 Derece Sağa Döndür">
-            <i data-lucide="rotate-cw" style="width: 13px; height: 13px;"></i> Döndür & Yeniden Tara
+          <button onclick="rotateAndReScan('${app.id}', 90)" class="btn-ocr-rotate" title="90 Derece Döndür">
+            <i data-lucide="rotate-cw" style="width: 13px; height: 13px;"></i> Döndür ↻
           </button>
         </div>
       </div>
     `;
   } else {
-    ocrStatusContainer.innerHTML = `
+    resultCardHtml = `
       <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; width: 100%;">
         <div style="display: flex; align-items: center; gap: 0.4rem;">
           <span class="ocr-badge ocr-badge-danger" title="Ruhsat görselinden plaka okunamadı.">
             <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Plaka Okunamadı 🔍
           </span>
         </div>
-        <span style="font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.3;">
-          Görsel yan veya ters ise döndürerek tekrar tarayabilirsiniz:
+        <span style="font-size: 0.725rem; color: var(--color-text-muted); line-height: 1.3;">
+          Görsel yan/ters ise döndürüp tarayın:
         </span>
-        <div style="display: flex; gap: 0.35rem; margin-top: 0.2rem; width: 100%;">
+        <div style="display: flex; gap: 0.35rem; margin-top: 0.15rem; width: 100%;">
           <button onclick="rotateAndReScan('${app.id}', 90)" class="btn-ocr-rotate" style="flex: 1; justify-content: center;">
             <i data-lucide="rotate-cw" style="width: 13px; height: 13px;"></i> Sağa Döndür ↻
           </button>
@@ -5674,6 +5705,15 @@ function renderOcrResult(app, candidates, userPlateNormalized) {
       </div>
     `;
   }
+
+  ocrStatusContainer.innerHTML = `
+    <div class="ocr-status-wrapper" style="display: flex; gap: 0.75rem; align-items: flex-start; width: 100%;">
+      ${thumbnailHtml}
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+        ${resultCardHtml}
+      </div>
+    </div>
+  `;
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
