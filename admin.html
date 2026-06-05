@@ -26,7 +26,7 @@
   <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
   
   <!-- Global Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20260605_4">
+  <link rel="stylesheet" href="style.css?v=20260605_5">
 </head>
 <body style="background-color: #f1f5f9;">
 
@@ -96,13 +96,13 @@
         
         <!-- Logged in Admin Avatar / Switcher -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <div class="admin-user" id="admin-user-selector-block" style="display: flex; align-items: center; gap: 0.75rem; background: rgba(15, 59, 162, 0.05); padding: 0.5rem 1rem; border-radius: var(--radius-lg); border: 1px solid rgba(15, 59, 162, 0.1);">
-            <div class="user-avatar" id="current-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--color-primary); color: var(--color-primary-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;">SA</div>
-            <div class="user-info" style="display: flex; flex-direction: column; gap: 0.15rem;">
-              <select id="active-user-role" onchange="handleUserRoleChange()" style="background: none; border: none; font-size: 0.85rem; font-weight: 800; color: var(--color-primary-dark); cursor: pointer; outline: none; padding-right: 1rem; font-family: inherit;">
+          <div class="admin-user" id="admin-user-selector-block">
+            <div class="user-avatar" id="current-user-avatar">SA</div>
+            <div class="user-info">
+              <select id="active-user-role" onchange="handleUserRoleChange()">
                 <option value="superadmin">Süper Yönetici</option>
               </select>
-              <p id="active-user-subtext" style="font-size: 0.7rem; color: var(--color-text-muted); margin: 0; font-weight: 600;">Sistem Sahibi (Tüm Yetkiler)</p>
+              <p id="active-user-subtext">Sistem Sahibi (Tüm Yetkiler)</p>
             </div>
           </div>
           <button onclick="sendTestNotification(event)" class="btn-test-notification" id="btn-test-notification" title="Test WP & Mail Gönder" style="background: none; border: 1px solid rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.04); color: #10b981; border-radius: var(--radius-lg); height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0 0.85rem; cursor: pointer; transition: all var(--transition-fast); font-size: 0.775rem; font-weight: 700; font-family: inherit; outline: none;">

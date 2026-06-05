@@ -4376,6 +4376,7 @@ function handleUserRoleChange() {
 
   const avatar = document.getElementById('current-user-avatar');
   const subtext = document.getElementById('active-user-subtext');
+  const adminUserBlock = document.getElementById('admin-user-selector-block');
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
   const dangerZone = document.querySelector('.sidebar-footer');
@@ -4383,8 +4384,14 @@ function handleUserRoleChange() {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
 
   if (val === 'superadmin') {
-    if (avatar) avatar.textContent = 'SA';
+    if (avatar) {
+      avatar.textContent = 'SA';
+      avatar.className = 'user-avatar user-avatar-superadmin';
+    }
     if (subtext) subtext.textContent = 'Sistem Sahibi (Tüm Yetkiler)';
+    if (adminUserBlock) {
+      adminUserBlock.className = 'admin-user admin-user-superadmin';
+    }
     if (tabOto) tabOto.style.display = 'inline-flex';
     if (tabAdm) tabAdm.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
@@ -4392,8 +4399,14 @@ function handleUserRoleChange() {
     const adminObj = admins.find(a => a.id === val);
     if (adminObj) {
       const initials = adminObj.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      if (avatar) avatar.textContent = initials;
+      if (avatar) {
+        avatar.textContent = initials;
+        avatar.className = 'user-avatar user-avatar-representative';
+      }
       if (subtext) subtext.textContent = 'Otopark Temsilcisi';
+    }
+    if (adminUserBlock) {
+      adminUserBlock.className = 'admin-user admin-user-representative';
     }
     if (tabOto) tabOto.style.display = 'none';
     if (tabAdm) tabAdm.style.display = 'none';

@@ -4109,3 +4109,141 @@ textarea.is-invalid {
   background-color: var(--color-border-light);
   color: var(--color-primary-dark);
 }
+
+/* ==========================================================================
+   PREMIUM ADMIN SELECTOR STYLES
+   ========================================================================== */
+
+/* Outer container */
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effect */
+.admin-user:hover {
+  transform: translateY(-1px);
+}
+
+/* Super Admin State */
+.admin-user.admin-user-superadmin {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(253, 246, 227, 0.75));
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08), 0 1px 3px rgba(245, 158, 11, 0.05);
+}
+.admin-user.admin-user-superadmin:hover {
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15), 0 2px 6px rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+/* Representative State */
+.admin-user.admin-user-representative {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(15, 59, 162, 0.03));
+  border-color: rgba(15, 59, 162, 0.12);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+.admin-user.admin-user-representative:hover {
+  box-shadow: 0 6px 14px rgba(15, 59, 162, 0.08);
+  border-color: rgba(15, 59, 162, 0.25);
+}
+
+/* User Avatar base */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Super Admin Avatar - Gold gradient with shiny animation */
+.user-avatar.user-avatar-superadmin {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.user-avatar.user-avatar-superadmin::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: shine-avatar 3s infinite linear;
+}
+
+@keyframes shine-avatar {
+  0% { transform: translate(-100%, -100%) rotate(30deg); }
+  100% { transform: translate(100%, 100%) rotate(30deg); }
+}
+
+/* Representative Avatar - Blue gradient */
+.user-avatar.user-avatar-representative {
+  background: linear-gradient(135deg, var(--color-primary), #2563eb);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(15, 59, 162, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* User Info Layout */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Active User select element */
+#active-user-role {
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  outline: none;
+  padding-right: 0.5rem;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+#active-user-role:hover {
+  color: var(--color-primary);
+}
+
+/* Active user subtext */
+#active-user-subtext {
+  font-size: 0.675rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: color 0.2s ease;
+}
+
+/* Super Admin Active user subtext gold highlight */
+.admin-user-superadmin #active-user-subtext {
+  color: #b45309;
+}
