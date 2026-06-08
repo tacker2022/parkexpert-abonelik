@@ -45,6 +45,9 @@ Mesaj: ${message}`);
         <company dil="TR">Netgsm</company>
         <usercode>${usercode}</usercode>
         <password>${password}</password>
+        <startdate></startdate>
+        <stopdate></stopdate>
+        <type>1:n</type>
         <msgheader>${msgheader}</msgheader>
     </header>
     <body>
