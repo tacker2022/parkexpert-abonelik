@@ -231,10 +231,6 @@ export async function onRequest(context) {
           console.error("Failed to send notifications on apply:", waErr);
         }
       })()
-    );tch (waErr) {
-          console.error("Failed to send WhatsApp/Email message on apply:", waErr);
-        }
-      })()
     );
 
     return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
