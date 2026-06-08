@@ -41,7 +41,7 @@ export function formatDateForNetgsm(date) {
   return `${day}${month}${year}${hours}${minutes}`; // ddMMyyyyHHmm
 }
 
-async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDate) {
+async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDate, location = "Sistem") {
   const supabaseUrl = env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = env.SUPABASE_ANON_KEY;
 
@@ -57,6 +57,7 @@ async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDat
       phone: p,
       message: message,
       status: status || "Beklemede",
+      location: location || "Sistem",
       scheduled_at: scheduledDate || null,
       created_at: new Date().toISOString()
     }));
@@ -81,7 +82,7 @@ async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDat
   }
 }
 
-export async function sendSMS(phone, message, env, scheduledDate, flashSms, filter = "0") {
+export async function sendSMS(phone, message, env, scheduledDate, flashSms, filter = "0", location = "Sistem") {
   const usercode = env.NETGSM_USERCODE;
   const password = env.NETGSM_PASSWORD;
   const msgheader = env.NETGSM_HEADER;
@@ -111,7 +112,7 @@ Flash SMS: ${flashSms ? 'Evet' : 'Hayır'}
     // Log simulated SMS
     const mockJobId = "SIM-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     const simStatus = "Simüle Edildi" + (flashSms ? " (Flash)" : "");
-    await logSMSToSupabase(cleanedPhones, message, env, mockJobId, simStatus, scheduledDate);
+    await logSMSToSupabase(cleanedPhones, message, env, mockJobId, simStatus, scheduledDate, location);
 
     return { success: true, simulated: true, reason: "Missing Netgsm configurations" };
   }
@@ -154,7 +155,7 @@ Flash SMS: ${flashSms ? 'Evet' : 'Hayır'}
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[Netgsm API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
-      await logSMSToSupabase(cleanedPhones, message, env, null, `Hata: HTTP ${res.status}`, scheduledDate);
+      await logSMSToSupabase(cleanedPhones, message, env, null, `Hata: HTTP ${res.status}`, scheduledDate, location);
       return { success: false, status: res.status, error: errText };
     }
 
@@ -166,17 +167,17 @@ Flash SMS: ${flashSms ? 'Evet' : 'Hayır'}
       console.log(`[Netgsm SMS API Başarılı] Alıcılar: ${cleanedPhones.length} adet, JobID: ${jobId}`);
       
       const initStatus = (scheduledDate ? "Zamanlandı" : "Gönderildi") + (flashSms ? " (Flash)" : "");
-      await logSMSToSupabase(cleanedPhones, message, env, jobId, initStatus, scheduledDate);
+      await logSMSToSupabase(cleanedPhones, message, env, jobId, initStatus, scheduledDate, location);
 
       return { success: true, jobId };
     } else {
       console.error(`[Netgsm SMS API Hatası Kodu: ${code}] Yanıt: ${responseText}`);
-      await logSMSToSupabase(cleanedPhones, message, env, null, `Hata: Kod ${code}`, scheduledDate);
+      await logSMSToSupabase(cleanedPhones, message, env, null, `Hata: Kod ${code}`, scheduledDate, location);
       return { success: false, errorCode: code, error: responseText };
     }
   } catch (err) {
     console.error(`[Netgsm SMS API Çökme Hatası]:`, err);
-    await logSMSToSupabase(cleanedPhones, message, env, null, "Hata: Bağlantı Hatası", scheduledDate);
+    await logSMSToSupabase(cleanedPhones, message, env, null, "Hata: Bağlantı Hatası", scheduledDate, location);
     return { success: false, error: err.message };
   }
 }

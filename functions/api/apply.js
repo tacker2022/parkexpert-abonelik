@@ -290,7 +290,7 @@ export async function onRequest(context) {
               }
             }
 
-            await sendSMS(phone, smsMessage, context.env, scheduledSMSDate, settings.flash_sms);
+            await sendSMS(phone, smsMessage, context.env, scheduledSMSDate, settings.flash_sms, "0", parkingLocation);
           }
         } catch (waErr) {
           console.error("Failed to send notifications on apply:", waErr);

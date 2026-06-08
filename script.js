@@ -6415,7 +6415,7 @@ async function loadSMSReports(forceRefresh = false) {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+      <td colspan="6" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
         <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center; justify-content: center;">
           <i class="spinner-border spinner-border-sm" role="status" style="width: 20px; height: 20px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; color: var(--color-primary); margin-bottom: 0.5rem;"></i>
           <span>SMS raporları yükleniyor...</span>
@@ -6437,11 +6437,11 @@ async function loadSMSReports(forceRefresh = false) {
       if (errData.error === "sms_logs_table_missing") {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" style="text-align: center; padding: 3rem; color: #b45309;">
+            <td colspan="6" style="text-align: center; padding: 3rem; color: #b45309;">
               <div style="display: flex; flex-direction: column; gap: 0.8rem; align-items: center; max-width: 550px; margin: 0 auto;">
                 <i data-lucide="alert-triangle" style="width: 36px; height: 36px; color: #d97706;"></i>
-                <span style="font-weight: 700; font-size: 1rem; color: #d97706;">Supabase Veritabanı Tablosu Eksik!</span>
-                <span style="font-size: 0.825rem; line-height: 1.5; color: var(--color-text-muted);">SMS raporlama özelliğini kullanabilmek için Supabase panelinizdeki <strong>SQL Editor</strong> ekranında aşağıdaki komutu çalıştırarak tabloyu oluşturmanız gerekmektedir:</span>
+                <span style="font-weight: 700; font-size: 1rem; color: #d97706;">Supabase Veritabanı Tablosu Eksik veya Güncellenmeli!</span>
+                <span style="font-size: 0.825rem; line-height: 1.5; color: var(--color-text-muted);">SMS raporlama özelliğini kullanabilmek ve konumları görebilmek için Supabase panelinizdeki <strong>SQL Editor</strong> ekranında aşağıdaki komutu çalıştırarak tabloyu güncelleyin:</span>
                 <pre style="background: #f1f5f9; padding: 0.75rem; border-radius: 6px; font-size: 0.75rem; text-align: left; width: 100%; overflow-x: auto; border: 1px solid var(--color-border-light); color: #334155; font-family: monospace;">
 CREATE TABLE IF NOT EXISTS sms_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -6449,9 +6449,11 @@ CREATE TABLE IF NOT EXISTS sms_logs (
     phone VARCHAR(50) NOT NULL,
     message TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'Beklemede',
+    location VARCHAR(100) DEFAULT 'Sistem',
     scheduled_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+ALTER TABLE sms_logs ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'Sistem';
 ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
               </div>
             </td>
@@ -6471,7 +6473,7 @@ ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
     console.error("loadSMSReports error:", err);
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-accent-red);">
+        <td colspan="6" style="text-align: center; padding: 3rem; color: var(--color-accent-red);">
           <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
             <i data-lucide="x-circle" style="width: 24px; height: 24px; color: var(--color-accent-red);"></i>
             <span>Hata: ${err.message}</span>
@@ -6544,6 +6546,7 @@ function filterSMSLogs(filterType) {
     filtered = filtered.filter(log => 
       log.phone.toLowerCase().includes(searchVal) || 
       log.message.toLowerCase().includes(searchVal) ||
+      (log.location && log.location.toLowerCase().includes(searchVal)) ||
       (log.job_id && log.job_id.toLowerCase().includes(searchVal))
     );
   }
@@ -6558,7 +6561,7 @@ function renderSMSReportsTable(logs) {
   if (logs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+        <td colspan="6" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
           <span>SMS kaydı bulunamadı.</span>
         </td>
       </tr>
@@ -6598,6 +6601,7 @@ function renderSMSReportsTable(logs) {
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
         <td style="padding: 1rem 1.5rem; font-weight: 600; color: var(--color-text-dark);">${log.phone}</td>
+        <td style="padding: 1rem 1.5rem; color: var(--color-text-dark); font-weight: 500;">${log.location || 'Sistem'}</td>
         <td style="padding: 1rem 1.5rem; max-width: 350px; white-space: normal; word-break: break-word; line-height: 1.4;">${log.message}</td>
         <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">
           <div style="display: flex; flex-direction: column; gap: 0.15rem;">

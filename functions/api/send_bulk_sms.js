@@ -194,7 +194,7 @@ export async function onRequest(context) {
         const promises = chunk.map(async (u) => {
           const personalizedMsg = replaceVars(message, u);
           try {
-            const res = await sendSMS(u.phone, personalizedMsg, context.env, null, flashSms, filter);
+            const res = await sendSMS(u.phone, personalizedMsg, context.env, null, flashSms, filter, u.appLocation);
             if (res.success) {
               results.successCount++;
             } else {
@@ -221,7 +221,8 @@ export async function onRequest(context) {
     } else {
       // No placeholders, send to everyone in one bulk 1:n XML request
       const phoneList = deduplicatedUsers.map(u => u.phone);
-      const res = await sendSMS(phoneList, message, context.env, null, flashSms, filter);
+      const bulkLocation = targetType === "otopark" ? (deduplicatedUsers[0]?.appLocation || "Otopark") : (targetType === "manual" ? "Manuel Alıcı" : "Genel Duyuru");
+      const res = await sendSMS(phoneList, message, context.env, null, flashSms, filter, bulkLocation);
       
       if (res.success) {
         return new Response(JSON.stringify({

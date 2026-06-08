@@ -132,7 +132,7 @@ export async function onRequest(context) {
       } else {
         smsMessage = `Bu bir test mesajidir. Takip No: ${mockAppId}. PARKEXPERT`;
       }
-      const smsResult = await sendSMS(testPhone, smsMessage, context.env, scheduledDate, flashSms);
+      const smsResult = await sendSMS(testPhone, smsMessage, context.env, scheduledDate, flashSms, "0", parkingLocation);
       smsSuccess = smsResult.success !== false;
       if (!smsSuccess) smsError = smsResult.error;
     } catch (e) {
