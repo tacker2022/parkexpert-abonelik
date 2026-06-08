@@ -48,8 +48,13 @@ async function verifyToken(token, secret) {
 }
 
 export async function onRequest(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const allowOrigin = (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin === "https://parkexpertabonelik.net")
+    ? origin
+    : "https://parkexpertabonelik.net";
+
   const headers = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization"
   };
@@ -164,7 +169,7 @@ export async function onRequest(context) {
     const fileHeaders = new Headers();
     object.writeHttpMetadata(fileHeaders);
     fileHeaders.set("etag", object.httpEtag);
-    fileHeaders.set("Access-Control-Allow-Origin", "*");
+    fileHeaders.set("Access-Control-Allow-Origin", allowOrigin);
     
     // Set appropriate disposition header to preview/download safely
     fileHeaders.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");

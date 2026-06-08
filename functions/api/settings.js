@@ -2,8 +2,13 @@
 import { logAudit } from "./audit_helper.js";
 
 export async function onRequest(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const allowOrigin = (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin === "https://parkexpertabonelik.net")
+    ? origin
+    : "https://parkexpertabonelik.net";
+
   const headers = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json"
