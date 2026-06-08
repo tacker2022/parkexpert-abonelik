@@ -80,6 +80,7 @@ export async function onRequest(context) {
     try {
       const waResult = await sendWhatsApp(testPhone, waMessage, context.env);
       waSuccess = waResult.success !== false;
+      if (!waSuccess) waError = waResult.error;
     } catch (e) {
       waError = e.message;
     }
