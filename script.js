@@ -3906,7 +3906,7 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
-  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports') && currentAdminUser !== 'superadmin') {
+  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -3919,6 +3919,7 @@ function switchAdminTab(tabName) {
   const tabAnalytic = document.getElementById('tab-analytics');
   const tabSet = document.getElementById('tab-settings');
   const tabSmsReports = document.getElementById('tab-sms-reports');
+  const tabBulk = document.getElementById('tab-bulk-sms');
   
   const panelApp = document.getElementById('panel-applications');
   const panelComp = document.getElementById('panel-companies');
@@ -3927,6 +3928,7 @@ function switchAdminTab(tabName) {
   const panelAnalytic = document.getElementById('panel-analytics');
   const panelSet = document.getElementById('panel-settings');
   const panelSmsReports = document.getElementById('panel-sms-reports');
+  const panelBulk = document.getElementById('panel-bulk-sms');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -3938,6 +3940,7 @@ function switchAdminTab(tabName) {
   if (tabAnalytic) tabAnalytic.classList.remove('active');
   if (tabSet) tabSet.classList.remove('active');
   if (tabSmsReports) tabSmsReports.classList.remove('active');
+  if (tabBulk) tabBulk.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
@@ -3947,6 +3950,7 @@ function switchAdminTab(tabName) {
   if (panelSet) panelSet.style.display = 'none';
   if (panelAnalytic) panelAnalytic.style.display = 'none';
   if (panelSmsReports) panelSmsReports.style.display = 'none';
+  if (panelBulk) panelBulk.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
@@ -3971,6 +3975,10 @@ function switchAdminTab(tabName) {
     if (tabSmsReports) tabSmsReports.classList.add('active');
     if (panelSmsReports) panelSmsReports.style.display = 'block';
     loadSMSReports();
+  } else if (tabName === 'bulk-sms') {
+    if (tabBulk) tabBulk.classList.add('active');
+    if (panelBulk) panelBulk.style.display = 'block';
+    loadOtoparksForBulkSms();
   } else if (tabName === 'analytics') {
     if (tabAnalytic) tabAnalytic.classList.add('active');
     if (panelAnalytic) panelAnalytic.style.display = 'block';
@@ -4411,6 +4419,7 @@ function handleUserRoleChange() {
   const tabAdm = document.getElementById('tab-admins');
   const tabSet = document.getElementById('tab-settings');
   const tabSmsReports = document.getElementById('tab-sms-reports');
+  const tabBulk = document.getElementById('tab-bulk-sms');
   const dangerZone = document.querySelector('.sidebar-footer');
   
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
@@ -4428,6 +4437,7 @@ function handleUserRoleChange() {
     if (tabAdm) tabAdm.style.display = 'inline-flex';
     if (tabSet) tabSet.style.display = 'inline-flex';
     if (tabSmsReports) tabSmsReports.style.display = 'inline-flex';
+    if (tabBulk) tabBulk.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
   } else {
     const adminObj = admins.find(a => a.id === val);
@@ -4445,13 +4455,14 @@ function handleUserRoleChange() {
     if (tabOto) tabOto.style.display = 'none';
     if (tabAdm) tabAdm.style.display = 'none';
     if (tabSet) tabSet.style.display = 'none';
+    if (tabSmsReports) tabSmsReports.style.display = 'none';
+    if (tabBulk) tabBulk.style.display = 'none';
     if (dangerZone) dangerZone.style.display = 'none';
  
-    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings') {
+    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms') {
       switchAdminTab('applications');
     }
   }
-
   loadApplications();
   populateLocationFilter();
   applyFilters();
@@ -6586,6 +6597,158 @@ function renderSMSReportsTable(logs) {
 
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
+  }
+}
+
+/* ==========================================================================
+   BULK SMS MARKETING & CAMPAIGN CONTROLLERS
+   ========================================================================== */
+
+async function loadOtoparksForBulkSms() {
+  const otoparkSelect = document.getElementById('bulk-sms-otopark');
+  if (!otoparkSelect) return;
+  
+  let otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  if (otoparks.length === 0) {
+    await loadOtoparks();
+    otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  }
+  
+  otoparkSelect.innerHTML = otoparks.map(p => `
+    <option value="${p.id}">${p.name} (${p.location || 'Konum Yok'})</option>
+  `).join('');
+}
+
+function toggleBulkTargetFields() {
+  const target = document.getElementById('bulk-sms-target')?.value;
+  const otoparkContainer = document.getElementById('bulk-sms-otopark-container');
+  const manualContainer = document.getElementById('bulk-sms-manual-container');
+  const varsContainer = document.getElementById('bulk-sms-vars-container');
+  
+  if (otoparkContainer) otoparkContainer.style.display = target === 'otopark' ? 'flex' : 'none';
+  if (manualContainer) manualContainer.style.display = target === 'manual' ? 'flex' : 'none';
+  if (varsContainer) varsContainer.style.display = target === 'manual' ? 'none' : 'flex';
+}
+
+function insertBulkPlaceholder(placeholder) {
+  const textarea = document.getElementById('bulk-sms-message');
+  if (!textarea) return;
+  
+  const startPos = textarea.selectionStart;
+  const endPos = textarea.selectionEnd;
+  const text = textarea.value;
+  
+  textarea.value = text.substring(0, startPos) + placeholder + text.substring(endPos);
+  textarea.focus();
+  textarea.selectionStart = startPos + placeholder.length;
+  textarea.selectionEnd = startPos + placeholder.length;
+  
+  updateBulkSMSCounter();
+}
+
+function updateBulkSMSCounter() {
+  const textarea = document.getElementById('bulk-sms-message');
+  const counter = document.getElementById('bulk-sms-counter');
+  if (!textarea || !counter) return;
+  
+  const len = textarea.value.length;
+  let parts = 1;
+  if (len > 160) {
+    parts = Math.ceil(len / 153);
+  }
+  counter.textContent = `${len} karakter / ${parts} SMS`;
+}
+
+async function submitBulkSMS(event) {
+  event.preventDefault();
+  
+  const targetType = document.getElementById('bulk-sms-target')?.value;
+  const otoparkId = document.getElementById('bulk-sms-otopark')?.value;
+  const manualNumbers = document.getElementById('bulk-sms-manual-numbers')?.value;
+  const message = document.getElementById('bulk-sms-message')?.value;
+  const isCommercial = document.querySelector('input[name="bulk-sms-commercial"]:checked')?.value === 'true';
+  const flashSms = document.getElementById('bulk-sms-flash')?.checked || false;
+  
+  const btn = document.getElementById('btn-send-bulk-sms');
+  const statusText = document.getElementById('bulk-sms-status-text');
+  
+  if (!message) {
+    alert("Lütfen mesaj içeriği girin.");
+    return;
+  }
+  
+  if (targetType === 'manual' && !manualNumbers) {
+    alert("Lütfen en az bir telefon numarası girin.");
+    return;
+  }
+  
+  const confirmMsg = `Toplu SMS gönderimi başlatılacaktır.\n\nGruptaki numaralara bu mesaj iletilecektir. Emin misiniz?\n\nTür: ${isCommercial ? 'Ticari / Reklam (İYS İzin Kontrollü)' : 'Bilgilendirme (İYS Filtresiz)'}\nFlash SMS: ${flashSms ? 'Evet' : 'Hayır'}`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+  
+  btn.disabled = true;
+  const originalBtnHTML = btn.innerHTML;
+  btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i> Gönderiliyor...';
+  
+  if (statusText) {
+    statusText.style.display = 'inline-block';
+    statusText.style.color = 'var(--color-primary)';
+    statusText.textContent = 'İstek gönderiliyor, lütfen bekleyin...';
+  }
+  
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  
+  try {
+    const res = await fetch('/api/send_bulk_sms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        message,
+        targetType,
+        otoparkId,
+        manualNumbers,
+        isCommercial,
+        flashSms
+      })
+    });
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.error || "Toplu SMS gönderimi sırasında hata oluştu.");
+    }
+    
+    if (statusText) {
+      statusText.style.color = '#10b981';
+      if (result.mode === 'personalized') {
+        statusText.textContent = `Tamamlandı! ${result.successCount} başarılı, ${result.failCount} başarısız.`;
+      } else {
+        statusText.textContent = `Tamamlandı! ${result.totalSent} adet SMS kuyruğa iletildi. (Job ID: ${result.jobId})`;
+      }
+    }
+    
+    document.getElementById('bulk-sms-message').value = '';
+    if (document.getElementById('bulk-sms-manual-numbers')) {
+      document.getElementById('bulk-sms-manual-numbers').value = '';
+    }
+    updateBulkSMSCounter();
+    
+    alert("Toplu SMS gönderim işlemi başarıyla tamamlandı.");
+    
+  } catch (err) {
+    console.error(err);
+    if (statusText) {
+      statusText.style.color = '#ef4444';
+      statusText.textContent = err.message;
+    }
+    alert(err.message);
+  } finally {
+    btn.innerHTML = originalBtnHTML;
+    btn.disabled = false;
   }
 }
 

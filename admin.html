@@ -264,6 +264,10 @@
             <i data-lucide="mail-warning" style="width: 16px; height: 16px;"></i>
             <span>SMS Raporları</span>
           </button>
+          <button class="admin-tab-btn" id="tab-bulk-sms" onclick="switchAdminTab('bulk-sms')" style="display: none;">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+            <span>Toplu SMS Gönderimi</span>
+          </button>
         </div>
 
         <!-- Panel 1: Detailed Applications -->
@@ -617,7 +621,105 @@
           </div>
         </div>
 
+        <!-- Panel 8: Bulk SMS Sender Dashboard -->
+        <div id="panel-bulk-sms" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>Toplu SMS Gönderimi ✉️</h3>
+            <p>Seçtiğiniz alıcı grubuna toplu duyuru, kampanya veya bilgilendirme SMS'leri gönderebilirsiniz.</p>
+          </section>
 
+          <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 2rem; margin-top: 1.5rem; box-shadow: var(--shadow-sm); max-width: 800px;">
+            <form id="form-bulk-sms" onsubmit="submitBulkSMS(event)" style="display: flex; flex-direction: column; gap: 1.5rem;">
+              
+              <!-- Target Selection -->
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label for="bulk-sms-target" style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem;">Alıcı Grubu</label>
+                <select id="bulk-sms-target" onchange="toggleBulkTargetFields()" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem; background-color: #fff;">
+                  <option value="approved">Tüm Onaylı Aboneler (Aktif Aboneler)</option>
+                  <option value="pending">Tüm Bekleyen Başvurular</option>
+                  <option value="all">Sistemdeki Tüm Başvurular (Hepsi)</option>
+                  <option value="otopark">Belirli Bir Otoparkın Aboneleri</option>
+                  <option value="manual">Manuel Telefon Numaraları Girişi</option>
+                </select>
+              </div>
+
+              <!-- Otopark Selector (Hidden by default) -->
+              <div id="bulk-sms-otopark-container" style="display: none; flex-direction: column; gap: 0.5rem;">
+                <label for="bulk-sms-otopark" style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem;">Otopark Seçin</label>
+                <select id="bulk-sms-otopark" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem; background-color: #fff;">
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+
+              <!-- Manual Numbers Input (Hidden by default) -->
+              <div id="bulk-sms-manual-container" style="display: none; flex-direction: column; gap: 0.5rem;">
+                <label for="bulk-sms-manual-numbers" style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem;">Telefon Numaraları (Virgül, boşluk veya alt alta yazın)</label>
+                <textarea id="bulk-sms-manual-numbers" placeholder="Örnek: 5372939874, 5321112233" style="width: 100%; min-height: 100px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem; resize: vertical;"></textarea>
+              </div>
+
+              <!-- Message Composer -->
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <label for="bulk-sms-message" style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem;">Mesaj İçeriği</label>
+                  <span id="bulk-sms-counter" style="font-size: 0.775rem; color: var(--color-text-muted);">0 karakter / 0 SMS</span>
+                </div>
+                
+                <!-- Variable helpers -->
+                <div id="bulk-sms-vars-container" style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                  <button type="button" onclick="insertBulkPlaceholder('{fullName}')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; min-height: 24px; font-weight: 600;">{fullName} (İsim)</button>
+                  <button type="button" onclick="insertBulkPlaceholder('{plateNumber}')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; min-height: 24px; font-weight: 600;">{plateNumber} (Plaka)</button>
+                  <button type="button" onclick="insertBulkPlaceholder('{appLocation}')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; min-height: 24px; font-weight: 600;">{appLocation} (Otopark)</button>
+                </div>
+
+                <textarea id="bulk-sms-message" oninput="updateBulkSMSCounter()" placeholder="Mesajınızı yazın..." style="width: 100%; min-height: 120px; border: 1px solid var(--color-border-light); padding: 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.875rem; resize: vertical; line-height: 1.5;" required></textarea>
+              </div>
+
+              <!-- Options Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; border-top: 1px dashed var(--color-border-light); border-bottom: 1px dashed var(--color-border-light); padding: 1.25rem 0;">
+                
+                <!-- IYS Toggle -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <span style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem;">Gönderim Türü (İYS Filtresi)</span>
+                  <div style="display: flex; gap: 1rem; margin-top: 0.25rem;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--color-text-dark); cursor: pointer;">
+                      <input type="radio" name="bulk-sms-commercial" value="false" checked style="cursor: pointer; width: 16px; height: 16px;">
+                      <span>Bilgilendirme (İYS Filtresiz)</span>
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--color-text-dark); cursor: pointer;">
+                      <input type="radio" name="bulk-sms-commercial" value="true" style="cursor: pointer; width: 16px; height: 16px;">
+                      <span>Ticari / Reklam (İYS Filtreli)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Flash SMS Toggle -->
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                    <span style="font-weight: 700; color: var(--color-text-dark); font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                      <i data-lucide="zap" style="width: 14px; height: 14px; color: #eab308; fill: rgba(234,179,8,0.1);"></i> Flash SMS
+                    </span>
+                    <span style="font-size: 0.725rem; color: var(--color-text-muted);">Doğrudan ekranda popup belirir.</span>
+                  </div>
+                  <label class="switch-toggle" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                    <input type="checkbox" id="bulk-sms-flash" style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider-round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
+                  </label>
+                </div>
+
+              </div>
+
+              <!-- Submit button and feedback -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                <span id="bulk-sms-status-text" style="font-size: 0.8rem; font-weight: 600; display: none;"></span>
+                <button type="submit" class="btn btn-primary" id="btn-send-bulk-sms" style="min-height: 42px; padding: 0 2rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                  <span>SMS Gönderimini Başlat</span>
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
 
       </main>
 
