@@ -80,7 +80,7 @@ export async function onRequest(context) {
     // GET: List all otoparks (Public)
     // ----------------------------------------------------
     if (method === "GET") {
-      const res = await fetch(`${supabaseUrl}/rest/v1/otoparks?select=*&order=name.asc`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/otoparks?is_deleted=eq.false&select=*&order=name.asc`, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
@@ -195,7 +195,7 @@ export async function onRequest(context) {
           .replace(/\s+/g, "-");
 
         // Check if exists
-        const checkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${generatedId}&select=id`, {
+        const checkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${generatedId}&select=id,is_deleted`, {
           headers: {
             "apikey": supabaseAnonKey,
             "Authorization": `Bearer ${supabaseAnonKey}`
@@ -205,7 +205,52 @@ export async function onRequest(context) {
         if (checkRes.ok) {
           const matched = await checkRes.json();
           if (matched.length > 0) {
-            return new Response(JSON.stringify({ error: "Bu isimde bir otopark zaten kayıtlı!" }), { status: 400, headers });
+            const existingPark = matched[0];
+            if (existingPark.is_deleted) {
+              // Reactivate existing deleted otopark
+              const reactivatePayload = {
+                ...dbPayload,
+                is_deleted: false,
+                is_active: isActive !== false
+              };
+
+              const reactivateRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${generatedId}`, {
+                method: "PATCH",
+                headers: {
+                  "apikey": supabaseAnonKey,
+                  "Authorization": `Bearer ${supabaseAnonKey}`,
+                  "Content-Type": "application/json",
+                  "Prefer": "return=representation"
+                },
+                body: JSON.stringify(reactivatePayload)
+              });
+
+              if (!reactivateRes.ok) {
+                const errText = await reactivateRes.text();
+                return new Response(JSON.stringify({ error: `Supabase reactivate error: ${errText}` }), { status: reactivateRes.status, headers });
+              }
+
+              const data = await reactivateRes.json();
+
+              // Log audit action
+              const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+              context.waitUntil(
+                logAudit({
+                  supabaseUrl,
+                  supabaseAnonKey,
+                  username: user.username,
+                  role: user.role,
+                  actionType: "create_otopark",
+                  targetId: generatedId,
+                  details: `"${name}" adındaki arşivlenmiş otopark işletmesi tekrar etkinleştirildi.`,
+                  ipAddress
+                })
+              );
+
+              return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
+            } else {
+              return new Response(JSON.stringify({ error: "Bu isimde bir otopark zaten kayıtlı!" }), { status: 400, headers });
+            }
           }
         }
 
@@ -252,7 +297,7 @@ export async function onRequest(context) {
     }
 
     // ----------------------------------------------------
-    // DELETE: Delete an otopark
+    // DELETE: Delete an otopark (Soft Delete / Archive)
     // ----------------------------------------------------
     if (method === "DELETE") {
       const { searchParams } = new URL(context.request.url);
@@ -263,17 +308,19 @@ export async function onRequest(context) {
       }
 
       const deleteRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${id}`, {
-        method: "DELETE",
+        method: "PATCH",
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`,
+          "Content-Type": "application/json",
           "Prefer": "return=representation"
-        }
+        },
+        body: JSON.stringify({ is_deleted: true, is_active: false })
       });
 
       if (!deleteRes.ok) {
         const errText = await deleteRes.text();
-        return new Response(JSON.stringify({ error: `Supabase delete error: ${errText}` }), { status: deleteRes.status, headers });
+        return new Response(JSON.stringify({ error: `Supabase archive error: ${errText}` }), { status: deleteRes.status, headers });
       }
 
       const deletedData = await deleteRes.json();
@@ -290,7 +337,7 @@ export async function onRequest(context) {
           role: user.role,
           actionType: "delete_otopark",
           targetId: id,
-          details: `"${otoparkName}" otopark işletmesi silindi.`,
+          details: `"${otoparkName}" otopark işletmesi arşivlendi (silindi).`,
           ipAddress
         })
       );
