@@ -3190,6 +3190,9 @@ async function updateCurrentAppStatus(newStatus) {
       
       // Refresh table rendering with current filter set
       applyFilters();
+      if (currentAdminTab === 'expirations') {
+        renderExpirationsDashboard();
+      }
       
       // Refresh the drawer body content to show updated status
       openDrawer(currentAppId);
@@ -3954,6 +3957,7 @@ function switchAdminTab(tabName) {
   }
   currentAdminTab = tabName;
   const tabApp = document.getElementById('tab-applications');
+  const tabExp = document.getElementById('tab-expirations');
   const tabComp = document.getElementById('tab-companies');
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
@@ -3963,6 +3967,7 @@ function switchAdminTab(tabName) {
   const tabBulk = document.getElementById('tab-bulk-sms');
   
   const panelApp = document.getElementById('panel-applications');
+  const panelExp = document.getElementById('panel-expirations');
   const panelComp = document.getElementById('panel-companies');
   const panelOto = document.getElementById('panel-otoparks');
   const panelAdm = document.getElementById('panel-admins');
@@ -3975,6 +3980,7 @@ function switchAdminTab(tabName) {
 
   // Reset active classes
   tabApp.classList.remove('active');
+  if (tabExp) tabExp.classList.remove('active');
   tabComp.classList.remove('active');
   if (tabOto) tabOto.classList.remove('active');
   if (tabAdm) tabAdm.classList.remove('active');
@@ -3985,6 +3991,7 @@ function switchAdminTab(tabName) {
 
   // Hide panels
   panelApp.style.display = 'none';
+  if (panelExp) panelExp.style.display = 'none';
   panelComp.style.display = 'none';
   if (panelOto) panelOto.style.display = 'none';
   if (panelAdm) panelAdm.style.display = 'none';
@@ -3996,6 +4003,10 @@ function switchAdminTab(tabName) {
   if (tabName === 'applications') {
     tabApp.classList.add('active');
     panelApp.style.display = 'block';
+  } else if (tabName === 'expirations') {
+    if (tabExp) tabExp.classList.add('active');
+    if (panelExp) panelExp.style.display = 'block';
+    renderExpirationsDashboard();
   } else if (tabName === 'companies') {
     tabComp.classList.add('active');
     panelComp.style.display = 'block';
@@ -4401,6 +4412,9 @@ async function saveQuickEdit(event) {
     // Refresh interface filters, tables, and stats
     populateCompanyFilter();
     applyFilters();
+    if (currentAdminTab === 'expirations') {
+      renderExpirationsDashboard();
+    }
 
     // Reopen drawer to refresh values
     openDrawer(appId);
@@ -4563,13 +4577,17 @@ function handleUserRoleChange() {
 
 function populateLocationFilter() {
   const filterSelect = document.getElementById('filter-location');
-  if (!filterSelect) return;
+  const expiryFilterSelect = document.getElementById('expiry-filter-location');
+  if (!filterSelect && !expiryFilterSelect) return;
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
 
-  const currentSelection = filterSelect.value;
-  filterSelect.innerHTML = '<option value="">Tüm Konumlar</option>';
+  const currentSelection = filterSelect ? filterSelect.value : '';
+  const currentExpirySelection = expiryFilterSelect ? expiryFilterSelect.value : '';
+
+  if (filterSelect) filterSelect.innerHTML = '<option value="">Tüm Konumlar</option>';
+  if (expiryFilterSelect) expiryFilterSelect.innerHTML = '<option value="">Tüm Konumlar</option>';
 
   let allowedOtoparks = otoparks;
   if (currentAdminUser !== 'superadmin') {
@@ -4592,21 +4610,51 @@ function populateLocationFilter() {
   });
 
   for (const [category, list] of Object.entries(grouped)) {
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = category;
+    let optgroup = null;
+    let expiryOptgroup = null;
+
+    if (filterSelect) {
+      optgroup = document.createElement('optgroup');
+      optgroup.label = category;
+    }
+    if (expiryFilterSelect) {
+      expiryOptgroup = document.createElement('optgroup');
+      expiryOptgroup.label = category;
+    }
+
     list.forEach(park => {
-      const option = document.createElement('option');
-      option.value = park.name;
-      option.textContent = park.name;
-      optgroup.appendChild(option);
+      if (filterSelect) {
+        const option = document.createElement('option');
+        option.value = park.name;
+        option.textContent = park.name;
+        optgroup.appendChild(option);
+      }
+      if (expiryFilterSelect) {
+        const option = document.createElement('option');
+        option.value = park.name;
+        option.textContent = park.name;
+        expiryOptgroup.appendChild(option);
+      }
     });
-    filterSelect.appendChild(optgroup);
+
+    if (filterSelect && optgroup) filterSelect.appendChild(optgroup);
+    if (expiryFilterSelect && expiryOptgroup) expiryFilterSelect.appendChild(expiryOptgroup);
   }
 
-  if (allowedOtoparks.some(park => park.name === currentSelection)) {
-    filterSelect.value = currentSelection;
-  } else {
-    filterSelect.value = '';
+  if (filterSelect) {
+    if (allowedOtoparks.some(park => park.name === currentSelection)) {
+      filterSelect.value = currentSelection;
+    } else {
+      filterSelect.value = '';
+    }
+  }
+
+  if (expiryFilterSelect) {
+    if (allowedOtoparks.some(park => park.name === currentExpirySelection)) {
+      expiryFilterSelect.value = currentExpirySelection;
+    } else {
+      expiryFilterSelect.value = '';
+    }
   }
 }
 
@@ -4667,6 +4715,274 @@ function renderAdminsTable() {
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
+function renderExpirationsDashboard() {
+  const tbody = document.getElementById('expirations-table-body');
+  const totalEl = document.getElementById('stats-exp-total');
+  const expiredEl = document.getElementById('stats-exp-expired');
+  const warning3dEl = document.getElementById('stats-exp-warning3d');
+  const warning7dEl = document.getElementById('stats-exp-warning7d');
+  const countResultsEl = document.getElementById('expirations-results-count');
+
+  if (!tbody) return;
+
+  const searchQuery = (document.getElementById('expiry-search-query')?.value || '').toLowerCase().trim();
+  const filterLocation = document.getElementById('expiry-filter-location')?.value || '';
+  const filterStatus = document.getElementById('expiry-filter-status')?.value || '';
+
+  // 1. Get ONLY approved applications
+  const approvedApps = allApplications.filter(app => app.status === 'Onaylandı');
+
+  // 2. Map and calculate remaining days
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const appsWithDays = approvedApps.map(app => {
+    let remainingDays = null;
+    if (app.subscription_expires_at) {
+      const expiry = new Date(app.subscription_expires_at);
+      expiry.setHours(23, 59, 59, 999);
+      const diffTime = expiry.getTime() - today.getTime();
+      remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    return { ...app, remainingDays };
+  });
+
+  // Calculate overall metrics
+  const countTotal = appsWithDays.length;
+  const countExpired = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays <= 0).length;
+  const countWarning3d = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays > 0 && a.remainingDays <= 3).length;
+  const countWarning7d = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays > 3 && a.remainingDays <= 7).length;
+
+  if (totalEl) totalEl.textContent = countTotal;
+  if (expiredEl) expiredEl.textContent = countExpired;
+  if (warning3dEl) warning3dEl.textContent = countWarning3d;
+  if (warning7dEl) warning7dEl.textContent = countWarning7d;
+
+  // 3. Apply Filters
+  let filtered = appsWithDays.filter(app => {
+    // Location Filter
+    if (filterLocation && app.parking_location !== filterLocation) return false;
+
+    // Search Query
+    if (searchQuery) {
+      const matchesName = app.full_name?.toLowerCase().includes(searchQuery);
+      const matchesPlate = app.plate?.toLowerCase().includes(searchQuery) || app.plate_number?.toLowerCase().includes(searchQuery);
+      if (!matchesName && !matchesPlate) return false;
+    }
+
+    // Expiry Status Filter
+    if (filterStatus) {
+      if (filterStatus === 'expired') {
+        return app.remainingDays !== null && app.remainingDays <= 0;
+      } else if (filterStatus === 'warning3d') {
+        return app.remainingDays !== null && app.remainingDays > 0 && app.remainingDays <= 3;
+      } else if (filterStatus === 'warning7d') {
+        return app.remainingDays !== null && app.remainingDays > 3 && app.remainingDays <= 7;
+      } else if (filterStatus === 'active') {
+        return app.remainingDays === null || app.remainingDays > 7;
+      }
+    }
+
+    return true;
+  });
+
+  // 4. Sort: Expired and soon-to-expire at the top
+  filtered.sort((a, b) => {
+    if (a.remainingDays === null && b.remainingDays === null) return 0;
+    if (a.remainingDays === null) return 1;
+    if (b.remainingDays === null) return -1;
+    return a.remainingDays - b.remainingDays;
+  });
+
+  if (countResultsEl) {
+    countResultsEl.textContent = `(${filtered.length} abone gösteriliyor)`;
+  }
+
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-size: 0.95rem;">
+          Arama kriterlerine uygun aktif abone bulunamadı.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  filtered.forEach(app => {
+    const tr = document.createElement('tr');
+    tr.id = `expiry-row-${app.id}`;
+
+    // Format Plate
+    const plateFormatted = formatPlateSpacing(app.plate || app.plate_number || '');
+
+    // Kalan Gün Rozeti (Badge)
+    let badgeHtml = '';
+    if (app.remainingDays === null) {
+      badgeHtml = `<span class="status-badge" style="background-color: #f1f5f9; color: #64748b; font-weight: 700; border: 1px solid #cbd5e1;">Belirtilmemiş</span>`;
+    } else if (app.remainingDays < 0) {
+      badgeHtml = `<span class="status-badge" style="background-color: #fef2f2; color: #dc2626; font-weight: 700; border: 1px solid #fca5a5;">Süresi Doldu (${Math.abs(app.remainingDays)} gün önce)</span>`;
+    } else if (app.remainingDays === 0) {
+      badgeHtml = `<span class="status-badge" style="background-color: #fef2f2; color: #dc2626; font-weight: 700; border: 1px solid #fca5a5;">Bugün Son Gün! ⚠️</span>`;
+    } else if (app.remainingDays <= 3) {
+      badgeHtml = `<span class="status-badge" style="background-color: #fff7ed; color: #ea580c; font-weight: 700; border: 1px solid #ffedd5;">${app.remainingDays} Gün Kaldı ⏳</span>`;
+    } else if (app.remainingDays <= 7) {
+      badgeHtml = `<span class="status-badge" style="background-color: #fef9c3; color: #a16207; font-weight: 700; border: 1px solid #fef08a;">${app.remainingDays} Gün Kaldı</span>`;
+    } else {
+      badgeHtml = `<span class="status-badge" style="background-color: #f0fdf4; color: #15803d; font-weight: 700; border: 1px solid #bbf7d0;">Aktif (${app.remainingDays} gün)</span>`;
+    }
+
+    tr.innerHTML = `
+      <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
+      <td>
+        <div class="col-customer">
+          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${app.full_name}</span>
+          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${app.phone}</span>
+        </div>
+      </td>
+      <td><span class="col-plate">${plateFormatted}</span></td>
+      <td><span class="col-otopark">${app.parking_location}</span></td>
+      <td style="text-align: center;">${badgeHtml}</td>
+      <td>${app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : '<span style="color:var(--color-text-muted);font-style:italic;">Belirtilmemiş</span>'}</td>
+      <td style="text-align: center;">
+        <div style="display: flex; gap: 0.25rem; justify-content: center;">
+          <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Abonelik Detayını Gör" style="padding: 0.35rem; min-height: 28px;">
+            <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+          </button>
+          <button class="btn-table-action" onclick="editSubscriptionExpiry('${app.id}')" title="Bitiş Tarihini Düzenle" style="padding: 0.35rem; min-height: 28px; color: var(--color-primary);">
+            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+window.renderExpirationsDashboard = renderExpirationsDashboard;
+
+function exportExpirationsToExcel() {
+  const searchQuery = (document.getElementById('expiry-search-query')?.value || '').toLowerCase().trim();
+  const filterLocation = document.getElementById('expiry-filter-location')?.value || '';
+  const filterStatus = document.getElementById('expiry-filter-status')?.value || '';
+
+  const approvedApps = allApplications.filter(app => app.status === 'Onaylandı');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const appsWithDays = approvedApps.map(app => {
+    let remainingDays = null;
+    if (app.subscription_expires_at) {
+      const expiry = new Date(app.subscription_expires_at);
+      expiry.setHours(23, 59, 59, 999);
+      const diffTime = expiry.getTime() - today.getTime();
+      remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    return { ...app, remainingDays };
+  });
+
+  // Apply same filters
+  let filtered = appsWithDays.filter(app => {
+    if (filterLocation && app.parking_location !== filterLocation) return false;
+    if (searchQuery) {
+      const matchesName = app.full_name?.toLowerCase().includes(searchQuery);
+      const matchesPlate = app.plate?.toLowerCase().includes(searchQuery) || app.plate_number?.toLowerCase().includes(searchQuery);
+      if (!matchesName && !matchesPlate) return false;
+    }
+    if (filterStatus) {
+      if (filterStatus === 'expired') {
+        return app.remainingDays !== null && app.remainingDays <= 0;
+      } else if (filterStatus === 'warning3d') {
+        return app.remainingDays !== null && app.remainingDays > 0 && app.remainingDays <= 3;
+      } else if (filterStatus === 'warning7d') {
+        return app.remainingDays !== null && app.remainingDays > 3 && app.remainingDays <= 7;
+      } else if (filterStatus === 'active') {
+        return app.remainingDays === null || app.remainingDays > 7;
+      }
+    }
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (a.remainingDays === null && b.remainingDays === null) return 0;
+    if (a.remainingDays === null) return 1;
+    if (b.remainingDays === null) return -1;
+    return a.remainingDays - b.remainingDays;
+  });
+
+  if (filtered.length === 0) {
+    alert("Dışa aktarılacak herhangi bir abone bulunmamaktadır.");
+    return;
+  }
+
+  const headers = [
+    "Abonelik No",
+    "Ad Soyad",
+    "Araç Plakası",
+    "Otopark Konumu",
+    "Abonelik Tipi",
+    "Telefon",
+    "E-posta",
+    "Kalan Gün",
+    "Bitiş Tarihi",
+    "Başvuru Tarihi"
+  ];
+
+  const rows = filtered.map(app => {
+    let kalanGunText = '';
+    if (app.remainingDays === null) kalanGunText = 'Belirtilmemiş';
+    else if (app.remainingDays < 0) kalanGunText = `Süresi Doldu (${Math.abs(app.remainingDays)} gün)`;
+    else if (app.remainingDays === 0) kalanGunText = 'Bugün Son Gün';
+    else kalanGunText = `${app.remainingDays} gün`;
+
+    return [
+      app.id,
+      app.full_name,
+      app.plate || app.plate_number || '',
+      app.parking_location,
+      app.subscription_type || '',
+      app.phone || '',
+      app.email || '',
+      kalanGunText,
+      app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : 'Belirtilmemiş',
+      formatDateTR(app.created_at || app.date_applied)
+    ];
+  });
+
+  const csvContent = [
+    headers.join(";"),
+    ...rows.map(r => r.map(cell => {
+      let cellStr = String(cell);
+      if (cellStr.includes(";") || cellStr.includes('"') || cellStr.includes("\n")) {
+        cellStr = `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(";"))
+  ].join("\n");
+
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const blob = new Blob([bom, csvContent], { type: "text/csv;charset=utf-8;" });
+  
+  const dateStr = new Date().toISOString().split('T')[0];
+  const filename = `ParkExpert_Abonelik_Takip_Raporu_${dateStr}.csv`;
+  
+  const link = document.createElement("a");
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+window.exportExpirationsToExcel = exportExpirationsToExcel;
 
 function populateAdminOtoparksCheckboxes(selectedOtoparks = []) {
   const container = document.getElementById('edit-admin-otoparks-checkboxes');

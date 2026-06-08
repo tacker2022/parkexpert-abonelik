@@ -240,6 +240,10 @@
             <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
             <span>Başvuru Listesi</span>
           </button>
+          <button class="admin-tab-btn" id="tab-expirations" onclick="switchAdminTab('expirations')">
+            <i data-lucide="hourglass" style="width: 16px; height: 16px;"></i>
+            <span>Abonelik Takibi ⏳</span>
+          </button>
           <button class="admin-tab-btn" id="tab-companies" onclick="switchAdminTab('companies')">
             <i data-lucide="building-2" style="width: 16px; height: 16px;"></i>
             <span>Firma ve Kümelenme Analizi</span>
@@ -303,6 +307,113 @@
                 </tr>
               </thead>
               <tbody id="table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <!-- Panel Expirations: Subscription Expiration Tracking -->
+        <div id="panel-expirations" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>Abonelik Süre & Bitiş Takibi ⏳ <span id="expirations-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 aktif abone)</span></h3>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn-export" onclick="exportExpirationsToExcel()" id="btn-expirations-excel-export">
+                <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                <span>Excel İndir</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Expirations Summary Cards (Metrics) -->
+          <section class="metrics-grid" aria-label="Abonelik Süre İstatistikleri" style="margin-bottom: 2rem;">
+            <article class="metric-card" id="metric-card-exp-total" style="border-top-color: var(--color-primary);">
+              <div class="metric-card-details">
+                <span class="metric-card-subtitle" style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Toplam Aktif Abone</span>
+                <div class="metric-card-value" id="stats-exp-total" style="font-size: 1.8rem; font-weight: 800; color: var(--color-primary-dark);">0</div>
+              </div>
+              <div class="metric-card-icon total" style="background: rgba(15, 59, 162, 0.06); color: var(--color-primary);">
+                <i data-lucide="users" style="width: 22px; height: 22px;"></i>
+              </div>
+            </article>
+
+            <article class="metric-card" id="metric-card-exp-expired" style="border-top-color: #dc2626;">
+              <div class="metric-card-details">
+                <span class="metric-card-subtitle" style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Süresi Dolanlar</span>
+                <div class="metric-card-value" id="stats-exp-expired" style="font-size: 1.8rem; font-weight: 800; color: #dc2626;">0</div>
+              </div>
+              <div class="metric-card-icon rejected" style="background: rgba(220, 38, 38, 0.06); color: #dc2626;">
+                <i data-lucide="alert-triangle" style="width: 22px; height: 22px;"></i>
+              </div>
+            </article>
+
+            <article class="metric-card" id="metric-card-exp-warning3d" style="border-top-color: #ea580c;">
+              <div class="metric-card-details">
+                <span class="metric-card-subtitle" style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Son 3 Gün Kalanlar</span>
+                <div class="metric-card-value" id="stats-exp-warning3d" style="font-size: 1.8rem; font-weight: 800; color: #ea580c;">0</div>
+              </div>
+              <div class="metric-card-icon review" style="background: rgba(234, 88, 12, 0.06); color: #ea580c;">
+                <i data-lucide="clock" style="width: 22px; height: 22px;"></i>
+              </div>
+            </article>
+
+            <article class="metric-card" id="metric-card-exp-warning7d" style="border-top-color: #d97706;">
+              <div class="metric-card-details">
+                <span class="metric-card-subtitle" style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Son 7 Gün Kalanlar</span>
+                <div class="metric-card-value" id="stats-exp-warning7d" style="font-size: 1.8rem; font-weight: 800; color: #d97706;">0</div>
+              </div>
+              <div class="metric-card-icon approved" style="background: rgba(217, 119, 6, 0.06); color: #d97706;">
+                <i data-lucide="calendar" style="width: 22px; height: 22px;"></i>
+              </div>
+            </article>
+          </section>
+
+          <!-- Filters Panel -->
+          <section class="filters-panel" aria-label="Abonelik Filtreleri">
+            <div class="filters-grid" style="grid-template-columns: 1.5fr 1fr 1.2fr;">
+              <!-- Search Query -->
+              <div class="filter-group">
+                <label for="expiry-search-query">Müşteri Adı veya Plaka</label>
+                <input type="text" id="expiry-search-query" oninput="renderExpirationsDashboard()" placeholder="İsim veya plaka ile ara..." style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+              </div>
+
+              <!-- Location Filter -->
+              <div class="filter-group">
+                <label for="expiry-filter-location">Otopark Konumu</label>
+                <select id="expiry-filter-location" onchange="renderExpirationsDashboard()" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+                  <option value="">Tüm Konumlar</option>
+                </select>
+              </div>
+
+              <!-- Status Filter -->
+              <div class="filter-group">
+                <label for="expiry-filter-status">Bitiş Durumu</label>
+                <select id="expiry-filter-status" onchange="renderExpirationsDashboard()" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+                  <option value="">Tüm Aktif Aboneler</option>
+                  <option value="expired">Aboneliği Dolanlar</option>
+                  <option value="warning3d">Son 3 Gün Kalanlar</option>
+                  <option value="warning7d">Son 7 Gün Kalanlar</option>
+                  <option value="active">Sorunsuz Aktifler (> 7 Gün)</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <!-- Expirations Table -->
+          <section class="table-container" aria-label="Abonelik Bitiş Süreleri Tablosu">
+            <table class="admin-table" id="expirations-table">
+              <thead>
+                <tr>
+                  <th scope="col">Başvuru No</th>
+                  <th scope="col">Müşteri Bilgileri</th>
+                  <th scope="col">Araç Plakası</th>
+                  <th scope="col">Otopark Konumu</th>
+                  <th scope="col" style="text-align: center;">Kalan Gün</th>
+                  <th scope="col">Bitiş Tarihi</th>
+                  <th scope="col" style="text-align: center;">Aksiyonlar</th>
+                </tr>
+              </thead>
+              <tbody id="expirations-table-body">
                 <!-- Rendered via JS -->
               </tbody>
             </table>
