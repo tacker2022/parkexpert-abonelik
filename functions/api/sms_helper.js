@@ -52,9 +52,7 @@ Mesaj: ${message}`);
     </header>
     <body>
         <msg><![CDATA[${message}]]></msg>
-        <gsm>
-            <no>${cleanedPhone}</no>
-        </gsm>
+        <no>${cleanedPhone}</no>
     </body>
 </mainbody>`;
 
