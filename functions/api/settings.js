@@ -1,4 +1,5 @@
 // GET & POST endpoint for system settings configuration
+import { logAudit } from "./audit_helper.js";
 
 export async function onRequest(context) {
   const headers = {
@@ -204,6 +205,22 @@ export async function onRequest(context) {
       }
 
       const data = await res.json();
+
+      // Log audit action
+      const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      context.waitUntil(
+        logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "update_settings",
+          targetId: "notification_toggles",
+          details: "Sistem bildirim ve otomatik hatırlatma ayarları güncellendi.",
+          ipAddress
+        })
+      );
+
       return new Response(JSON.stringify({ success: true, data: data[0]?.value }), { status: 200, headers });
     }
 

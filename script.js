@@ -3950,7 +3950,7 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
-  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms') && currentAdminUser !== 'superadmin') {
+  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -3965,6 +3965,7 @@ function switchAdminTab(tabName) {
   const tabSet = document.getElementById('tab-settings');
   const tabSmsReports = document.getElementById('tab-sms-reports');
   const tabBulk = document.getElementById('tab-bulk-sms');
+  const tabAuditLogs = document.getElementById('tab-audit-logs');
   
   const panelApp = document.getElementById('panel-applications');
   const panelExp = document.getElementById('panel-expirations');
@@ -3975,6 +3976,7 @@ function switchAdminTab(tabName) {
   const panelSet = document.getElementById('panel-settings');
   const panelSmsReports = document.getElementById('panel-sms-reports');
   const panelBulk = document.getElementById('panel-bulk-sms');
+  const panelAuditLogs = document.getElementById('panel-audit-logs');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -3988,6 +3990,7 @@ function switchAdminTab(tabName) {
   if (tabSet) tabSet.classList.remove('active');
   if (tabSmsReports) tabSmsReports.classList.remove('active');
   if (tabBulk) tabBulk.classList.remove('active');
+  if (tabAuditLogs) tabAuditLogs.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
@@ -3999,6 +4002,7 @@ function switchAdminTab(tabName) {
   if (panelAnalytic) panelAnalytic.style.display = 'none';
   if (panelSmsReports) panelSmsReports.style.display = 'none';
   if (panelBulk) panelBulk.style.display = 'none';
+  if (panelAuditLogs) panelAuditLogs.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
@@ -4031,6 +4035,10 @@ function switchAdminTab(tabName) {
     if (tabBulk) tabBulk.classList.add('active');
     if (panelBulk) panelBulk.style.display = 'block';
     loadOtoparksForBulkSms();
+  } else if (tabName === 'audit-logs') {
+    if (tabAuditLogs) tabAuditLogs.classList.add('active');
+    if (panelAuditLogs) panelAuditLogs.style.display = 'block';
+    loadAuditLogs();
   } else if (tabName === 'analytics') {
     if (tabAnalytic) tabAnalytic.classList.add('active');
     if (panelAnalytic) panelAnalytic.style.display = 'block';
@@ -4527,6 +4535,7 @@ function handleUserRoleChange() {
   const tabSet = document.getElementById('tab-settings');
   const tabSmsReports = document.getElementById('tab-sms-reports');
   const tabBulk = document.getElementById('tab-bulk-sms');
+  const tabAuditLogs = document.getElementById('tab-audit-logs');
   const dangerZone = document.querySelector('.sidebar-footer');
   
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
@@ -4545,6 +4554,7 @@ function handleUserRoleChange() {
     if (tabSet) tabSet.style.display = 'inline-flex';
     if (tabSmsReports) tabSmsReports.style.display = 'inline-flex';
     if (tabBulk) tabBulk.style.display = 'inline-flex';
+    if (tabAuditLogs) tabAuditLogs.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
   } else {
     const adminObj = admins.find(a => a.id === val);
@@ -4564,9 +4574,10 @@ function handleUserRoleChange() {
     if (tabSet) tabSet.style.display = 'none';
     if (tabSmsReports) tabSmsReports.style.display = 'none';
     if (tabBulk) tabBulk.style.display = 'none';
+    if (tabAuditLogs) tabAuditLogs.style.display = 'none';
     if (dangerZone) dangerZone.style.display = 'none';
  
-    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms') {
+    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs') {
       switchAdminTab('applications');
     }
   }
@@ -7509,6 +7520,186 @@ async function submitBulkSMS(event) {
     btn.disabled = false;
   }
 }
+
+let allAuditLogs = [];
+
+async function loadAuditLogs() {
+  const tbody = document.getElementById('audit-logs-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+        Denetim günlüğü yükleniyor, lütfen bekleyin...
+      </td>
+    </tr>
+  `;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const response = await fetch(`/api/audit_logs?_t=${Date.now()}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Günlükler yüklenemedi.");
+    }
+
+    allAuditLogs = await response.json();
+    filterAuditLogs();
+  } catch (err) {
+    console.error("Failed to load audit logs:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-danger); font-weight: 600;">
+          Hata oluştu: ${err.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function filterAuditLogs() {
+  const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
+  const filterAction = document.getElementById('audit-filter-action')?.value || '';
+
+  const filtered = allAuditLogs.filter(log => {
+    // Action Type Filter
+    if (filterAction && log.action_type !== filterAction) return false;
+
+    // Search Query (username or details)
+    if (searchQuery) {
+      const matchesUsername = log.admin_username?.toLowerCase().includes(searchQuery);
+      const matchesDetails = log.details?.toLowerCase().includes(searchQuery);
+      if (!matchesUsername && !matchesDetails) return false;
+    }
+
+    return true;
+  });
+
+  renderAuditLogsTable(filtered);
+}
+
+function renderAuditLogsTable(logs) {
+  const tbody = document.getElementById('audit-logs-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (logs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+          Gösterilecek denetim kaydı bulunamadı.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  logs.forEach(log => {
+    const tr = document.createElement('tr');
+
+    // Format Date
+    let dateFormatted = '-';
+    if (log.created_at) {
+      try {
+        const d = new Date(log.created_at);
+        if (!isNaN(d.getTime())) {
+          // Format with hours and minutes: DD.MM.YYYY HH:mm
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          dateFormatted = `${day}.${month}.${year} ${hours}:${minutes}`;
+        }
+      } catch (e) {
+        dateFormatted = log.created_at;
+      }
+    }
+
+    // Role badge
+    let roleBadge = '';
+    if (log.admin_role === 'superadmin') {
+      roleBadge = `<span class="status-badge" style="background-color: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; font-weight: 700; font-size: 0.75rem;">Süper Admin</span>`;
+    } else {
+      roleBadge = `<span class="status-badge" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.75rem;">Otopark Admin</span>`;
+    }
+
+    // Action Translation
+    let actionLabel = log.action_type;
+    let actionStyle = 'background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;';
+    switch (log.action_type) {
+      case 'approve_app':
+        actionLabel = 'Başvuru Onaylandı ✅';
+        actionStyle = 'background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;';
+        break;
+      case 'reject_app':
+        actionLabel = 'Başvuru Reddedildi ❌';
+        actionStyle = 'background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;';
+        break;
+      case 'extend_subscription':
+        actionLabel = 'Abonelik Süresi Uzatıldı ⏳';
+        actionStyle = 'background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a;';
+        break;
+      case 'edit_application':
+        actionLabel = 'Başvuru Düzenlendi ✏️';
+        actionStyle = 'background-color: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4;';
+        break;
+      case 'update_settings':
+        actionLabel = 'Sistem Ayarları Değişti ⚙️';
+        actionStyle = 'background-color: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe;';
+        break;
+      case 'create_otopark':
+        actionLabel = 'Yeni Otopark Eklendi ➕';
+        actionStyle = 'background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;';
+        break;
+      case 'update_otopark':
+        actionLabel = 'Otopark Güncellendi 🔄';
+        actionStyle = 'background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;';
+        break;
+      case 'delete_otopark':
+        actionLabel = 'Otopark Silindi 🗑️';
+        actionStyle = 'background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7;';
+        break;
+      case 'create_admin':
+        actionLabel = 'Yeni Yönetici Eklendi 👤';
+        actionStyle = 'background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;';
+        break;
+      case 'update_admin':
+        actionLabel = 'Yönetici Güncellendi 👤';
+        actionStyle = 'background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;';
+        break;
+      case 'delete_admin':
+        actionLabel = 'Yönetici Silindi 🗑️';
+        actionStyle = 'background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7;';
+        break;
+    }
+
+    tr.innerHTML = `
+      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-muted); font-size: 0.8rem; white-space: nowrap;">${dateFormatted}</td>
+      <td style="padding: 0.85rem 1.5rem; font-weight: 700; color: var(--color-text-dark);">${log.admin_username}</td>
+      <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">${roleBadge}</td>
+      <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
+        <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
+      </td>
+      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; line-height: 1.4;">${log.details || ''}</td>
+      <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Bind loadAuditLogs to window so inline onclick handlers in admin.html can call it
+window.loadAuditLogs = loadAuditLogs;
+window.filterAuditLogs = filterAuditLogs;
 
 
 

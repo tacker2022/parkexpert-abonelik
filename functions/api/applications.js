@@ -1,6 +1,7 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
 import { sendSMS } from "./sms_helper.js";
+import { logAudit } from "./audit_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -186,6 +187,53 @@ export async function onRequest(context) {
       }
 
       const updatedData = await updateRes.json();
+
+      // Log audit action
+      if (updatedData && updatedData.length > 0) {
+        const updatedApp = updatedData[0];
+        let auditActionType = "edit_application";
+        let auditDetails = `Başvuru #${id} (${updatedApp.full_name || ''}) güncellendi:`;
+        const detailParts = [];
+        
+        if (status !== undefined) {
+          if (status === "Onaylandı") {
+            auditActionType = "approve_app";
+            detailParts.push(`Durum "Onaylandı" olarak güncellendi.`);
+          } else if (status === "Reddedildi") {
+            auditActionType = "reject_app";
+            detailParts.push(`Durum "Reddedildi" olarak güncellendi.`);
+          } else {
+            auditActionType = "update_status";
+            detailParts.push(`Durum "${status}" olarak güncellendi.`);
+          }
+        }
+        if (subscription_expires_at !== undefined) {
+          auditActionType = "extend_subscription";
+          detailParts.push(`Abonelik bitiş tarihi ${subscription_expires_at.substring(0, 10)} olarak güncellendi.`);
+        }
+        if (plate_number !== undefined) {
+          detailParts.push(`Plaka "${plate_number}" olarak değiştirildi.`);
+        }
+        if (company_name !== undefined) {
+          detailParts.push(`Firma adı "${company_name}" olarak değiştirildi.`);
+        }
+
+        auditDetails += " " + detailParts.join(" ");
+        const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+
+        context.waitUntil(
+          logAudit({
+            supabaseUrl,
+            supabaseAnonKey,
+            username: user.username,
+            role: user.role,
+            actionType: auditActionType,
+            targetId: id,
+            details: auditDetails,
+            ipAddress
+          })
+        );
+      }
 
       // Trigger status notifications asynchronously in the background
       if (updatedData && updatedData.length > 0) {

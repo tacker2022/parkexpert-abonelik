@@ -1,4 +1,5 @@
 // Helper for safe base64 decoding (supports Unicode)
+import { logAudit } from "./audit_helper.js";
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -159,6 +160,22 @@ export async function onRequest(context) {
         }
 
         const data = await updateRes.json();
+
+        // Log audit action
+        const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        context.waitUntil(
+          logAudit({
+            supabaseUrl,
+            supabaseAnonKey,
+            username: user.username,
+            role: user.role,
+            actionType: "update_admin",
+            targetId: id,
+            details: `"${name}" (${username}) yöneticisinin bilgileri güncellendi.`,
+            ipAddress
+          })
+        );
+
         return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
       } else {
         // CREATE new admin
@@ -207,6 +224,22 @@ export async function onRequest(context) {
         }
 
         const data = await createRes.json();
+
+        // Log audit action
+        const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        context.waitUntil(
+          logAudit({
+            supabaseUrl,
+            supabaseAnonKey,
+            username: user.username,
+            role: user.role,
+            actionType: "create_admin",
+            targetId: newAdminId,
+            details: `"${name}" (${username}) yetkili yöneticisi oluşturuldu.`,
+            ipAddress
+          })
+        );
+
         return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
       }
     }
@@ -235,6 +268,26 @@ export async function onRequest(context) {
         const errText = await deleteRes.text();
         return new Response(JSON.stringify({ error: `Supabase delete error: ${errText}` }), { status: deleteRes.status, headers });
       }
+
+      const deletedData = await deleteRes.json();
+      const deletedAdmin = deletedData[0] || {};
+      const adminName = deletedAdmin.name || id;
+      const adminUsername = deletedAdmin.username || "";
+
+      // Log audit action
+      const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      context.waitUntil(
+        logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "delete_admin",
+          targetId: id,
+          details: `"${adminName}" (${adminUsername}) yetkili yöneticisi silindi.`,
+          ipAddress
+        })
+      );
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     }

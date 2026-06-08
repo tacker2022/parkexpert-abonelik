@@ -1,4 +1,5 @@
 // Helper for safe base64 decoding (supports Unicode)
+import { logAudit } from "./audit_helper.js";
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -164,6 +165,22 @@ export async function onRequest(context) {
         }
 
         const data = await updateRes.json();
+
+        // Log audit action
+        const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        context.waitUntil(
+          logAudit({
+            supabaseUrl,
+            supabaseAnonKey,
+            username: user.username,
+            role: user.role,
+            actionType: "update_otopark",
+            targetId: id,
+            details: `"${name}" otopark işletmesi bilgileri güncellendi.`,
+            ipAddress
+          })
+        );
+
         return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
       } else {
         // CREATE otopark
@@ -209,6 +226,22 @@ export async function onRequest(context) {
         }
 
         const data = await createRes.json();
+
+        // Log audit action
+        const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        context.waitUntil(
+          logAudit({
+            supabaseUrl,
+            supabaseAnonKey,
+            username: user.username,
+            role: user.role,
+            actionType: "create_otopark",
+            targetId: generatedId,
+            details: `"${name}" adında yeni otopark işletmesi oluşturuldu.`,
+            ipAddress
+          })
+        );
+
         return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
       }
     }
@@ -237,6 +270,25 @@ export async function onRequest(context) {
         const errText = await deleteRes.text();
         return new Response(JSON.stringify({ error: `Supabase delete error: ${errText}` }), { status: deleteRes.status, headers });
       }
+
+      const deletedData = await deleteRes.json();
+      const deletedOtopark = deletedData[0] || {};
+      const otoparkName = deletedOtopark.name || id;
+
+      // Log audit action
+      const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      context.waitUntil(
+        logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "delete_otopark",
+          targetId: id,
+          details: `"${otoparkName}" otopark işletmesi silindi.`,
+          ipAddress
+        })
+      );
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     }

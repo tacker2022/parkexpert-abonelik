@@ -272,6 +272,10 @@
             <i data-lucide="send" style="width: 16px; height: 16px;"></i>
             <span>Toplu SMS Gönderimi</span>
           </button>
+          <button class="admin-tab-btn" id="tab-audit-logs" onclick="switchAdminTab('audit-logs')" style="display: none;">
+            <i data-lucide="scroll" style="width: 16px; height: 16px;"></i>
+            <span>Denetim Günlükleri 📜</span>
+          </button>
         </div>
 
         <!-- Panel 1: Detailed Applications -->
@@ -1045,6 +1049,68 @@
               </div>
 
             </form>
+          </div>
+        </div>
+
+        <!-- Panel 9: Admin Audit Logs Dashboard -->
+        <div id="panel-audit-logs" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>Yönetici Denetim Günlüğü (Audit Logs) 📜</h3>
+            <p>Yöneticilerin panel üzerinde yaptığı son 500 kritik işlem ve eylem geçmişi.</p>
+          </section>
+
+          <!-- Audit filters -->
+          <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
+              <label for="audit-search-query" style="font-weight: 700; font-size: 0.8rem; color: var(--color-text-dark);">Arama (Kullanıcı Adı veya Detay)</label>
+              <input type="text" id="audit-search-query" oninput="filterAuditLogs()" placeholder="Ara..." style="min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+            </div>
+
+            <div style="width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
+              <label for="audit-filter-action" style="font-weight: 700; font-size: 0.8rem; color: var(--color-text-dark);">İşlem Türü</label>
+              <select id="audit-filter-action" onchange="filterAuditLogs()" style="min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; background-color: #fff;">
+                <option value="">Tümü</option>
+                <option value="approve_app">Başvuru Onaylama</option>
+                <option value="reject_app">Başvuru Reddetme</option>
+                <option value="extend_subscription">Süre Uzatma</option>
+                <option value="edit_application">Başvuru Bilgi Düzenleme</option>
+                <option value="update_settings">Sistem Ayarları</option>
+                <option value="create_otopark">Otopark Ekleme</option>
+                <option value="update_otopark">Otopark Güncelleme</option>
+                <option value="delete_otopark">Otopark Silme</option>
+                <option value="create_admin">Yönetici Ekleme</option>
+                <option value="update_admin">Yönetici Güncelleme</option>
+                <option value="delete_admin">Yönetici Silme</option>
+              </select>
+            </div>
+            
+            <button class="btn btn-primary" onclick="loadAuditLogs()" style="min-height: 38px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.25rem;">
+              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+              <span>Yenile</span>
+            </button>
+          </div>
+
+          <!-- Audit Logs Table -->
+          <div class="table-container" style="margin-top: 1.5rem; background: #ffffff; border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); overflow: hidden;">
+            <table class="admin-table" style="font-size: 0.85rem;">
+              <thead>
+                <tr>
+                  <th scope="col" style="width: 160px; padding: 1rem 1.5rem;">Tarih</th>
+                  <th scope="col" style="width: 150px; padding: 1rem 1.5rem;">Yönetici</th>
+                  <th scope="col" style="width: 120px; padding: 1rem 1.5rem;">Yetki Rolü</th>
+                  <th scope="col" style="width: 180px; padding: 1rem 1.5rem;">İşlem Türü</th>
+                  <th scope="col" style="padding: 1rem 1.5rem;">Detay</th>
+                  <th scope="col" style="width: 130px; padding: 1rem 1.5rem; text-align: center;">IP Adresi</th>
+                </tr>
+              </thead>
+              <tbody id="audit-logs-table-body">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+                    Denetim günlüğü yükleniyor...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
