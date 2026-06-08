@@ -108,7 +108,7 @@ export async function onRequest(context) {
     // ----------------------------------------------------
     if (method === "POST") {
       const payload = await context.request.json();
-      const { id, name, username, password, otoparks } = payload;
+      const { id, name, username, password, otoparks, phone, email } = payload;
 
       if (!name || !username || !otoparks || otoparks.length === 0) {
         return new Response(JSON.stringify({ error: "Ad Soyad, kullanıcı adı ve otopark bilgisi zorunludur." }), { status: 400, headers });
@@ -136,7 +136,9 @@ export async function onRequest(context) {
         const updatePayload = {
           name,
           username: username.toLowerCase(),
-          otoparks
+          otoparks,
+          phone: phone || null,
+          email: email || null
         };
         // Only update password if provided
         if (password) {
@@ -204,7 +206,9 @@ export async function onRequest(context) {
           name,
           username: username.toLowerCase(),
           password,
-          otoparks
+          otoparks,
+          phone: phone || null,
+          email: email || null
         };
 
         const createRes = await fetch(`${supabaseUrl}/rest/v1/admin_users`, {

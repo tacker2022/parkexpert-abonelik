@@ -2161,6 +2161,9 @@ let allApplications = [];
 let filteredApplications = [];
 let currentAppId = null;
 
+// Two-Factor Authentication temporary username storage
+let temp2FAUsername = null;
+
 async function handleAdminLogin(event) {
   if (event) event.preventDefault();
 
@@ -2189,6 +2192,55 @@ async function handleAdminLogin(event) {
 
     const data = await res.json();
     
+    // Check if Two-Factor Authentication is required
+    if (data.twoFactorRequired) {
+      temp2FAUsername = data.username;
+      
+      const credentialsBlock = document.getElementById('login-credentials-block');
+      const twoFactorBlock = document.getElementById('login-2fa-block');
+      
+      if (credentialsBlock) credentialsBlock.style.display = 'none';
+      if (twoFactorBlock) twoFactorBlock.style.display = 'block';
+
+      // Mask details display
+      const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
+      if (maskedPhoneEl) {
+        const span = maskedPhoneEl.querySelector('span');
+        const icon = maskedPhoneEl.querySelector('i');
+        if (data.phone_masked) {
+          span.textContent = data.phone_masked;
+          if (icon) {
+            icon.setAttribute('data-lucide', 'message-square');
+            icon.style.color = '#16a34a';
+            icon.style.fill = 'rgba(22, 163, 74, 0.1)';
+          }
+        } else if (data.email_masked) {
+          span.textContent = data.email_masked;
+          if (icon) {
+            icon.setAttribute('data-lucide', 'mail');
+            icon.style.color = '#3b82f6';
+            icon.style.fill = 'rgba(59, 130, 246, 0.1)';
+          }
+        } else {
+          span.textContent = 'Doğrulama Kanalı';
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+
+      // Reset OTP UI states
+      const otpInput = document.getElementById('login-otp-code');
+      if (otpInput) {
+        otpInput.value = '';
+        otpInput.focus();
+      }
+      const twoFactorError = document.getElementById('login-2fa-error-msg');
+      const twoFactorSuccess = document.getElementById('login-2fa-success-msg');
+      if (twoFactorError) twoFactorError.style.display = 'none';
+      if (twoFactorSuccess) twoFactorSuccess.style.display = 'none';
+
+      return;
+    }
+    
     // Save to localStorage
     localStorage.setItem('parkexpert_token', data.token);
     localStorage.setItem('parkexpert_user', JSON.stringify(data.user));
@@ -2212,6 +2264,151 @@ async function handleAdminLogin(event) {
     }
   }
 }
+
+async function verifyAdminOTP(event) {
+  if (event) event.preventDefault();
+
+  const otpInput = document.getElementById('login-otp-code');
+  const errorMsg = document.getElementById('login-2fa-error-msg');
+  const successMsg = document.getElementById('login-2fa-success-msg');
+
+  if (!otpInput || !temp2FAUsername) return;
+
+  const otpCode = otpInput.value.trim();
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (successMsg) successMsg.style.display = 'none';
+
+  try {
+    const res = await fetch("/api/verify_otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: temp2FAUsername, otp_code: otpCode })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Doğrulama başarısız.");
+    }
+
+    const data = await res.json();
+
+    // Save to localStorage
+    localStorage.setItem('parkexpert_token', data.token);
+    localStorage.setItem('parkexpert_user', JSON.stringify(data.user));
+    localStorage.setItem('parkexpert_current_admin', data.user.id);
+
+    // Hide overlay
+    const overlay = document.getElementById('modal-login-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // Clear and reset blocks
+    otpInput.value = '';
+    const credentialsBlock = document.getElementById('login-credentials-block');
+    const twoFactorBlock = document.getElementById('login-2fa-block');
+    if (credentialsBlock) credentialsBlock.style.display = 'block';
+    if (twoFactorBlock) twoFactorBlock.style.display = 'none';
+
+    // Reset login inputs
+    const usernameInput = document.getElementById('login-username');
+    const passwordInput = document.getElementById('login-password');
+    if (usernameInput) usernameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+
+    temp2FAUsername = null;
+
+    // Initialize controller and fetch
+    initAdminController();
+
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.textContent = err.message;
+      errorMsg.style.display = 'block';
+    }
+  }
+}
+
+async function sendOTPEmail() {
+  const errorMsg = document.getElementById('login-2fa-error-msg');
+  const successMsg = document.getElementById('login-2fa-success-msg');
+  const resendBtn = document.getElementById('btn-resend-otp-email');
+
+  if (!temp2FAUsername) return;
+
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (successMsg) successMsg.style.display = 'none';
+
+  let originalHTML = '';
+  if (resendBtn) {
+    originalHTML = resendBtn.innerHTML;
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Gönderiliyor...';
+  }
+
+  try {
+    const res = await fetch("/api/send_otp_email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: temp2FAUsername })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "E-posta gönderimi başarısız oldu.");
+    }
+
+    const data = await res.json();
+
+    if (successMsg) {
+      successMsg.textContent = `Güvenlik kodu ${data.email_masked} e-posta adresine gönderildi.`;
+      successMsg.style.display = 'block';
+    }
+
+    // Mask details display update
+    const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
+    if (maskedPhoneEl && data.email_masked) {
+      const span = maskedPhoneEl.querySelector('span');
+      const icon = maskedPhoneEl.querySelector('i');
+      span.textContent = data.email_masked;
+      if (icon) {
+        icon.setAttribute('data-lucide', 'mail');
+        icon.style.color = '#3b82f6';
+        icon.style.fill = 'rgba(59, 130, 246, 0.1)';
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.textContent = err.message;
+      errorMsg.style.display = 'block';
+    }
+  } finally {
+    if (resendBtn) {
+      resendBtn.disabled = false;
+      resendBtn.innerHTML = originalHTML;
+    }
+  }
+}
+
+function cancel2FA() {
+  temp2FAUsername = null;
+  const credentialsBlock = document.getElementById('login-credentials-block');
+  const twoFactorBlock = document.getElementById('login-2fa-block');
+  if (credentialsBlock) credentialsBlock.style.display = 'block';
+  if (twoFactorBlock) twoFactorBlock.style.display = 'none';
+
+  const otpInput = document.getElementById('login-otp-code');
+  if (otpInput) otpInput.value = '';
+
+  const twoFactorError = document.getElementById('login-2fa-error-msg');
+  const twoFactorSuccess = document.getElementById('login-2fa-success-msg');
+  if (twoFactorError) twoFactorError.style.display = 'none';
+  if (twoFactorSuccess) twoFactorSuccess.style.display = 'none';
+}
+
+window.verifyAdminOTP = verifyAdminOTP;
+window.sendOTPEmail = sendOTPEmail;
+window.cancel2FA = cancel2FA;
 
 function handleAdminLogout() {
   localStorage.removeItem('parkexpert_token');
@@ -4703,9 +4900,16 @@ function renderAdminsTable() {
         <div class="otopark-card__name">${admin.name}</div>
         <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700;">@${admin.username}</span>
       </div>
-      <div class="otopark-card__body" style="padding: 1.25rem 1.5rem;">
+      <div class="otopark-card__body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.25rem;">
+          <span class="otopark-card__label" style="margin-bottom: 0.15rem;">İletişim Bilgileri</span>
+          <div style="font-size: 0.825rem; color: var(--color-text-dark); display: flex; flex-direction: column; gap: 0.25rem;">
+            <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="phone" style="width: 13px; height: 13px; color: var(--color-text-muted);"></i> ${admin.phone || '<span style="color: var(--color-text-muted); font-style: italic;">Telefon tanımlanmamış</span>'}</span>
+            <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="mail" style="width: 13px; height: 13px; color: var(--color-text-muted);"></i> ${admin.email || '<span style="color: var(--color-text-muted); font-style: italic;">E-posta tanımlanmamış</span>'}</span>
+          </div>
+        </div>
         <div class="otopark-card__field otopark-card__field--full">
-          <span class="otopark-card__label" style="margin-bottom: 0.5rem;">Yetkili Olduğu Otoparklar</span>
+          <span class="otopark-card__label" style="margin-bottom: 0.25rem;">Yetkili Olduğu Otoparklar</span>
           <div style="margin-top: 0.25rem;">
             ${otoparkBadges || '<span style="color: var(--color-text-muted); font-style: italic;">Yetkili otopark atanmamış</span>'}
           </div>
@@ -5141,6 +5345,11 @@ function openCreateAdminModal() {
   const passStar = document.getElementById('admin-password-required-star');
   if (passStar) passStar.style.display = 'inline';
 
+  const phoneInput = document.getElementById('edit-admin-phone');
+  const emailInput = document.getElementById('edit-admin-email');
+  if (phoneInput) phoneInput.value = '';
+  if (emailInput) emailInput.value = '';
+
   populateAdminOtoparksCheckboxes([]);
   openModal('modal-admin-edit');
 }
@@ -5166,6 +5375,11 @@ function editAdmin(adminId) {
   const passStar = document.getElementById('admin-password-required-star');
   if (passStar) passStar.style.display = 'none';
 
+  const phoneInput = document.getElementById('edit-admin-phone');
+  const emailInput = document.getElementById('edit-admin-email');
+  if (phoneInput) phoneInput.value = adminObj.phone || '';
+  if (emailInput) emailInput.value = adminObj.email || '';
+
   populateAdminOtoparksCheckboxes(adminObj.otoparks || []);
   openModal('modal-admin-edit');
 }
@@ -5175,7 +5389,7 @@ async function saveAdminConfig(event) {
   
   const token = localStorage.getItem('parkexpert_token');
   if (!token) {
-    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
     return;
   }
 
@@ -5183,6 +5397,8 @@ async function saveAdminConfig(event) {
   const name = document.getElementById('edit-admin-name').value.trim();
   const username = document.getElementById('edit-admin-username').value.trim().toLowerCase().replace(/\s+/g, '');
   const password = document.getElementById('edit-admin-password').value;
+  const phone = document.getElementById('edit-admin-phone')?.value.trim() || '';
+  const email = document.getElementById('edit-admin-email')?.value.trim() || '';
   
   const checkboxes = document.querySelectorAll('input[name="admin-otopark-choice"]:checked');
   const selectedOtoparks = Array.from(checkboxes).map(cb => cb.value);
@@ -5190,6 +5406,14 @@ async function saveAdminConfig(event) {
   if (selectedOtoparks.length === 0) {
     alert("Lütfen en az bir otopark seçiniz.");
     return;
+  }
+
+  if (phone) {
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      alert("Lütfen geçerli bir telefon numarası giriniz.");
+      return;
+    }
   }
 
   if (!id && !password) {
@@ -5201,7 +5425,9 @@ async function saveAdminConfig(event) {
     id: id || undefined,
     name,
     username,
-    otoparks: selectedOtoparks
+    otoparks: selectedOtoparks,
+    phone: phone || null,
+    email: email || null
   };
 
   if (password) {
@@ -6788,6 +7014,7 @@ async function loadSystemSettings() {
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const reminderDaysContainer = document.getElementById('settings-reminder-days-container');
   const flashSmsCh = document.getElementById('settings-flash-sms');
+  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
   const saveBtn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh) return;
@@ -6832,6 +7059,10 @@ async function loadSystemSettings() {
 
     if (flashSmsCh) {
       flashSmsCh.checked = settings.flash_sms === true;
+    }
+
+    if (twoFactorEnabledCh) {
+      twoFactorEnabledCh.checked = settings.two_factor_enabled === true;
     }
 
     const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
@@ -6907,6 +7138,7 @@ async function saveSystemSettings(event) {
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const flashSmsCh = document.getElementById('settings-flash-sms');
+  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
   
   const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
   const autoRemindersChannelSelect = document.getElementById('settings-auto-reminders-channel');
@@ -6934,6 +7166,7 @@ async function saveSystemSettings(event) {
       send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
       expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3,
       flash_sms: flashSmsCh ? flashSmsCh.checked : false,
+      two_factor_enabled: twoFactorEnabledCh ? twoFactorEnabledCh.checked : false,
       auto_reminders_enabled: autoRemindersEnabledCh ? autoRemindersEnabledCh.checked : false,
       auto_reminders_channel: autoRemindersChannelSelect ? autoRemindersChannelSelect.value : 'sms',
       auto_reminders_days: autoRemindersDaysInput ? autoRemindersDaysInput.value : '7,3,1,0',
