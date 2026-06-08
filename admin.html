@@ -26,7 +26,7 @@
   <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
   
   <!-- Global Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20260608_2130">
+  <link rel="stylesheet" href="style.css?v=20260608_2140">
 </head>
 <body style="background-color: #f1f5f9;">
 
@@ -402,6 +402,28 @@
               </h4>
               <div class="chart-canvas-container">
                 <canvas id="chart-trend-applications"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 4: Otopark Occupancy/Active Subscribers -->
+            <div class="chart-card">
+              <h4 class="chart-title">
+                <i data-lucide="map-pin" class="chart-title-icon"></i>
+                <span>Lokasyon Bazlı Aktif Abone Dağılımı</span>
+              </h4>
+              <div class="chart-canvas-container doughnut-container">
+                <canvas id="chart-otopark-occupancy"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 5: Application Conversion Rates -->
+            <div class="chart-card">
+              <h4 class="chart-title">
+                <i data-lucide="check-square" class="chart-title-icon"></i>
+                <span>Başvuru Durum Dağılımı (Dönüşüm Oranları)</span>
+              </h4>
+              <div class="chart-canvas-container doughnut-container">
+                <canvas id="chart-conversion-rates"></canvas>
               </div>
             </div>
           </div>
@@ -1322,6 +1344,6 @@
   <!-- Chart.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260608_2130"></script>
+  <script src="script.js?v=20260608_2140"></script>
 </body>
 </html>

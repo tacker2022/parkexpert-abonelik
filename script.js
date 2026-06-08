@@ -5152,6 +5152,8 @@ function initBrowserNotifications() {
 let chartRevenueOtopark = null;
 let chartSubscriptionDistribution = null;
 let chartTrendApplications = null;
+let chartOtoparkOccupancy = null;
+let chartConversionRates = null;
 
 function getAppDate(app) {
   const val = app.created_at || app.date_applied;
@@ -5317,8 +5319,8 @@ function updateAnalyticsCharts(apps) {
       data: data,
       backgroundColor: color,
       borderColor: color,
-      borderWidth: 1,
-      borderRadius: 4,
+      borderWidth: 0,
+      borderRadius: 6,
       stack: 'Stack 0'
     };
   });
@@ -5473,6 +5475,16 @@ function updateAnalyticsCharts(apps) {
   const canvasTrend = document.getElementById('chart-trend-applications');
   if (canvasTrend) {
     const ctxTrend = canvasTrend.getContext('2d');
+    
+    // Create modern gradients for line fills
+    const gradientTotal = ctxTrend.createLinearGradient(0, 0, 0, 300);
+    gradientTotal.addColorStop(0, 'rgba(148, 163, 184, 0.25)');
+    gradientTotal.addColorStop(1, 'rgba(148, 163, 184, 0.01)');
+    
+    const gradientApproved = ctxTrend.createLinearGradient(0, 0, 0, 300);
+    gradientApproved.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+    gradientApproved.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+
     if (chartTrendApplications) chartTrendApplications.destroy();
     chartTrendApplications = new Chart(ctxTrend, {
       type: 'line',
@@ -5483,7 +5495,7 @@ function updateAnalyticsCharts(apps) {
             label: 'Toplam Başvuru',
             data: dataTotalLine,
             borderColor: '#94a3b8',
-            backgroundColor: 'rgba(148, 163, 184, 0.05)',
+            backgroundColor: gradientTotal,
             borderWidth: 2,
             tension: 0.3,
             fill: true
@@ -5492,7 +5504,7 @@ function updateAnalyticsCharts(apps) {
             label: 'Onaylanan Başvuru',
             data: dataApprovedLine,
             borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+            backgroundColor: gradientApproved,
             borderWidth: 2.5,
             tension: 0.3,
             fill: true
@@ -5528,6 +5540,127 @@ function updateAnalyticsCharts(apps) {
             }
           }
         }
+      }
+    });
+  }
+
+  // 6. Compile Chart 4: Otopark Occupancy/Active Subscribers (Doughnut)
+  const otoparkCounts = {};
+  apps.forEach(app => {
+    if (app.status === 'Onaylandı' && app.parking_location) {
+      otoparkCounts[app.parking_location] = (otoparkCounts[app.parking_location] || 0) + 1;
+    }
+  });
+  const otoparkOccupancyLabels = Object.keys(otoparkCounts);
+  const otoparkOccupancyData = Object.values(otoparkCounts);
+
+  const canvasOccupancy = document.getElementById('chart-otopark-occupancy');
+  if (canvasOccupancy) {
+    const ctxOccupancy = canvasOccupancy.getContext('2d');
+    if (chartOtoparkOccupancy) chartOtoparkOccupancy.destroy();
+    
+    // Generate colors dynamically from colorsPalette
+    const dynamicColors = otoparkOccupancyLabels.map((_, idx) => colorsPalette[idx % colorsPalette.length]);
+    
+    chartOtoparkOccupancy = new Chart(ctxOccupancy, {
+      type: 'doughnut',
+      data: {
+        labels: otoparkOccupancyLabels.length > 0 ? otoparkOccupancyLabels : ['Aktif Abone Yok'],
+        datasets: [{
+          data: otoparkOccupancyData.length > 0 ? otoparkOccupancyData : [1],
+          backgroundColor: otoparkOccupancyData.length > 0 ? dynamicColors : ['#e2e8f0'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#0f172a',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11, weight: '500' },
+              padding: 12
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                if (otoparkOccupancyData.length === 0) return ' Aktif abone bulunmuyor';
+                const value = context.raw;
+                const total = otoparkOccupancyData.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return ` ${context.label}: ${value} abone (%${percentage})`;
+              }
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+  }
+
+  // 7. Compile Chart 5: Application Conversion Rates (Doughnut)
+  let countApproved = 0;
+  let countPending = 0;
+  let countRejected = 0;
+
+  apps.forEach(app => {
+    const status = app.status || 'Beklemede';
+    if (status === 'Onaylandı') {
+      countApproved++;
+    } else if (status === 'Beklemede') {
+      countPending++;
+    } else if (status.startsWith('Red')) {
+      countRejected++;
+    } else {
+      countPending++;
+    }
+  });
+
+  const canvasConversion = document.getElementById('chart-conversion-rates');
+  if (canvasConversion) {
+    const ctxConversion = canvasConversion.getContext('2d');
+    if (chartConversionRates) chartConversionRates.destroy();
+    
+    const totalApps = countApproved + countPending + countRejected;
+    
+    chartConversionRates = new Chart(ctxConversion, {
+      type: 'doughnut',
+      data: {
+        labels: ['Onaylandı', 'Beklemede', 'Reddedildi'],
+        datasets: [{
+          data: [countApproved, countPending, countRejected],
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#0f172a',
+              font: { family: 'Outfit, Inter, sans-serif', size: 11, weight: '500' },
+              padding: 12
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const percentage = totalApps > 0 ? Math.round((value / totalApps) * 100) : 0;
+                return ` ${context.label}: ${value} adet (%${percentage})`;
+              }
+            }
+          }
+        },
+        cutout: '70%'
       }
     });
   }
