@@ -26,7 +26,7 @@
   <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd000'%3E%3Cpath d='M19 13H5v-2h14v2z'/%3E%3C/svg%3E">
   
   <!-- Global Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20260608_2115">
+  <link rel="stylesheet" href="style.css?v=20260608_2125">
 </head>
 <body style="background-color: #f1f5f9;">
 
@@ -575,24 +575,43 @@
             <p>Sistem üzerinden gönderilen veya zamanlanan SMS'lerin anlık iletim durumlarını takip edebilirsiniz.</p>
           </section>
 
-          <section class="admin-actions-bar" style="margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div class="sms-toolbar">
             <!-- Filter buttons -->
-            <div class="filter-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn btn-secondary active" id="filter-sms-all" onclick="filterSMSLogs('all')">Hepsi</button>
-              <button class="btn btn-secondary" id="filter-sms-delivered" onclick="filterSMSLogs('delivered')">İletildi</button>
-              <button class="btn btn-secondary" id="filter-sms-pending" onclick="filterSMSLogs('pending')">Beklemede</button>
-              <button class="btn btn-secondary" id="filter-sms-failed" onclick="filterSMSLogs('failed')">Hatalı</button>
+            <div class="sms-filter-nav">
+              <button class="sms-filter-btn active" id="filter-sms-all" onclick="filterSMSLogs('all')">
+                <i data-lucide="mail" style="width: 16px; height: 16px;"></i>
+                <span>Hepsi</span>
+                <span class="sms-count-badge" id="sms-count-all">0</span>
+              </button>
+              <button class="sms-filter-btn" id="filter-sms-delivered" onclick="filterSMSLogs('delivered')">
+                <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+                <span>İletildi</span>
+                <span class="sms-count-badge" id="sms-count-delivered">0</span>
+              </button>
+              <button class="sms-filter-btn" id="filter-sms-pending" onclick="filterSMSLogs('pending')">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                <span>Beklemede</span>
+                <span class="sms-count-badge" id="sms-count-pending">0</span>
+              </button>
+              <button class="sms-filter-btn" id="filter-sms-failed" onclick="filterSMSLogs('failed')">
+                <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i>
+                <span>Hatalı</span>
+                <span class="sms-count-badge" id="sms-count-failed">0</span>
+              </button>
             </div>
 
             <!-- Search box and Refresh button -->
-            <div style="display: flex; gap: 0.5rem; margin-left: auto; width: 100%; max-width: 400px; justify-content: flex-end; flex-wrap: wrap;">
-              <input type="text" id="sms-search-input" placeholder="Telefon veya mesaj içeriği ara..." oninput="filterSMSLogs()" style="flex-grow: 1; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem;">
-              <button class="btn btn-primary" onclick="loadSMSReports(true)" id="btn-refresh-sms" style="display: inline-flex; align-items: center; gap: 0.4rem; min-height: 38px; padding: 0 1.25rem;">
+            <div class="sms-search-container">
+              <div class="sms-search-wrapper">
+                <i data-lucide="search"></i>
+                <input type="text" id="sms-search-input" placeholder="Telefon veya mesaj ara..." oninput="filterSMSLogs()">
+              </div>
+              <button class="btn btn-primary" onclick="loadSMSReports(true)" id="btn-refresh-sms" style="display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 1.25rem; border-radius: 8px; font-weight: 700; white-space: nowrap;">
                 <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
-                <span>Durumları Güncelle</span>
+                <span>Güncelle</span>
               </button>
             </div>
-          </section>
+          </div>
 
           <!-- Table Container -->
           <div class="table-container" style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); margin-top: 1.5rem; overflow-x: auto; box-shadow: var(--shadow-sm);">
@@ -1302,6 +1321,6 @@
   <!-- Chart.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260608_2115"></script>
+  <script src="script.js?v=20260608_2125"></script>
 </body>
 </html>

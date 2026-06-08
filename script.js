@@ -6464,6 +6464,7 @@ ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
     }
 
     window.allSMSLogs = await res.json();
+    updateSMSCountBadges();
     filterSMSLogs();
 
   } catch (err) {
@@ -6486,6 +6487,25 @@ ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
   }
+}
+
+function updateSMSCountBadges() {
+  const logs = window.allSMSLogs || [];
+  
+  const countAll = logs.length;
+  const countDelivered = logs.filter(log => log.status === 'İletildi' || log.status === 'Simüle Edildi').length;
+  const countPending = logs.filter(log => log.status === 'Beklemede' || log.status === 'Zamanlandı').length;
+  const countFailed = logs.filter(log => log.status && (log.status.startsWith('Hata') || log.status.startsWith('İletilemedi'))).length;
+  
+  const badgeAll = document.getElementById('sms-count-all');
+  const badgeDelivered = document.getElementById('sms-count-delivered');
+  const badgePending = document.getElementById('sms-count-pending');
+  const badgeFailed = document.getElementById('sms-count-failed');
+  
+  if (badgeAll) badgeAll.textContent = countAll;
+  if (badgeDelivered) badgeDelivered.textContent = countDelivered;
+  if (badgePending) badgePending.textContent = countPending;
+  if (badgeFailed) badgeFailed.textContent = countFailed;
 }
 
 function filterSMSLogs(filterType) {
