@@ -3688,6 +3688,9 @@ function renderOtoparksTable() {
           ${park.supportPhone || '—'}
         </span>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="otopark-card__edit-btn" onclick="openTemplatesModal('${park.id}')" style="color: var(--color-primary);">
+            <i data-lucide="mail" style="width: 12px; height: 12px; color: var(--color-primary);"></i> Şablonlar
+          </button>
           <button class="otopark-card__edit-btn" onclick="editOtopark('${park.id}')">
             <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
           </button>
@@ -3790,6 +3793,16 @@ async function saveOtoparkConfig(event) {
   const supportPhoneVal = document.getElementById('edit-otopark-support').value.trim();
   const statusVal = document.getElementById('edit-otopark-status').value;
 
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  let existingTemplates = undefined;
+  if (id) {
+    const currentOtoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+    const existingPark = currentOtoparks.find(p => p.id === id);
+    if (existingPark) {
+      existingTemplates = existingPark.templates;
+    }
+  }
+
   const payload = {
     id: id || undefined,
     name: nameVal,
@@ -3802,7 +3815,8 @@ async function saveOtoparkConfig(event) {
     priceEmployee: priceEmployeeVal,
     priceExternal: priceExternalVal,
     supportPhone: supportPhoneVal,
-    isActive: statusVal === 'active'
+    isActive: statusVal === 'active',
+    templates: existingTemplates
   };
 
   try {
@@ -6111,5 +6125,174 @@ async function saveSystemSettings(event) {
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 }
+
+window.activeTemplates = {};
+window.currentTemplateTab = 'apply';
+
+function openTemplatesModal(otoparkId) {
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.id === otoparkId);
+  if (!park) {
+    alert("Otopark bulunamadı.");
+    return;
+  }
+
+  document.getElementById('tpl-otopark-id').value = otoparkId;
+  document.getElementById('otopark-templates-subtitle').textContent = `"${park.name}" otoparkı için giden bildirim şablonlarını özelleştirin.`;
+  
+  // Clone or initialize templates
+  window.activeTemplates = JSON.parse(JSON.stringify(park.templates || {}));
+  
+  // Reset active tab to 'apply'
+  window.currentTemplateTab = 'apply';
+  
+  // Style tab headers
+  document.querySelectorAll('.template-tab-btn').forEach(btn => {
+    btn.style.color = 'var(--color-text-muted)';
+    btn.style.borderBottomColor = 'transparent';
+  });
+  const activeBtn = document.getElementById('tpl-tab-apply');
+  if (activeBtn) {
+    activeBtn.style.color = 'var(--color-primary)';
+    activeBtn.style.borderBottomColor = 'var(--color-primary)';
+  }
+
+  // Load active tab fields
+  const tpl = window.activeTemplates.apply || {};
+  document.getElementById('tpl-input-sms').value = tpl.sms || '';
+  document.getElementById('tpl-input-whatsapp').value = tpl.whatsapp || '';
+  document.getElementById('tpl-input-email-subject').value = tpl.email_subject || '';
+  document.getElementById('tpl-input-email-html').value = tpl.email_html || '';
+
+  const modal = document.getElementById('otopark-templates-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+  
+  // Refresh Lucide icons inside modal if needed
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+function switchTemplateTab(tabName) {
+  const prevTab = window.currentTemplateTab;
+  
+  // Save current values to activeTemplates
+  if (prevTab) {
+    if (!window.activeTemplates[prevTab]) window.activeTemplates[prevTab] = {};
+    window.activeTemplates[prevTab].sms = document.getElementById('tpl-input-sms').value.trim();
+    window.activeTemplates[prevTab].whatsapp = document.getElementById('tpl-input-whatsapp').value.trim();
+    window.activeTemplates[prevTab].email_subject = document.getElementById('tpl-input-email-subject').value.trim();
+    window.activeTemplates[prevTab].email_html = document.getElementById('tpl-input-email-html').value.trim();
+  }
+
+  window.currentTemplateTab = tabName;
+
+  // Style tab headers
+  document.querySelectorAll('.template-tab-btn').forEach(btn => {
+    btn.style.color = 'var(--color-text-muted)';
+    btn.style.borderBottomColor = 'transparent';
+  });
+  const activeBtn = document.getElementById(`tpl-tab-${tabName}`);
+  if (activeBtn) {
+    activeBtn.style.color = 'var(--color-primary)';
+    activeBtn.style.borderBottomColor = 'var(--color-primary)';
+  }
+
+  // Load new tab fields
+  const tpl = window.activeTemplates[tabName] || {};
+  document.getElementById('tpl-input-sms').value = tpl.sms || '';
+  document.getElementById('tpl-input-whatsapp').value = tpl.whatsapp || '';
+  document.getElementById('tpl-input-email-subject').value = tpl.email_subject || '';
+  document.getElementById('tpl-input-email-html').value = tpl.email_html || '';
+}
+
+function closeTemplatesModal(event) {
+  if (event) event.preventDefault();
+  const modal = document.getElementById('otopark-templates-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function saveOtoparkTemplates(event) {
+  if (event) event.preventDefault();
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const otoparkId = document.getElementById('tpl-otopark-id').value;
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.id === otoparkId);
+  if (!park) {
+    alert("Otopark bulunamadı.");
+    return;
+  }
+
+  // Save active tab values first
+  const activeTab = window.currentTemplateTab;
+  if (activeTab) {
+    if (!window.activeTemplates[activeTab]) window.activeTemplates[activeTab] = {};
+    window.activeTemplates[activeTab].sms = document.getElementById('tpl-input-sms').value.trim();
+    window.activeTemplates[activeTab].whatsapp = document.getElementById('tpl-input-whatsapp').value.trim();
+    window.activeTemplates[activeTab].email_subject = document.getElementById('tpl-input-email-subject').value.trim();
+    window.activeTemplates[activeTab].email_html = document.getElementById('tpl-input-email-html').value.trim();
+  }
+
+  const btn = document.getElementById('btn-save-templates');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i> Kaydediliyor...';
+
+  // Construct complete payload matching create/update otopark API
+  const payload = {
+    id: park.id,
+    name: park.name,
+    category: park.category,
+    companyTitle: park.companyTitle,
+    taxOffice: park.taxOffice,
+    taxNumber: park.taxNumber,
+    bankName: park.bankName,
+    iban: park.iban,
+    priceEmployee: park.priceEmployee,
+    priceExternal: park.priceExternal,
+    supportPhone: park.supportPhone,
+    isActive: park.isActive !== false,
+    templates: window.activeTemplates
+  };
+
+  try {
+    const res = await fetch('/api/otoparks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Şablonlar kaydedilirken hata oluştu.");
+    }
+
+    closeTemplatesModal();
+    await loadOtoparks();
+    renderOtoparksTable();
+    alert("Şablonlar başarıyla kaydedildi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+  }
+}
+
 
 

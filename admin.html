@@ -938,6 +938,107 @@
     </div>
   </div>
 
+  <!-- Otopark Templates Modal Overlay -->
+  <div id="otopark-templates-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1200; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #ffffff; padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light); width: 100%; max-width: 800px; max-height: 90vh; box-shadow: var(--shadow-lg); position: relative; display: flex; flex-direction: column; overflow: hidden;">
+      
+      <!-- Close button -->
+      <button onclick="closeTemplatesModal(event)" style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.5rem; line-height: 1; color: var(--color-text-muted); cursor: pointer; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--color-text-dark)'" onmouseout="this.style.color='var(--color-text-muted)'">&times;</button>
+
+      <h3 style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="mail" style="width: 24px; height: 24px; color: var(--color-primary);"></i>
+        Bildirim Şablonlarını Düzenle
+      </h3>
+      <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.5rem; margin-top: 0;" id="otopark-templates-subtitle">Otopark için giden bildirim şablonlarını özelleştirin.</p>
+      
+      <!-- Tabs header -->
+      <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); margin-bottom: 1.5rem;">
+        <button onclick="switchTemplateTab('apply')" id="tpl-tab-apply" class="template-tab-btn active-tab" style="padding: 0.5rem 1rem; background: none; border: none; font-family: var(--font-heading); font-size: 0.85rem; font-weight: 700; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); cursor: pointer; transition: all var(--transition-fast);">Başvuru Alındı</button>
+        <button onclick="switchTemplateTab('approve')" id="tpl-tab-approve" class="template-tab-btn" style="padding: 0.5rem 1rem; background: none; border: none; font-family: var(--font-heading); font-size: 0.85rem; font-weight: 700; color: var(--color-text-muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-fast);">Başvuru Onaylandı</button>
+        <button onclick="switchTemplateTab('reject')" id="tpl-tab-reject" class="template-tab-btn" style="padding: 0.5rem 1rem; background: none; border: none; font-family: var(--font-heading); font-size: 0.85rem; font-weight: 700; color: var(--color-text-muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-fast);">Başvuru Reddedildi</button>
+      </div>
+
+      <!-- Main Content & Help Sidebar (Flex container) -->
+      <div style="display: flex; gap: 1.5rem; flex: 1; overflow: hidden; min-height: 0;">
+        
+        <!-- Forms area -->
+        <div style="flex: 1; overflow-y: auto; padding-right: 0.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          
+          <!-- Hidden input to store active otopark ID -->
+          <input type="hidden" id="tpl-otopark-id">
+          
+          <!-- SMS Template Form -->
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i> SMS Şablonu
+            </label>
+            <textarea id="tpl-input-sms" style="width: 100%; min-height: 70px; border: 1px solid var(--color-border-light); padding: 0.6rem; border-radius: var(--radius-sm); outline: none; font-size: 0.825rem; font-family: var(--font-body); resize: vertical;" placeholder="Boş bırakılırsa varsayılan şablon kullanılır."></textarea>
+          </div>
+
+          <!-- WhatsApp Template Form -->
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i> WhatsApp Şablonu
+            </label>
+            <textarea id="tpl-input-whatsapp" style="width: 100%; min-height: 100px; border: 1px solid var(--color-border-light); padding: 0.6rem; border-radius: var(--radius-sm); outline: none; font-size: 0.825rem; font-family: var(--font-body); resize: vertical;" placeholder="Boş bırakılırsa varsayılan şablon kullanılır."></textarea>
+          </div>
+
+          <!-- Email Templates Forms -->
+          <div style="display: flex; flex-direction: column; gap: 1rem; border-top: 1px dashed var(--color-border-light); padding-top: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="type" style="width: 14px; height: 14px;"></i> E-posta Konusu
+              </label>
+              <input type="text" id="tpl-input-email-subject" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.6rem; border-radius: var(--radius-sm); outline: none; font-size: 0.825rem; font-family: var(--font-body);" placeholder="Boş bırakılırsa varsayılan konu kullanılır.">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; flex: 1;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="mail" style="width: 14px; height: 14px;"></i> E-posta İçeriği (HTML)
+              </label>
+              <textarea id="tpl-input-email-html" style="width: 100%; min-height: 180px; flex: 1; border: 1px solid var(--color-border-light); padding: 0.6rem; border-radius: var(--radius-sm); outline: none; font-size: 0.825rem; font-family: monospace; resize: vertical;" placeholder="Boş bırakılırsa varsayılan HTML içeriği kullanılır."></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Guide Sidebar -->
+        <div style="width: 250px; background: var(--color-bg-light); border-radius: var(--radius-sm); border: 1px solid var(--color-border-light); padding: 1rem; display: flex; flex-direction: column; overflow-y: auto;">
+          <h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.25rem;">
+            <i data-lucide="help-circle" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+            Kılavuz & Değişkenler
+          </h4>
+          <p style="font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.4; margin-top: 0; margin-bottom: 1rem;">Şablonlarınızda kullanabileceğiniz değişkenler aşağıdadır. Sistem, gönderim yaparken parantez içindeki ifadeleri gerçek verilerle dolduracaktır:</p>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.75rem;">
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{fullName}</strong><br><span style="color: var(--color-text-muted);">Müşteri Ad Soyad</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{appId}</strong><br><span style="color: var(--color-text-muted);">Takip Kodu</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{plateNumber}</strong><br><span style="color: var(--color-text-muted);">Araç Plakası</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{parkingLocation}</strong><br><span style="color: var(--color-text-muted);">Otopark Konumu</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{subscriptionType}</strong><br><span style="color: var(--color-text-muted);">Abonelik Türü</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{price}</strong><br><span style="color: var(--color-text-muted);">Ücret (TL)</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{supportPhone}</strong><br><span style="color: var(--color-text-muted);">Destek Telefonu</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{bankName}</strong><br><span style="color: var(--color-text-muted);">Banka Adı</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{iban}</strong><br><span style="color: var(--color-text-muted);">IBAN Numarası</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{companyTitle}</strong><br><span style="color: var(--color-text-muted);">Şirket Resmi Ünvanı</span></div>
+            <div><strong style="color: var(--color-primary); font-family: monospace;">{carModel}</strong><br><span style="color: var(--color-text-muted);">Araç Marka/Modeli</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem;">
+        <button onclick="closeTemplatesModal(event)" style="background: none; border: 1px solid var(--color-border-light); color: var(--color-text-dark); padding: 0.6rem 1.2rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast);">Kapat</button>
+        <button onclick="saveOtoparkTemplates(event)" id="btn-save-templates" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.6rem 1.2rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: inline-flex; align-items: center; gap: 0.4rem;">
+          <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+          Şablonları Kaydet
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Test Notification Modal Overlay -->
   <div id="test-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1200; align-items: center; justify-content: center;">
     <div style="background: #ffffff; padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light); width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); position: relative; display: flex; flex-direction: column;">

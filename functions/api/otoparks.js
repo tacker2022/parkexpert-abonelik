@@ -119,7 +119,8 @@ export async function onRequest(context) {
         priceEmployee,
         priceExternal,
         supportPhone,
-        isActive
+        isActive,
+        templates
       } = payload;
 
       if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
@@ -139,6 +140,10 @@ export async function onRequest(context) {
         support_phone: supportPhone,
         is_active: isActive !== false
       };
+
+      if (templates !== undefined) {
+        dbPayload.templates = templates;
+      }
 
       if (id) {
         // UPDATE otopark

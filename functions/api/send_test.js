@@ -72,8 +72,40 @@ export async function onRequest(context) {
     const price = park.price_employee || "300";
     const supportPhone = park.support_phone || "02165044722";
 
+    const templateVars = {
+      fullName,
+      appId: mockAppId,
+      plateNumber,
+      parkingLocation,
+      subscriptionType,
+      price,
+      supportPhone,
+      bankName,
+      iban,
+      companyTitle,
+      carModel: 'Belirtilmedi'
+    };
+
+    const replaceVars = (str, vars) => {
+      if (!str) return "";
+      let res = str;
+      for (const [k, v] of Object.entries(vars)) {
+        const regex = new RegExp(`\\{${k}\\}`, "g");
+        res = res.replace(regex, v);
+      }
+      return res;
+    };
+
+    const customTemplates = park.templates || {};
+    const applyTemplates = customTemplates.apply || {};
+
     // 2. Construct WhatsApp Message (exact template requested by user)
-    const waMessage = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${mockAppId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}\nAlıcı: ${companyTitle}`;
+    let waMessage = "";
+    if (applyTemplates.whatsapp) {
+      waMessage = replaceVars(applyTemplates.whatsapp, templateVars);
+    } else {
+      waMessage = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${mockAppId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}\nAlıcı: ${companyTitle}`;
+    }
 
     // 3. Send WhatsApp
     let waSuccess = false;
@@ -90,7 +122,12 @@ export async function onRequest(context) {
     let smsSuccess = false;
     let smsError = null;
     try {
-      const smsMessage = `Bu bir test mesajidir. Takip No: ${mockAppId}. PARKEXPERT`;
+      let smsMessage = "";
+      if (applyTemplates.sms) {
+        smsMessage = replaceVars(applyTemplates.sms, templateVars);
+      } else {
+        smsMessage = `Bu bir test mesajidir. Takip No: ${mockAppId}. PARKEXPERT`;
+      }
       const smsResult = await sendSMS(testPhone, smsMessage, context.env);
       smsSuccess = smsResult.success !== false;
       if (!smsSuccess) smsError = smsResult.error;
@@ -99,32 +136,44 @@ export async function onRequest(context) {
     }
 
     // 4. Construct Email HTML
-    const emailSubject = `🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: ${mockAppId})`;
-    const emailHtml = `
-      <h2 style="font-size: 1.25rem; color: #0f3ba2; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
-      
-      <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
-        Bu bir <strong>TEST MESAJIDIR</strong>. Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
-      </p>
+    let emailSubject = "";
+    let emailHtml = "";
+    
+    if (applyTemplates.email_subject) {
+      emailSubject = replaceVars(applyTemplates.email_subject, templateVars);
+    } else {
+      emailSubject = `🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: ${mockAppId})`;
+    }
 
-      <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #0f3ba2; border: 1px solid #e2e8f0; border-left-width: 4px;">
-        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Başvuru Detayları (TEST)</h4>
-        <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
-          <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${mockAppId}</span></div>
-          <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
-          <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${parkingLocation}</span></div>
-          <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${subscriptionType}</span></div>
+    if (applyTemplates.email_html) {
+      emailHtml = replaceVars(applyTemplates.email_html, templateVars);
+    } else {
+      emailHtml = `
+        <h2 style="font-size: 1.25rem; color: #0f3ba2; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+        
+        <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+          Bu bir <strong>TEST MESAJIDIR</strong>. Abonelik başvuru kaydınız başarıyla veri tabanımıza kaydedilmiştir. Plaka tanıma sistemi entegrasyonu ve yüklemiş olduğunuz belgeler ekiplerimiz tarafından incelenmektedir.
+        </p>
+
+        <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #0f3ba2; border: 1px solid #e2e8f0; border-left-width: 4px;">
+          <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Başvuru Detayları (TEST)</h4>
+          <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+            <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${mockAppId}</span></div>
+            <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+            <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${parkingLocation}</span></div>
+            <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${subscriptionType}</span></div>
+          </div>
         </div>
-      </div>
 
-      <div style="background: rgba(15, 59, 162, 0.05); border: 1px dashed #0f3ba2; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #0f3ba2; margin-bottom: 1.5rem;">
-        <strong>Ödeme ve Hesap Bilgileri:</strong><br>
-        Banka: ${bankName}<br>
-        IBAN: ${iban}<br>
-        Alıcı Unvanı: ${companyTitle}<br>
-        Ücret: ${price} TL
-      </div>
-    `;
+        <div style="background: rgba(15, 59, 162, 0.05); border: 1px dashed #0f3ba2; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #0f3ba2; margin-bottom: 1.5rem;">
+          <strong>Ödeme ve Hesap Bilgileri:</strong><br>
+          Banka: ${bankName}<br>
+          IBAN: ${iban}<br>
+          Alıcı Unvanı: ${companyTitle}<br>
+          Ücret: ${price} TL
+        </div>
+      `;
+    }
 
     // 5. Send Email
     let emailSuccess = false;

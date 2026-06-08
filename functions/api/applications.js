@@ -206,27 +206,71 @@ export async function onRequest(context) {
               const plateNumber = updatedApp.plate_number;
               const appLocation = updatedApp.parking_location;
 
-              const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(appLocation)}&select=support_phone`, {
+              const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(appLocation)}&select=*`, {
                 headers: {
                   "apikey": supabaseAnonKey,
                   "Authorization": `Bearer ${supabaseAnonKey}`
                 }
               });
-              let supportPhone = "0216 504 47 22";
+              let park = {};
               if (otoparkRes.ok) {
                 const parks = await otoparkRes.json();
                 if (parks.length > 0) {
-                  supportPhone = parks[0].support_phone || supportPhone;
+                  park = parks[0];
                 }
               }
+
+              const supportPhone = park.support_phone || "0216 504 47 22";
+              const bankName = park.bank_name || "Vakıfbank";
+              const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
+              const companyTitle = park.company_title || "PARKEXPERT";
+              const price = updatedApp.subscription_type?.includes("Kurumsal") 
+                ? (park.price_external || "2400 TL") 
+                : (park.price_employee || "1200 TL");
+
+              const templateVars = {
+                fullName,
+                appId: id,
+                plateNumber,
+                parkingLocation: appLocation,
+                subscriptionType: updatedApp.subscription_type || "",
+                price,
+                supportPhone,
+                bankName,
+                iban,
+                companyTitle,
+                carModel: updatedApp.car_model || 'Belirtilmedi'
+              };
+
+              const replaceVars = (str, vars) => {
+                if (!str) return "";
+                let res = str;
+                for (const [k, v] of Object.entries(vars)) {
+                  const regex = new RegExp(`\\{${k}\\}`, "g");
+                  res = res.replace(regex, v);
+                }
+                return res;
+              };
+
+              const customTemplates = park.templates || {};
+              const approveTemplates = customTemplates.approve || {};
+              const rejectTemplates = customTemplates.reject || {};
 
               // 2. Dispatch WhatsApp Notification if enabled
               if (settings.whatsapp_enabled) {
                 let message = "";
                 if (status === "Onaylandı") {
-                  message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve ONAYLANMIŞTIR. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n💸 Abonelik Tipi: ${updatedApp.subscription_type}\n📞 Destek Telefonu: ${supportPhone}\n\n🚗 HGS Otomatik Geçiş Bilgilendirmesi:\nPlaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!`;
+                  if (approveTemplates.whatsapp) {
+                    message = replaceVars(approveTemplates.whatsapp, templateVars);
+                  } else {
+                    message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve ONAYLANMIŞTIR. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n💸 Abonelik Tipi: ${updatedApp.subscription_type}\n📞 Destek Telefonu: ${supportPhone}\n\n🚗 HGS Otomatik Geçiş Bilgilendirmesi:\nPlaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!`;
+                  }
                 } else if (status === "Reddedildi") {
-                  message = `Merhaba Sayın ${fullName}, ⚠️\n\nAbonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle REDDEDİLMİŞTİR.\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n⚠️ Durum: Belge Eksikliği / Dekont Hatası\n\n💬 Nasıl Düzeltebilirsiniz?\nLütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: ${supportPhone}`;
+                  if (rejectTemplates.whatsapp) {
+                    message = replaceVars(rejectTemplates.whatsapp, templateVars);
+                  } else {
+                    message = `Merhaba Sayın ${fullName}, ⚠️\n\nAbonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle REDDEDİLMİŞTIR.\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n⚠️ Durum: Belge Eksikliği / Dekont Hatası\n\n💬 Nasıl Düzeltebilirsiniz?\nLütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: ${supportPhone}`;
+                  }
                 }
                 if (message) {
                   await sendWhatsApp(phone, message, context.env);
@@ -239,54 +283,72 @@ export async function onRequest(context) {
                 let emailHtml = "";
 
                 if (status === "Onaylandı") {
-                  emailSubject = `🎉 PARKEXPERT Abonelik Başvurunuz ONAYLANDI! (Takip No: ${id})`;
-                  emailHtml = `
-                    <h2 style="font-size: 1.25rem; color: #10b981; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
-                    
-                    <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
-                      Abonelik başvuru evraklarınız ve ödeme dekontunuz ekiplerimiz tarafından doğrulanmış ve <strong>ONAYLANMIŞTIR</strong>. Plaka tanıma sistemimiz aktif edilmiştir.
-                    </p>
+                  if (approveTemplates.email_subject) {
+                    emailSubject = replaceVars(approveTemplates.email_subject, templateVars);
+                  } else {
+                    emailSubject = `🎉 PARKEXPERT Abonelik Başvurunuz ONAYLANDI! (Takip No: ${id})`;
+                  }
 
-                    <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #10b981; border: 1px solid #e2e8f0; border-left-width: 4px;">
-                      <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Onaylanan Abonelik Detayları</h4>
-                      <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
-                        <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${updatedApp.subscription_type}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #10b981; font-weight: 700;">Aktif / Onaylandı</span></div>
+                  if (approveTemplates.email_html) {
+                    emailHtml = replaceVars(approveTemplates.email_html, templateVars);
+                  } else {
+                    emailHtml = `
+                      <h2 style="font-size: 1.25rem; color: #10b981; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+                      
+                      <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+                        Abonelik başvuru evraklarınız ve ödeme dekontunuz ekiplerimiz tarafından doğrulanmış ve <strong>ONAYLANMIŞTIR</strong>. Plaka tanıma sistemimiz aktif edilmiştir.
+                      </p>
+
+                      <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #10b981; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Onaylanan Abonelik Detayları</h4>
+                        <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                          <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Abonelik Tipi:</strong> <span>${updatedApp.subscription_type}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #10b981; font-weight: 700;">Aktif / Onaylandı</span></div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed #10b981; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #065f46;">
-                      <strong>HGS / Otomatik Geçiş Bilgilendirmesi:</strong><br>
-                      Otopark giriş ve çıkışlarında plaka tanıma HGS (Hızlı Geçiş Sistemi) plakanızı otomatik olarak okuyacak ve geçiş izni verecektir. Bilet almanıza veya kart kullanmanıza gerek yoktur. Keyifli sürüşler dileriz!
-                    </div>
-                  `;
+                      <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed #10b981; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #065f46;">
+                        <strong>HGS / Otomatik Geçiş Bilgilendirmesi:</strong><br>
+                        Otopark giriş ve çıkışlarında plaka tanıma HGS (Hızlı Geçiş Sistemi) plakanızı otomatik olarak okuyacak ve geçiş izni verecektir. Bilet almanıza veya kart kullanmanıza gerek yoktur. Keyifli sürüşler dileriz!
+                      </div>
+                    `;
+                  }
                 } else if (status === "Reddedildi") {
-                  emailSubject = `⚠️ PARKEXPERT Abonelik Başvurunuz Hakkında (Takip No: ${id})`;
-                  emailHtml = `
-                    <h2 style="font-size: 1.25rem; color: #ef4444; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
-                    
-                    <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
-                      Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun uyuşmaması nedeniyle <strong>REDDEDİLMİŞTIR</strong>.
-                    </p>
+                  if (rejectTemplates.email_subject) {
+                    emailSubject = replaceVars(rejectTemplates.email_subject, templateVars);
+                  } else {
+                    emailSubject = `⚠️ PARKEXPERT Abonelik Başvurunuz Hakkında (Takip No: ${id})`;
+                  }
 
-                    <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #ef4444; border: 1px solid #e2e8f0; border-left-width: 4px;">
-                      <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Reddedilen Başvuru Detayları</h4>
-                      <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
-                        <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
-                        <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #ef4444; font-weight: 700;">Reddedildi / Evrak Eksikliği</span></div>
+                  if (rejectTemplates.email_html) {
+                    emailHtml = replaceVars(rejectTemplates.email_html, templateVars);
+                  } else {
+                    emailHtml = `
+                      <h2 style="font-size: 1.25rem; color: #ef4444; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
+                      
+                      <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
+                        Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun uyuşmaması nedeniyle <strong>REDDEDİLMİŞTİR</strong>.
+                      </p>
+
+                      <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #ef4444; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700;">Reddedilen Başvuru Detayları</h4>
+                        <div style="font-size: 0.875rem; color: #334155; line-height: 1.5;">
+                          <div style="margin-bottom: 0.25rem;"><strong>Takip Numarası:</strong> <span style="color: #0f3ba2; font-weight: 700;">${id}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700; color: #334155;">${plateNumber}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Otopark Konumu:</strong> <span>${appLocation}</span></div>
+                          <div style="margin-bottom: 0.25rem;"><strong>Durum:</strong> <span style="color: #ef4444; font-weight: 700;">Reddedildi / Evrak Eksikliği</span></div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div style="background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #991b1b;">
-                      <strong>Nasıl Düzeltebilirsiniz?</strong><br>
-                      Lütfen belgelerinizi, plaka numaranızı veya dekont bilgilerinizi kontrol ederek doğru belgelerle yeni bir abonelik başvurusu oluşturunuz ya da destek hattımız ile iletişime geçiniz: <strong>${supportPhone}</strong>
-                    </div>
-                  `;
+                      <div style="background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444; border-radius: 8px; padding: 1rem; font-size: 0.85rem; line-height: 1.5; color: #991b1b;">
+                        <strong>Nasıl Düzeltebilirsiniz?</strong><br>
+                        Lütfen belgelerinizi, plaka numaranızı veya dekont bilgilerinizi kontrol ederek doğru belgelerle yeni bir abonelik başvurusu oluşturunuz ya da destek hattımız ile iletişime geçiniz: <strong>${supportPhone}</strong>
+                      </div>
+                    `;
+                  }
                 }
 
                 await sendEmail({ to: updatedApp.email, subject: emailSubject, html: emailHtml, env: context.env });
@@ -296,9 +358,17 @@ export async function onRequest(context) {
               if (settings.sms_enabled) {
                 let smsMessage = "";
                 if (status === "Onaylandı") {
-                  smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz ONAYLANMIŞTIR. Plakanız otopark geçiş sistemine tanımlanmıştır. Keyifli sürüşler dileriz. PARKEXPERT`;
+                  if (approveTemplates.sms) {
+                    smsMessage = replaceVars(approveTemplates.sms, templateVars);
+                  } else {
+                    smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz ONAYLANMIŞTIR. Plakanız otopark geçiş sistemine tanımlanmıştır. Keyifli sürüşler dileriz. PARKEXPERT`;
+                  }
                 } else if (status === "Reddedildi") {
-                  smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz belge veya ödeme hatası nedeniyle REDDEDİLMİŞTİR. Detaylar e-posta/WhatsApp ile iletilmiştir. PARKEXPERT`;
+                  if (rejectTemplates.sms) {
+                    smsMessage = replaceVars(rejectTemplates.sms, templateVars);
+                  } else {
+                    smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz belge veya ödeme hatası nedeniyle REDDEDİLMİŞTİR. Detaylar e-posta/WhatsApp ile iletilmiştir. PARKEXPERT`;
+                  }
                 }
                 if (smsMessage) {
                   await sendSMS(phone, smsMessage, context.env);
