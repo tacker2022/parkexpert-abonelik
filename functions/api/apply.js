@@ -274,7 +274,23 @@ export async function onRequest(context) {
             } else {
               smsMessage = `Sayın ${fullName}, ${parkingLocation} otopark abonelik başvurunuz alınmıştır. Takip No: ${appId}. Evraklarınız incelenmektedir. PARKEXPERT`;
             }
-            await sendSMS(phone, smsMessage, context.env);
+
+            let scheduledSMSDate = null;
+            if (settings.delay_night_sms) {
+              const nowUtc = new Date();
+              const turkeyTime = new Date(nowUtc.getTime() + (3 * 60 * 60 * 1000));
+              const hours = turkeyTime.getUTCHours();
+              if (hours >= 22 || hours < 8) {
+                const scheduledTurkey = new Date(turkeyTime);
+                if (hours >= 22) {
+                  scheduledTurkey.setUTCDate(scheduledTurkey.getUTCDate() + 1);
+                }
+                scheduledTurkey.setUTCHours(9, 0, 0, 0);
+                scheduledSMSDate = new Date(scheduledTurkey.getTime() - (3 * 60 * 60 * 1000));
+              }
+            }
+
+            await sendSMS(phone, smsMessage, context.env, scheduledSMSDate);
           }
         } catch (waErr) {
           console.error("Failed to send notifications on apply:", waErr);

@@ -21,7 +21,27 @@ export function formatSMSNumber(phone) {
   return cleaned;
 }
 
-export async function sendSMS(phone, message, env) {
+export function formatDateForNetgsm(date) {
+  if (!date) return "";
+  let d = date;
+  if (typeof date === "string") {
+    d = new Date(date);
+  }
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+
+  // Convert to Turkey Time (UTC+3)
+  const turkeyTime = new Date(d.getTime() + (3 * 60 * 60 * 1000));
+  
+  const day = String(turkeyTime.getUTCDate()).padStart(2, '0');
+  const month = String(turkeyTime.getUTCMonth() + 1).padStart(2, '0');
+  const year = String(turkeyTime.getUTCFullYear());
+  const hours = String(turkeyTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(turkeyTime.getUTCMinutes()).padStart(2, '0');
+  
+  return `${day}${month}${year}${hours}${minutes}`; // ddMMyyyyHHmm
+}
+
+export async function sendSMS(phone, message, env, scheduledDate) {
   const usercode = env.NETGSM_USERCODE;
   const password = env.NETGSM_PASSWORD;
   const msgheader = env.NETGSM_HEADER;
@@ -29,7 +49,8 @@ export async function sendSMS(phone, message, env) {
   if (!usercode || !password || !msgheader) {
     console.log(`[SMS Simüle Gönderim] (Env Değişkenleri Eksik)
 Alıcı: ${phone}
-Mesaj: ${message}`);
+Mesaj: ${message}
+Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
     return { success: true, simulated: true, reason: "Missing Netgsm configurations" };
   }
 
@@ -38,6 +59,8 @@ Mesaj: ${message}`);
     return { success: false, error: "Invalid Turkish phone number for SMS (must be 10 digits)" };
   }
 
+  const startdateValue = formatDateForNetgsm(scheduledDate);
+
   // XML Payload format requested by Netgsm
   const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
 <mainbody>
@@ -45,7 +68,7 @@ Mesaj: ${message}`);
         <company dil="TR">Netgsm</company>
         <usercode>${usercode}</usercode>
         <password>${password}</password>
-        <startdate></startdate>
+        <startdate>${startdateValue}</startdate>
         <stopdate></stopdate>
         <type>1:n</type>
         <msgheader>${msgheader}</msgheader>

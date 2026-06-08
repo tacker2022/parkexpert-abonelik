@@ -4793,6 +4793,14 @@ async function sendTestNotification(event) {
   if (phoneInput && !phoneInput.value) {
     phoneInput.value = "5372939874";
   }
+
+  // Reset scheduling inputs on modal open
+  const scheduleEnabled = document.getElementById('test-schedule-enabled');
+  const scheduleTime = document.getElementById('test-input-schedule-time');
+  const scheduleContainer = document.getElementById('test-schedule-time-container');
+  if (scheduleEnabled) scheduleEnabled.checked = false;
+  if (scheduleTime) scheduleTime.value = '';
+  if (scheduleContainer) scheduleContainer.style.display = 'none';
   
   const modal = document.getElementById('test-modal');
   if (modal) {
@@ -4808,6 +4816,14 @@ function closeTestModal(event) {
   }
 }
 
+function toggleTestScheduleTime(checked) {
+  const container = document.getElementById('test-schedule-time-container');
+  if (container) {
+    container.style.display = checked ? 'flex' : 'none';
+  }
+}
+window.toggleTestScheduleTime = toggleTestScheduleTime;
+
 async function submitTestNotification(event) {
   if (event) event.preventDefault();
   
@@ -4817,6 +4833,23 @@ async function submitTestNotification(event) {
   if (!email || !phone) {
     alert("Lütfen tüm alanları doldurun.");
     return;
+  }
+
+  const scheduleEnabled = document.getElementById('test-schedule-enabled')?.checked;
+  const scheduleTimeVal = document.getElementById('test-input-schedule-time')?.value;
+
+  if (scheduleEnabled && !scheduleTimeVal) {
+    alert("Lütfen ileri tarihli gönderim için tarih ve saat seçin.");
+    return;
+  }
+
+  let scheduledDate = null;
+  if (scheduleEnabled && scheduleTimeVal) {
+    // Treat the input as Turkey Time (UTC+3)
+    const parsedDate = new Date(scheduleTimeVal + ":00+03:00");
+    if (!isNaN(parsedDate.getTime())) {
+      scheduledDate = parsedDate.toISOString();
+    }
   }
   
   const btn = document.getElementById('btn-test-submit');
@@ -4832,7 +4865,7 @@ async function submitTestNotification(event) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, phone })
+      body: JSON.stringify({ email, phone, scheduledDate })
     });
 
     if (!res.ok) {
@@ -6041,6 +6074,10 @@ async function loadSystemSettings() {
   const emailCh = document.getElementById('settings-email-enabled');
   const whatsappCh = document.getElementById('settings-whatsapp-enabled');
   const smsCh = document.getElementById('settings-sms-enabled');
+  const delayNightSmsCh = document.getElementById('settings-delay-night-sms');
+  const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
+  const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
+  const reminderDaysContainer = document.getElementById('settings-reminder-days-container');
   const saveBtn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh) return;
@@ -6058,6 +6095,30 @@ async function loadSystemSettings() {
     emailCh.checked = settings.email_enabled !== false;
     whatsappCh.checked = settings.whatsapp_enabled !== false;
     smsCh.checked = settings.sms_enabled !== false;
+
+    if (delayNightSmsCh) {
+      delayNightSmsCh.checked = settings.delay_night_sms === true;
+    }
+
+    if (sendReminderCh) {
+      sendReminderCh.checked = settings.send_expiration_reminder !== false;
+
+      // Wire change listener to toggle reminder days input container
+      sendReminderCh.onchange = () => {
+        if (reminderDaysContainer) {
+          reminderDaysContainer.style.display = sendReminderCh.checked ? 'flex' : 'none';
+        }
+      };
+
+      // Set initial visibility
+      if (reminderDaysContainer) {
+        reminderDaysContainer.style.display = sendReminderCh.checked ? 'flex' : 'none';
+      }
+    }
+
+    if (reminderDaysInput) {
+      reminderDaysInput.value = settings.expiration_reminder_days || 3;
+    }
 
   } catch (err) {
     console.error("Failed to load settings:", err);
@@ -6083,6 +6144,9 @@ async function saveSystemSettings(event) {
   const emailCh = document.getElementById('settings-email-enabled');
   const whatsappCh = document.getElementById('settings-whatsapp-enabled');
   const smsCh = document.getElementById('settings-sms-enabled');
+  const delayNightSmsCh = document.getElementById('settings-delay-night-sms');
+  const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
+  const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const btn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh || !btn) return;
@@ -6096,7 +6160,10 @@ async function saveSystemSettings(event) {
     const payload = {
       email_enabled: emailCh.checked,
       whatsapp_enabled: whatsappCh.checked,
-      sms_enabled: smsCh.checked
+      sms_enabled: smsCh.checked,
+      delay_night_sms: delayNightSmsCh ? delayNightSmsCh.checked : false,
+      send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
+      expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3
     };
 
     const res = await fetch('/api/settings', {
@@ -6114,7 +6181,7 @@ async function saveSystemSettings(event) {
     }
 
     const data = await res.json();
-    showToastNotification("Sistem Ayarları", "Bildirim kanalları ayarı başarıyla kaydedildi! ✅", "check-circle");
+    showToastNotification("Sistem Ayarları", "Sistem ayarları başarıyla kaydedildi! ✅", "check-circle");
 
   } catch (err) {
     console.error("Failed to save settings:", err);

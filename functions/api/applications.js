@@ -370,8 +370,41 @@ export async function onRequest(context) {
                     smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz belge veya ödeme hatası nedeniyle REDDEDİLMİŞTİR. Detaylar e-posta/WhatsApp ile iletilmiştir. PARKEXPERT`;
                   }
                 }
+
+                let scheduledSMSDate = null;
+                if (settings.delay_night_sms) {
+                  const nowUtc = new Date();
+                  const turkeyTime = new Date(nowUtc.getTime() + (3 * 60 * 60 * 1000));
+                  const hours = turkeyTime.getUTCHours();
+                  if (hours >= 22 || hours < 8) {
+                    const scheduledTurkey = new Date(turkeyTime);
+                    if (hours >= 22) {
+                      scheduledTurkey.setUTCDate(scheduledTurkey.getUTCDate() + 1);
+                    }
+                    scheduledTurkey.setUTCHours(9, 0, 0, 0);
+                    scheduledSMSDate = new Date(scheduledTurkey.getTime() - (3 * 60 * 60 * 1000));
+                  }
+                }
+
                 if (smsMessage) {
-                  await sendSMS(phone, smsMessage, context.env);
+                  await sendSMS(phone, smsMessage, context.env, scheduledSMSDate);
+                }
+
+                // Abonelik Bitiş Hatırlatma SMS'i Planla
+                if (status === "Onaylandı" && settings.send_expiration_reminder) {
+                  const reminderDays = settings.expiration_reminder_days || 3;
+                  const targetDays = 30 - reminderDays;
+
+                  const nowUtc = new Date();
+                  const turkeyTime = new Date(nowUtc.getTime() + (3 * 60 * 60 * 1000));
+                  const scheduledTurkey = new Date(turkeyTime);
+                  scheduledTurkey.setUTCDate(scheduledTurkey.getUTCDate() + targetDays);
+                  scheduledTurkey.setUTCHours(10, 0, 0, 0); // Sabah saat 10:00
+
+                  const scheduledReminderDate = new Date(scheduledTurkey.getTime() - (3 * 60 * 60 * 1000));
+                  const reminderMessage = `Sayın ${fullName}, ${appLocation} otopark aboneliğiniz ${reminderDays} gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT`;
+
+                  await sendSMS(phone, reminderMessage, context.env, scheduledReminderDate);
                 }
               }
             } catch (waErr) {

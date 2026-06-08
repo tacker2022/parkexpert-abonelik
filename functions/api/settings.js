@@ -40,7 +40,10 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({
           email_enabled: true,
           whatsapp_enabled: true,
-          sms_enabled: true
+          sms_enabled: true,
+          delay_night_sms: false,
+          send_expiration_reminder: true,
+          expiration_reminder_days: 3
         }), { status: 200, headers });
       }
 
@@ -49,7 +52,10 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({
           email_enabled: true,
           whatsapp_enabled: true,
-          sms_enabled: true
+          sms_enabled: true,
+          delay_night_sms: false,
+          send_expiration_reminder: true,
+          expiration_reminder_days: 3
         }), { status: 200, headers });
       }
 
@@ -118,7 +124,7 @@ export async function onRequest(context) {
       }
 
       const payload = await context.request.json();
-      const { email_enabled, whatsapp_enabled, sms_enabled } = payload;
+      const { email_enabled, whatsapp_enabled, sms_enabled, delay_night_sms, send_expiration_reminder, expiration_reminder_days } = payload;
 
       const dbPayload = {
         id: "1",
@@ -126,7 +132,10 @@ export async function onRequest(context) {
         value: {
           email_enabled: email_enabled !== false,
           whatsapp_enabled: whatsapp_enabled !== false,
-          sms_enabled: sms_enabled !== false
+          sms_enabled: sms_enabled !== false,
+          delay_night_sms: delay_night_sms === true,
+          send_expiration_reminder: send_expiration_reminder !== false,
+          expiration_reminder_days: parseInt(expiration_reminder_days) || 3
         },
         updated_at: new Date().toISOString()
       };
