@@ -177,7 +177,9 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: `Supabase update error: ${errText}` }), { status: updateRes.status, headers });
       }
 
-      const updatedData = await updateRes.      // Trigger status notifications asynchronously in the background
+      const updatedData = await updateRes.json();
+
+      // Trigger status notifications asynchronously in the background
       if (updatedData && updatedData.length > 0) {
         const updatedApp = updatedData[0];
         context.waitUntil(
@@ -304,13 +306,6 @@ export async function onRequest(context) {
               }
             } catch (waErr) {
               console.error("Failed to send WhatsApp/Email/SMS message on status change:", waErr);
-            }
-          })()
-        );
-      }ontext.env });
-              }
-            } catch (waErr) {
-              console.error("Failed to send WhatsApp/Email message on status change:", waErr);
             }
           })()
         );
