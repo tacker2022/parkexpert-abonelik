@@ -41,6 +41,45 @@ export function formatDateForNetgsm(date) {
   return `${day}${month}${year}${hours}${minutes}`; // ddMMyyyyHHmm
 }
 
+async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDate) {
+  const supabaseUrl = env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("[logSMSToSupabase] Supabase config missing, skipping DB logging");
+    return;
+  }
+
+  try {
+    const dbPayload = {
+      job_id: jobId || null,
+      phone: phone,
+      message: message,
+      status: status || "Beklemede",
+      scheduled_at: scheduledDate || null,
+      created_at: new Date().toISOString()
+    };
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/sms_logs`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(dbPayload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[logSMSToSupabase Error] ${res.status}: ${errText}`);
+    }
+  } catch (err) {
+    console.error("[logSMSToSupabase Exception]", err);
+  }
+}
+
 export async function sendSMS(phone, message, env, scheduledDate) {
   const usercode = env.NETGSM_USERCODE;
   const password = env.NETGSM_PASSWORD;
@@ -51,6 +90,11 @@ export async function sendSMS(phone, message, env, scheduledDate) {
 Alıcı: ${phone}
 Mesaj: ${message}
 Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
+    
+    // Log simulated SMS
+    const mockJobId = "SIM-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    await logSMSToSupabase(phone, message, env, mockJobId, "Simüle Edildi", scheduledDate);
+
     return { success: true, simulated: true, reason: "Missing Netgsm configurations" };
   }
 
@@ -93,6 +137,7 @@ Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[Netgsm API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
+      await logSMSToSupabase(cleanedPhone, message, env, null, `Hata: HTTP ${res.status}`, scheduledDate);
       return { success: false, status: res.status, error: errText };
     }
 
@@ -102,13 +147,19 @@ Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
     if (code === "00") {
       const jobId = responseText.substring(3).trim();
       console.log(`[Netgsm SMS API Başarılı] Alıcı: ${cleanedPhone}, JobID: ${jobId}`);
+      
+      const initStatus = scheduledDate ? "Zamanlandı" : "Gönderildi";
+      await logSMSToSupabase(cleanedPhone, message, env, jobId, initStatus, scheduledDate);
+
       return { success: true, jobId };
     } else {
       console.error(`[Netgsm SMS API Hatası Kodu: ${code}] Yanıt: ${responseText}`);
+      await logSMSToSupabase(cleanedPhone, message, env, null, `Hata: Kod ${code}`, scheduledDate);
       return { success: false, errorCode: code, error: responseText };
     }
   } catch (err) {
     console.error(`[Netgsm SMS API Çökme Hatası]:`, err);
+    await logSMSToSupabase(cleanedPhone || phone, message, env, null, "Hata: Bağlantı Hatası", scheduledDate);
     return { success: false, error: err.message };
   }
 }

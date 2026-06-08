@@ -260,6 +260,10 @@
             <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
             <span>Sistem Ayarları</span>
           </button>
+          <button class="admin-tab-btn" id="tab-sms-reports" onclick="switchAdminTab('sms-reports')" style="display: none;">
+            <i data-lucide="mail-warning" style="width: 16px; height: 16px;"></i>
+            <span>SMS Raporları</span>
+          </button>
         </div>
 
         <!-- Panel 1: Detailed Applications -->
@@ -543,6 +547,59 @@
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+
+        <!-- Panel 7: SMS Reports Dashboard -->
+        <div id="panel-sms-reports" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>SMS Gönderim & Durum Raporları 📊</h3>
+            <p>Sistem üzerinden gönderilen veya zamanlanan SMS'lerin anlık iletim durumlarını takip edebilirsiniz.</p>
+          </section>
+
+          <section class="admin-actions-bar" style="margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <!-- Filter buttons -->
+            <div class="filter-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary active" id="filter-sms-all" onclick="filterSMSLogs('all')">Hepsi</button>
+              <button class="btn btn-secondary" id="filter-sms-delivered" onclick="filterSMSLogs('delivered')">İletildi</button>
+              <button class="btn btn-secondary" id="filter-sms-pending" onclick="filterSMSLogs('pending')">Beklemede</button>
+              <button class="btn btn-secondary" id="filter-sms-failed" onclick="filterSMSLogs('failed')">Hatalı</button>
+            </div>
+
+            <!-- Search box and Refresh button -->
+            <div style="display: flex; gap: 0.5rem; margin-left: auto; width: 100%; max-width: 400px; justify-content: flex-end; flex-wrap: wrap;">
+              <input type="text" id="sms-search-input" placeholder="Telefon veya mesaj içeriği ara..." oninput="filterSMSLogs()" style="flex-grow: 1; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem;">
+              <button class="btn btn-primary" onclick="loadSMSReports(true)" id="btn-refresh-sms" style="display: inline-flex; align-items: center; gap: 0.4rem; min-height: 38px; padding: 0 1.25rem;">
+                <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+                <span>Durumları Güncelle</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Table Container -->
+          <div class="table-container" style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); margin-top: 1.5rem; overflow-x: auto; box-shadow: var(--shadow-sm);">
+            <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid var(--color-border-light); font-weight: 700; color: var(--color-text-dark);">
+                  <th style="padding: 1rem 1.5rem;">Alıcı Telefon</th>
+                  <th style="padding: 1rem 1.5rem;">Mesaj İçeriği</th>
+                  <th style="padding: 1rem 1.5rem;">Zamanlama / Gönderim Tarihi</th>
+                  <th style="padding: 1rem 1.5rem;">Netgsm Job ID</th>
+                  <th style="padding: 1rem 1.5rem;">Durum</th>
+                </tr>
+              </thead>
+              <tbody id="sms-reports-table-body">
+                <!-- Rows populated by script.js -->
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+                      <i data-lucide="loader-2" style="width: 24px; height: 24px; animation: spin 1s linear infinite;"></i>
+                      <span>Raporlar yükleniyor...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1121,6 +1178,6 @@
   <!-- Chart.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260608_1750"></script>
+  <script src="script.js?v=20260608_2042"></script>
 </body>
 </html>

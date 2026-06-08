@@ -3906,7 +3906,7 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
-  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings') && currentAdminUser !== 'superadmin') {
+  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -3918,6 +3918,7 @@ function switchAdminTab(tabName) {
   const tabAdm = document.getElementById('tab-admins');
   const tabAnalytic = document.getElementById('tab-analytics');
   const tabSet = document.getElementById('tab-settings');
+  const tabSmsReports = document.getElementById('tab-sms-reports');
   
   const panelApp = document.getElementById('panel-applications');
   const panelComp = document.getElementById('panel-companies');
@@ -3925,6 +3926,7 @@ function switchAdminTab(tabName) {
   const panelAdm = document.getElementById('panel-admins');
   const panelAnalytic = document.getElementById('panel-analytics');
   const panelSet = document.getElementById('panel-settings');
+  const panelSmsReports = document.getElementById('panel-sms-reports');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -3935,6 +3937,7 @@ function switchAdminTab(tabName) {
   if (tabAdm) tabAdm.classList.remove('active');
   if (tabAnalytic) tabAnalytic.classList.remove('active');
   if (tabSet) tabSet.classList.remove('active');
+  if (tabSmsReports) tabSmsReports.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
@@ -3943,6 +3946,7 @@ function switchAdminTab(tabName) {
   if (panelAdm) panelAdm.style.display = 'none';
   if (panelSet) panelSet.style.display = 'none';
   if (panelAnalytic) panelAnalytic.style.display = 'none';
+  if (panelSmsReports) panelSmsReports.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
@@ -3963,6 +3967,10 @@ function switchAdminTab(tabName) {
     if (tabSet) tabSet.classList.add('active');
     if (panelSet) panelSet.style.display = 'block';
     loadSystemSettings();
+  } else if (tabName === 'sms-reports') {
+    if (tabSmsReports) tabSmsReports.classList.add('active');
+    if (panelSmsReports) panelSmsReports.style.display = 'block';
+    loadSMSReports();
   } else if (tabName === 'analytics') {
     if (tabAnalytic) tabAnalytic.classList.add('active');
     if (panelAnalytic) panelAnalytic.style.display = 'block';
@@ -4402,10 +4410,11 @@ function handleUserRoleChange() {
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
   const tabSet = document.getElementById('tab-settings');
+  const tabSmsReports = document.getElementById('tab-sms-reports');
   const dangerZone = document.querySelector('.sidebar-footer');
- 
+  
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
- 
+  
   if (val === 'superadmin') {
     if (avatar) {
       avatar.textContent = 'SA';
@@ -4418,6 +4427,7 @@ function handleUserRoleChange() {
     if (tabOto) tabOto.style.display = 'inline-flex';
     if (tabAdm) tabAdm.style.display = 'inline-flex';
     if (tabSet) tabSet.style.display = 'inline-flex';
+    if (tabSmsReports) tabSmsReports.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
   } else {
     const adminObj = admins.find(a => a.id === val);
@@ -6358,6 +6368,213 @@ async function saveOtoparkTemplates(event) {
   } finally {
     btn.innerHTML = originalHTML;
     btn.disabled = false;
+  }
+}
+
+// ==========================================================================
+// SMS DELIVERY REPORTS DASHBOARD LOGIC
+// ==========================================================================
+
+window.allSMSLogs = [];
+window.currentSMSFilter = 'all';
+
+async function loadSMSReports(forceRefresh = false) {
+  const tbody = document.getElementById('sms-reports-table-body');
+  const refreshBtn = document.getElementById('btn-refresh-sms');
+  const token = localStorage.getItem('parkexpert_token');
+
+  if (!tbody || !token) return;
+
+  const originalBtnHTML = refreshBtn ? refreshBtn.innerHTML : '';
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="ocr-spinner"></span> <span>Güncelleniyor...</span>';
+  }
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center; justify-content: center;">
+          <i class="spinner-border spinner-border-sm" role="status" style="width: 20px; height: 20px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; color: var(--color-primary); margin-bottom: 0.5rem;"></i>
+          <span>SMS raporları yükleniyor...</span>
+        </div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const url = `/api/sms_reports?refresh=${forceRefresh ? 'true' : 'false'}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      if (errData.error === "sms_logs_table_missing") {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 3rem; color: #b45309;">
+              <div style="display: flex; flex-direction: column; gap: 0.8rem; align-items: center; max-width: 550px; margin: 0 auto;">
+                <i data-lucide="alert-triangle" style="width: 36px; height: 36px; color: #d97706;"></i>
+                <span style="font-weight: 700; font-size: 1rem; color: #d97706;">Supabase Veritabanı Tablosu Eksik!</span>
+                <span style="font-size: 0.825rem; line-height: 1.5; color: var(--color-text-muted);">SMS raporlama özelliğini kullanabilmek için Supabase panelinizdeki <strong>SQL Editor</strong> ekranında aşağıdaki komutu çalıştırarak tabloyu oluşturmanız gerekmektedir:</span>
+                <pre style="background: #f1f5f9; padding: 0.75rem; border-radius: 6px; font-size: 0.75rem; text-align: left; width: 100%; overflow-x: auto; border: 1px solid var(--color-border-light); color: #334155; font-family: monospace;">
+CREATE TABLE IF NOT EXISTS sms_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id VARCHAR(100),
+    phone VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'Beklemede',
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
+              </div>
+            </td>
+          </tr>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+      }
+      throw new Error(errData.error || "SMS raporları yüklenirken hata oluştu.");
+    }
+
+    window.allSMSLogs = await res.json();
+    filterSMSLogs();
+
+  } catch (err) {
+    console.error("loadSMSReports error:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-accent-red);">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+            <i data-lucide="x-circle" style="width: 24px; height: 24px; color: var(--color-accent-red);"></i>
+            <span>Hata: ${err.message}</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = originalBtnHTML;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+}
+
+function filterSMSLogs(filterType) {
+  if (filterType) {
+    window.currentSMSFilter = filterType;
+    
+    // Update filter buttons active class
+    const buttons = ['all', 'delivered', 'pending', 'failed'];
+    buttons.forEach(b => {
+      const btn = document.getElementById(`filter-sms-${b}`);
+      if (btn) {
+        if (b === filterType) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+  }
+
+  const searchVal = document.getElementById('sms-search-input')?.value.toLowerCase().trim() || '';
+  
+  let filtered = window.allSMSLogs;
+
+  // Apply status filter
+  if (window.currentSMSFilter === 'delivered') {
+    filtered = filtered.filter(log => log.status === 'İletildi' || log.status === 'Simüle Edildi');
+  } else if (window.currentSMSFilter === 'pending') {
+    filtered = filtered.filter(log => log.status === 'Beklemede' || log.status === 'Zamanlandı');
+  } else if (window.currentSMSFilter === 'failed') {
+    filtered = filtered.filter(log => log.status.startsWith('Hata') || log.status.startsWith('İletilemedi'));
+  }
+
+  // Apply search filter
+  if (searchVal) {
+    filtered = filtered.filter(log => 
+      log.phone.toLowerCase().includes(searchVal) || 
+      log.message.toLowerCase().includes(searchVal) ||
+      (log.job_id && log.job_id.toLowerCase().includes(searchVal))
+    );
+  }
+
+  renderSMSReportsTable(filtered);
+}
+
+function renderSMSReportsTable(logs) {
+  const tbody = document.getElementById('sms-reports-table-body');
+  if (!tbody) return;
+
+  if (logs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+          <span>SMS kaydı bulunamadı.</span>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = logs.map(log => {
+    // Format creation time
+    const createdDate = new Date(log.created_at);
+    const createdStr = isNaN(createdDate.getTime()) ? '-' : createdDate.toLocaleString('tr-TR');
+
+    // Format scheduled time
+    let scheduledStr = '-';
+    if (log.scheduled_at) {
+      const schedDate = new Date(log.scheduled_at);
+      scheduledStr = isNaN(schedDate.getTime()) ? '-' : schedDate.toLocaleString('tr-TR');
+    }
+
+    // Determine status badge style
+    let badgeStyle = 'background: #f1f5f9; color: #475569;'; // default fallback
+    let statusText = log.status || 'Beklemede';
+
+    if (statusText === 'İletildi') {
+      badgeStyle = 'background: #def7ec; color: #03543f;'; // green
+    } else if (statusText === 'Simüle Edildi') {
+      badgeStyle = 'background: #e1effe; color: #1e429f;'; // blue
+    } else if (statusText === 'Zamanlandı') {
+      badgeStyle = 'background: #fdf2f2; color: #9b1c1c; border: 1px dashed #f8b4b4;'; // light pink border for future SMS
+      statusText = `⏳ Zamanlandı (${scheduledStr})`;
+    } else if (statusText === 'Beklemede') {
+      badgeStyle = 'background: #fef08a; color: #713f12;'; // yellow
+    } else if (statusText.startsWith('Hata') || statusText.startsWith('İletilemedi')) {
+      badgeStyle = 'background: #fde8e8; color: #9b1c1c;'; // red
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid var(--color-border-light);">
+        <td style="padding: 1rem 1.5rem; font-weight: 600; color: var(--color-text-dark);">${log.phone}</td>
+        <td style="padding: 1rem 1.5rem; max-width: 350px; white-space: normal; word-break: break-word; line-height: 1.4;">${log.message}</td>
+        <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">
+          <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+            <span>${createdStr}</span>
+            ${log.scheduled_at ? `<span style="font-size: 0.75rem; color: #7c3aed; font-weight: 600;">⏰ Planlanan: ${scheduledStr}</span>` : ''}
+          </div>
+        </td>
+        <td style="padding: 1rem 1.5rem; font-family: monospace; color: var(--color-text-muted); font-size: 0.8rem;">${log.job_id || '-'}</td>
+        <td style="padding: 1rem 1.5rem;">
+          <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.775rem; font-weight: 700; ${badgeStyle}">
+            ${statusText}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
   }
 }
 
