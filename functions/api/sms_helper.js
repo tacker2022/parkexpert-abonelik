@@ -119,7 +119,7 @@ Flash SMS: ${flashSms ? 'Evet' : 'Hayır'}`);
         <stopdate></stopdate>
         <type>1:n</type>
         <msgheader>${msgheader}</msgheader>
-        <flashsms>${flashSmsValue}</flashsms>
+        <flash>${flashSmsValue}</flash>
     </header>
     <body>
         <msg><![CDATA[${message}]]></msg>
