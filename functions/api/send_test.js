@@ -1,5 +1,6 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
+import { sendSMS } from "./sms_helper.js";
 
 export async function onRequest(context) {
   const headers = {
@@ -85,6 +86,18 @@ export async function onRequest(context) {
       waError = e.message;
     }
 
+    // Send SMS Test
+    let smsSuccess = false;
+    let smsError = null;
+    try {
+      const smsMessage = `Bu bir test mesajidir. Takip No: ${mockAppId}. PARKEXPERT`;
+      const smsResult = await sendSMS(testPhone, smsMessage, context.env);
+      smsSuccess = smsResult.success !== false;
+      if (!smsSuccess) smsError = smsResult.error;
+    } catch (e) {
+      smsError = e.message;
+    }
+
     // 4. Construct Email HTML
     const emailSubject = `🌟 PARKEXPERT Abonelik Başvurunuz Alındı! (Takip No: ${mockAppId})`;
     const emailHtml = `
@@ -128,7 +141,8 @@ export async function onRequest(context) {
       success: true, 
       mockAppId,
       whatsapp: { success: waSuccess, error: waError },
-      email: { success: emailSuccess, error: emailError }
+      email: { success: emailSuccess, error: emailError },
+      sms: { success: smsSuccess, error: smsError }
     }), { status: 200, headers });
 
   } catch (err) {

@@ -256,6 +256,10 @@
             <i data-lucide="users" style="width: 16px; height: 16px;"></i>
             <span>Yetkili Yönetimi</span>
           </button>
+          <button class="admin-tab-btn" id="tab-settings" onclick="switchAdminTab('settings')" style="display: none;">
+            <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
+            <span>Sistem Ayarları</span>
+          </button>
         </div>
 
         <!-- Panel 1: Detailed Applications -->
@@ -427,6 +431,82 @@
             <!-- Rendered via JS -->
           </div>
         </div>
+
+        <!-- Panel 6: System Settings -->
+        <div id="panel-settings" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>Sistem Bildirim Ayarları ⚙️</h3>
+            <p>E-posta, WhatsApp ve SMS bildirim kanallarını buradan aktif veya pasif hale getirebilirsiniz.</p>
+          </section>
+
+          <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 2rem; max-width: 600px; margin-top: 1.5rem; box-shadow: var(--shadow-sm);">
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem;">
+              <i data-lucide="bell" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+              <span>Global Bildirim Kanalları</span>
+            </h4>
+
+            <form id="system-settings-form" onsubmit="saveSystemSettings(event)" style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <!-- Email Toggle -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px dashed var(--color-border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.4rem;">
+                    <i data-lucide="mail" style="width: 16px; height: 16px; color: var(--color-primary);"></i> E-posta Bildirimleri
+                  </span>
+                  <span style="font-size: 0.775rem; color: var(--color-text-muted);">Yeni başvuru ve onay/ret durumlarında e-posta gönderir.</span>
+                </div>
+                <label class="switch-toggle" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                  <input type="checkbox" id="settings-email-enabled" style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider-round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
+                </label>
+              </div>
+
+              <!-- WhatsApp Toggle -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px dashed var(--color-border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.4rem;">
+                    <i data-lucide="message-circle" style="width: 16px; height: 16px; color: #25d366; fill: rgba(37,211,102,0.1);"></i> WhatsApp (Green API) Bildirimleri
+                  </span>
+                  <span style="font-size: 0.775rem; color: var(--color-text-muted);">Yeni başvuru ve onay/ret durumlarında Green API ile WhatsApp gönderir.</span>
+                </div>
+                <label class="switch-toggle" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                  <input type="checkbox" id="settings-whatsapp-enabled" style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider-round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
+                </label>
+              </div>
+
+              <!-- SMS Toggle -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px dashed var(--color-border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.4rem;">
+                    <i data-lucide="smartphone" style="width: 16px; height: 16px; color: var(--color-accent-orange);"></i> SMS (Netgsm) Bildirimleri
+                  </span>
+                  <span style="font-size: 0.775rem; color: var(--color-text-muted);">Yeni başvuru ve onay/ret durumlarında Netgsm XML API ile SMS gönderir.</span>
+                </div>
+                <label class="switch-toggle" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                  <input type="checkbox" id="settings-sms-enabled" style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider-round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
+                </label>
+              </div>
+
+              <!-- Netgsm Credential Instructions -->
+              <div style="background: rgba(245,158,11,0.05); border: 1px dashed rgba(245,158,11,0.25); border-radius: var(--radius-md); padding: 1rem; font-size: 0.8rem; color: #b45309; line-height: 1.5; display: flex; gap: 0.6rem; align-items: flex-start; margin-top: 0.5rem;">
+                <i data-lucide="info" style="width: 18px; height: 18px; color: #b45309; flex-shrink: 0; margin-top: 0.1rem;"></i>
+                <div>
+                  <strong>Bilgi:</strong> Netgsm SMS gönderimi için gereken <code>NETGSM_USERCODE</code>, <code>NETGSM_PASSWORD</code> ve <code>NETGSM_HEADER</code> değişkenlerinin Cloudflare Dashboard'da tanımlanmış olması gerekmektedir. Eksik olması durumunda SMS gönderimi simüle edilerek loglara yazılacaktır.
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" id="btn-save-settings" style="min-height: 42px; padding: 0 2rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="save" style="width: 18px; height: 18px;"></i>
+                  <span>Ayarları Kaydet</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
 
 
       </main>

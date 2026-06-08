@@ -3892,7 +3892,7 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
-  if ((tabName === 'otoparks' || tabName === 'admins') && currentAdminUser !== 'superadmin') {
+  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -3903,12 +3903,14 @@ function switchAdminTab(tabName) {
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
   const tabAnalytic = document.getElementById('tab-analytics');
+  const tabSet = document.getElementById('tab-settings');
   
   const panelApp = document.getElementById('panel-applications');
   const panelComp = document.getElementById('panel-companies');
   const panelOto = document.getElementById('panel-otoparks');
   const panelAdm = document.getElementById('panel-admins');
   const panelAnalytic = document.getElementById('panel-analytics');
+  const panelSet = document.getElementById('panel-settings');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -3918,12 +3920,14 @@ function switchAdminTab(tabName) {
   if (tabOto) tabOto.classList.remove('active');
   if (tabAdm) tabAdm.classList.remove('active');
   if (tabAnalytic) tabAnalytic.classList.remove('active');
+  if (tabSet) tabSet.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
   panelComp.style.display = 'none';
   if (panelOto) panelOto.style.display = 'none';
   if (panelAdm) panelAdm.style.display = 'none';
+  if (panelSet) panelSet.style.display = 'none';
   if (panelAnalytic) panelAnalytic.style.display = 'none';
 
   if (tabName === 'applications') {
@@ -3941,6 +3945,10 @@ function switchAdminTab(tabName) {
     if (tabAdm) tabAdm.classList.add('active');
     if (panelAdm) panelAdm.style.display = 'block';
     renderAdminsTable();
+  } else if (tabName === 'settings') {
+    if (tabSet) tabSet.classList.add('active');
+    if (panelSet) panelSet.style.display = 'block';
+    loadSystemSettings();
   } else if (tabName === 'analytics') {
     if (tabAnalytic) tabAnalytic.classList.add('active');
     if (panelAnalytic) panelAnalytic.style.display = 'block';
@@ -4379,10 +4387,11 @@ function handleUserRoleChange() {
   const adminUserBlock = document.getElementById('admin-user-selector-block');
   const tabOto = document.getElementById('tab-otoparks');
   const tabAdm = document.getElementById('tab-admins');
+  const tabSet = document.getElementById('tab-settings');
   const dangerZone = document.querySelector('.sidebar-footer');
-
+ 
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-
+ 
   if (val === 'superadmin') {
     if (avatar) {
       avatar.textContent = 'SA';
@@ -4394,6 +4403,7 @@ function handleUserRoleChange() {
     }
     if (tabOto) tabOto.style.display = 'inline-flex';
     if (tabAdm) tabAdm.style.display = 'inline-flex';
+    if (tabSet) tabSet.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
   } else {
     const adminObj = admins.find(a => a.id === val);
@@ -4410,9 +4420,10 @@ function handleUserRoleChange() {
     }
     if (tabOto) tabOto.style.display = 'none';
     if (tabAdm) tabAdm.style.display = 'none';
+    if (tabSet) tabSet.style.display = 'none';
     if (dangerZone) dangerZone.style.display = 'none';
-
-    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins') {
+ 
+    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings') {
       switchAdminTab('applications');
     }
   }
@@ -4819,7 +4830,8 @@ async function submitTestNotification(event) {
     
     let statusMsg = `Mock Başvuru Kodu: ${data.mockAppId}\n\n`;
     statusMsg += `📧 E-posta (${email}): ${data.email.success ? '✅ Gönderildi' : '❌ HATA: ' + data.email.error}\n`;
-    statusMsg += `💬 WhatsApp (${phone}): ${data.whatsapp.success ? '✅ Gönderildi' : '❌ HATA: ' + data.whatsapp.error}`;
+    statusMsg += `💬 WhatsApp (${phone}): ${data.whatsapp.success ? '✅ Gönderildi' : '❌ HATA: ' + data.whatsapp.error}\n`;
+    statusMsg += `📱 SMS (${phone}): ${data.sms.success ? '✅ Gönderildi' : '❌ HATA: ' + data.sms.error}`;
 
     alert(`Test Sonucu:\n\n${statusMsg}`);
     
@@ -6006,4 +6018,98 @@ function exportSingleApplicationExcel(appId, type) {
     });
   }
 }
+
+/* ==========================================================================
+   GLOBAL SYSTEM SETTINGS & NOTIFICATION CHANNELS
+   ========================================================================== */
+
+async function loadSystemSettings() {
+  const emailCh = document.getElementById('settings-email-enabled');
+  const whatsappCh = document.getElementById('settings-whatsapp-enabled');
+  const smsCh = document.getElementById('settings-sms-enabled');
+  const saveBtn = document.getElementById('btn-save-settings');
+
+  if (!emailCh || !whatsappCh || !smsCh) return;
+
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="ocr-spinner"></span> <span>Yükleniyor...</span>';
+    }
+
+    const res = await fetch('/api/settings');
+    if (!res.ok) throw new Error("Ayarlar yüklenemedi.");
+
+    const settings = await res.json();
+    emailCh.checked = settings.email_enabled !== false;
+    whatsappCh.checked = settings.whatsapp_enabled !== false;
+    smsCh.checked = settings.sms_enabled !== false;
+
+  } catch (err) {
+    console.error("Failed to load settings:", err);
+    showToastNotification("Sistem Ayarları", "Sistem ayarları yüklenirken hata oluştu.", "alert-circle");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i data-lucide="save" style="width: 18px; height: 18px;"></i> <span>Ayarları Kaydet</span>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+}
+
+async function saveSystemSettings(event) {
+  event.preventDefault();
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  const emailCh = document.getElementById('settings-email-enabled');
+  const whatsappCh = document.getElementById('settings-whatsapp-enabled');
+  const smsCh = document.getElementById('settings-sms-enabled');
+  const btn = document.getElementById('btn-save-settings');
+
+  if (!emailCh || !whatsappCh || !smsCh || !btn) return;
+
+  const originalHTML = btn.innerHTML;
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ocr-spinner"></span> <span>Kaydediliyor...</span>';
+
+    const payload = {
+      email_enabled: emailCh.checked,
+      whatsapp_enabled: whatsappCh.checked,
+      sms_enabled: smsCh.checked
+    };
+
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Ayarlar kaydedilemedi.");
+    }
+
+    const data = await res.json();
+    showToastNotification("Sistem Ayarları", "Bildirim kanalları ayarı başarıyla kaydedildi! ✅", "check-circle");
+
+  } catch (err) {
+    console.error("Failed to save settings:", err);
+    alert(`Ayar Kaydedilemedi!\n\nHata: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
 

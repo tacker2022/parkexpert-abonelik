@@ -1,5 +1,6 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
+import { sendSMS } from "./sms_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -176,14 +177,28 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: `Supabase update error: ${errText}` }), { status: updateRes.status, headers });
       }
 
-      const updatedData = await updateRes.json();
-
-      // Trigger WhatsApp status notification asynchronously in the background
+      const updatedData = await updateRes.      // Trigger status notifications asynchronously in the background
       if (updatedData && updatedData.length > 0) {
         const updatedApp = updatedData[0];
         context.waitUntil(
           (async () => {
             try {
+              // 1. Fetch System Settings / Notification Toggles
+              const settingsRes = await fetch(`${supabaseUrl}/rest/v1/system_settings?key=eq.notification_toggles&select=*`, {
+                headers: {
+                  "apikey": supabaseAnonKey,
+                  "Authorization": `Bearer ${supabaseAnonKey}`
+                }
+              });
+              
+              let settings = { email_enabled: true, whatsapp_enabled: true, sms_enabled: true };
+              if (settingsRes.ok) {
+                const rows = await settingsRes.json();
+                if (rows.length > 0) {
+                  settings = rows[0].value;
+                }
+              }
+
               const fullName = updatedApp.full_name;
               const phone = updatedApp.phone;
               const plateNumber = updatedApp.plate_number;
@@ -195,7 +210,7 @@ export async function onRequest(context) {
                   "Authorization": `Bearer ${supabaseAnonKey}`
                 }
               });
-              let supportPhone = "0212 875 34 56";
+              let supportPhone = "0216 504 47 22";
               if (otoparkRes.ok) {
                 const parks = await otoparkRes.json();
                 if (parks.length > 0) {
@@ -203,19 +218,21 @@ export async function onRequest(context) {
                 }
               }
 
-              let message = "";
-              if (status === "Onaylandı") {
-                message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve ONAYLANMIŞTIR. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n💸 Abonelik Tipi: ${updatedApp.subscription_type}\n📞 Destek Telefonu: ${supportPhone}\n\n🚗 HGS Otomatik Geçiş Bilgilendirmesi:\nPlaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!`;
-              } else if (status === "Reddedildi") {
-                message = `Merhaba Sayın ${fullName}, ⚠️\n\nAbonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle REDDEDİLMİŞTİR.\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n⚠️ Durum: Belge Eksikliği / Dekont Hatası\n\n💬 Nasıl Düzeltebilirsiniz?\nLütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: ${supportPhone}`;
+              // 2. Dispatch WhatsApp Notification if enabled
+              if (settings.whatsapp_enabled) {
+                let message = "";
+                if (status === "Onaylandı") {
+                  message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru evraklarınız ve ödeme dekontunuz başarıyla incelenmiş ve ONAYLANMIŞTIR. Aboneliğiniz aktif edilmiştir! Detaylar aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n💸 Abonelik Tipi: ${updatedApp.subscription_type}\n📞 Destek Telefonu: ${supportPhone}\n\n🚗 HGS Otomatik Geçiş Bilgilendirmesi:\nPlaka tanıma sistemimiz plakanızı otomatik olarak veritabanına tanımlamıştır. Otopark giriş ve çıkışlarında HGS (Hızlı Geçiş Sistemi) plakanızı okuyarak geçiş izni verecektir. Herhangi bir kart okutmanıza veya bilet almanıza gerek yoktur. Keyifli sürüşler dileriz!`;
+                } else if (status === "Reddedildi") {
+                  message = `Merhaba Sayın ${fullName}, ⚠️\n\nAbonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun doğrulanamaması nedeniyle REDDEDİLMİŞTİR.\n\n📦 Başvuru Kodu: ${id}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${appLocation}\n⚠️ Durum: Belge Eksikliği / Dekont Hatası\n\n💬 Nasıl Düzeltebilirsiniz?\nLütfen bilgilerinizi kontrol edip belgeleri yeniden yükleyerek yeni bir başvuru oluşturunuz veya otopark yönetim ofisimizle iletişime geçiniz: ${supportPhone}`;
+                }
+                if (message) {
+                  await sendWhatsApp(phone, message, context.env);
+                }
               }
 
-              if (message) {
-                await sendWhatsApp(phone, message, context.env);
-              }
-
-              // Send email notification based on status
-              if (status === "Onaylandı" || status === "Reddedildi") {
+              // 3. Dispatch Email Notification if enabled
+              if (settings.email_enabled && (status === "Onaylandı" || status === "Reddedildi")) {
                 let emailSubject = "";
                 let emailHtml = "";
 
@@ -250,7 +267,7 @@ export async function onRequest(context) {
                     <h2 style="font-size: 1.25rem; color: #ef4444; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-align: center;">Sayın ${fullName},</h2>
                     
                     <p style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem; text-align: center;">
-                      Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun uyuşmaması nedeniyle <strong>REDDEDİLMİŞTİR</strong>.
+                      Abonelik ön başvurunuz, yüklenen belgelerdeki (ruhsat/kimlik) eksiklikler veya ödeme dekontunun uyuşmaması nedeniyle <strong>REDDEDİLMİŞTIR</strong>.
                     </p>
 
                     <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #ef4444; border: 1px solid #e2e8f0; border-left-width: 4px;">
@@ -271,6 +288,26 @@ export async function onRequest(context) {
                 }
 
                 await sendEmail({ to: updatedApp.email, subject: emailSubject, html: emailHtml, env: context.env });
+              }
+
+              // 4. Dispatch SMS Notification if enabled
+              if (settings.sms_enabled) {
+                let smsMessage = "";
+                if (status === "Onaylandı") {
+                  smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz ONAYLANMIŞTIR. Plakanız otopark geçiş sistemine tanımlanmıştır. Keyifli sürüşler dileriz. PARKEXPERT`;
+                } else if (status === "Reddedildi") {
+                  smsMessage = `Sayın ${fullName}, ${appLocation} otopark abonelik başvurunuz belge veya ödeme hatası nedeniyle REDDEDİLMİŞTİR. Detaylar e-posta/WhatsApp ile iletilmiştir. PARKEXPERT`;
+                }
+                if (smsMessage) {
+                  await sendSMS(phone, smsMessage, context.env);
+                }
+              }
+            } catch (waErr) {
+              console.error("Failed to send WhatsApp/Email/SMS message on status change:", waErr);
+            }
+          })()
+        );
+      }ontext.env });
               }
             } catch (waErr) {
               console.error("Failed to send WhatsApp/Email message on status change:", waErr);
