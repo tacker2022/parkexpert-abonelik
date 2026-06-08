@@ -1,0 +1,100 @@
+// GET endpoint for fetching reminder logs and conversion rates
+function base64Decode(base64) {
+  const binString = atob(base64);
+  const bytes = new Uint8Array(binString.length);
+  for (let i = 0; i < binString.length; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+async function verifyToken(token, secret) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 2) return null;
+    const payloadStr = base64Decode(parts[0]);
+    const signatureHex = parts[1];
+
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(payloadStr)
+    );
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const reSignatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+    if (signatureHex === reSignatureHex) {
+      const payload = JSON.parse(payloadStr);
+      if (payload.exp && payload.exp < Date.now()) {
+        return null;
+      }
+      return payload;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
+export async function onRequest(context) {
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Content-Type": "application/json"
+  };
+
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers });
+  }
+
+  const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
+  const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
+  const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
+  }
+
+  const authHeader = context.request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
+  }
+
+  const token = authHeader.substring(7);
+  const user = await verifyToken(token, jwtSecret);
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Geçersiz oturum!" }), { status: 401, headers });
+  }
+
+  try {
+    // Fetch logs from Supabase
+    // If the table doesn't exist, it might fail, so we return an empty array fallback
+    const res = await fetch(`${supabaseUrl}/rest/v1/reminder_logs?select=*&order=sent_at.desc&limit=500`, {
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`
+      }
+    });
+
+    if (!res.ok) {
+      console.warn("[reminder_logs API] Failed to query reminder_logs table. Returning empty array fallback.");
+      return new Response(JSON.stringify([]), { status: 200, headers });
+    }
+
+    const data = await res.json();
+    return new Response(JSON.stringify(data), { status: 200, headers });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
+  }
+}

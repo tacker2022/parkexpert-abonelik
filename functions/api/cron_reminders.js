@@ -211,6 +211,34 @@ export async function onRequest(context) {
               errors.push(`${app.phone}: Gönderim başarısız.`);
             }
           }
+
+          // If at least one channel succeeded, log it to reminder_logs
+          const actualSent = sentEmailSuccess || sentWASuccess || sentSMSSuccess;
+          if (actualSent) {
+            try {
+              let logChannel = "sms";
+              if (sentWASuccess) logChannel = "whatsapp";
+              else if (sentEmailSuccess) logChannel = "email";
+
+              await fetch(`${supabaseUrl}/rest/v1/reminder_logs`, {
+                method: "POST",
+                headers: {
+                  "apikey": supabaseAnonKey,
+                  "Authorization": `Bearer ${supabaseAnonKey}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  application_id: app.id,
+                  plate_number: app.plate_number || app.plate || "",
+                  phone: app.phone,
+                  days_left: daysLeft,
+                  channel: logChannel
+                })
+              });
+            } catch (dbLogErr) {
+              console.error(`[Cron Reminder DB Log Error] for app ${app.id}:`, dbLogErr);
+            }
+          }
         } catch (singleAppErr) {
           failCount++;
           errors.push(`${app.phone}: ${singleAppErr.message}`);

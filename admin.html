@@ -418,6 +418,71 @@
               </tbody>
             </table>
           </section>
+
+          <!-- Conversion Analytics & Reminder Log Section -->
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; margin-top: 2rem;">
+            <!-- Left: Conversion Analytics -->
+            <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-top: 0; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem;">
+                <i data-lucide="trending-up" style="color: var(--color-primary); width: 18px; height: 18px;"></i>
+                <span>Hatırlatıcı Dönüşüm Analizi</span>
+              </h4>
+              
+              <div style="display: flex; align-items: center; justify-content: center; flex-direction: column; margin: auto 0; padding: 1rem 0;">
+                <div style="font-size: 0.775rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Ortalama Dönüşüm Oranı</div>
+                <div id="conversion-rate-value" style="font-family: var(--font-heading); font-size: 3rem; font-weight: 800; color: var(--color-primary);">%0</div>
+                
+                <!-- Circular Progress Bar or simple horizontal bar -->
+                <div style="width: 100%; max-width: 240px; background-color: #f1f5f9; height: 12px; border-radius: 6px; margin: 1rem 0 1.25rem 0; overflow: hidden; border: 1px solid #e2e8f0;">
+                  <div id="conversion-rate-bar" style="width: 0%; height: 100%; background-color: var(--color-primary); border-radius: 6px; transition: width 0.8s ease-out;"></div>
+                </div>
+                
+                <p id="conversion-rate-text" style="font-size: 0.825rem; color: var(--color-text-muted); text-align: center; margin: 0; line-height: 1.4;">
+                  SMS/WhatsApp hatırlatmalarından sonra yenilenen aboneliklerin oranı.
+                </p>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem; margin-top: auto;">
+                <div style="text-align: center;">
+                  <div style="font-size: 0.725rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700;">Toplam Bildirim</div>
+                  <div id="conversion-total-sent" style="font-size: 1.4rem; font-weight: 800; color: var(--color-text-dark); margin-top: 0.25rem;">0</div>
+                </div>
+                <div style="text-align: center; border-left: 1px solid var(--color-border-light);">
+                  <div style="font-size: 0.725rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700;">Dönüşen (Yenilenen)</div>
+                  <div id="conversion-total-renewed" style="font-size: 1.4rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Mini Logs List -->
+            <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-primary-dark); margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem;">
+                <i data-lucide="history" style="color: var(--color-primary); width: 18px; height: 18px;"></i>
+                <span>Son Gönderilen Hatırlatmalar</span>
+              </h4>
+
+              <div class="table-container" style="box-shadow: none; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); margin-bottom: 0; max-height: 250px; overflow-y: auto;">
+                <table class="admin-table" style="font-size: 0.8rem;">
+                  <thead style="position: sticky; top: 0; z-index: 10;">
+                    <tr>
+                      <th scope="col" style="padding: 0.6rem 1rem; font-size: 0.75rem;">Plaka</th>
+                      <th scope="col" style="padding: 0.6rem 1rem; font-size: 0.75rem;">Kanal</th>
+                      <th scope="col" style="padding: 0.6rem 1rem; font-size: 0.75rem; text-align: center;">Kalan Gün</th>
+                      <th scope="col" style="padding: 0.6rem 1rem; font-size: 0.75rem;">Tarih</th>
+                      <th scope="col" style="padding: 0.6rem 1rem; font-size: 0.75rem; text-align: center;">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reminder-mini-logs-body">
+                    <tr>
+                      <td colspan="5" style="text-align: center; padding: 2rem 1rem; color: var(--color-text-muted); font-style: italic;">
+                        Henüz gönderim kaydı bulunmuyor.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Panel 2: Aggregated Companies -->

@@ -125,7 +125,7 @@ export async function onRequest(context) {
     // ----------------------------------------------------
     if (method === "PATCH") {
       const requestData = await context.request.json();
-      const { id, status, plate_number, company_name } = requestData;
+      const { id, status, plate_number, company_name, subscription_expires_at } = requestData;
       if (!id) {
         return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers });
       }
@@ -166,6 +166,7 @@ export async function onRequest(context) {
       }
       if (plate_number !== undefined) updateBody.plate_number = plate_number;
       if (company_name !== undefined) updateBody.company_name = company_name;
+      if (subscription_expires_at !== undefined) updateBody.subscription_expires_at = subscription_expires_at;
 
       // Update in Supabase
       const updateRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}`, {
@@ -412,6 +413,28 @@ export async function onRequest(context) {
                   const reminderMessage = `Sayın ${fullName}, ${appLocation} otopark aboneliğiniz ${reminderDays} gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT`;
 
                   await sendSMS(phone, reminderMessage, context.env, scheduledReminderDate, settings.flash_sms, "0", appLocation);
+                }
+              }
+
+              // 5. Mark reminder_logs as converted if application is approved or expiry is updated
+              if (status === "Onaylandı" || subscription_expires_at !== undefined) {
+                try {
+                  const targetPlate = plate_number || updatedApp.plate_number || updatedApp.plate || "";
+                  const filterQuery = `or=(application_id.eq.${id},plate_number.eq.${encodeURIComponent(targetPlate)})&converted=eq.false`;
+                  await fetch(`${supabaseUrl}/rest/v1/reminder_logs?${filterQuery}`, {
+                    method: "PATCH",
+                    headers: {
+                      "apikey": supabaseAnonKey,
+                      "Authorization": `Bearer ${supabaseAnonKey}`,
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      converted: true,
+                      converted_at: new Date().toISOString()
+                    })
+                  });
+                } catch (convErr) {
+                  console.error("Failed to mark reminder_logs as converted:", convErr);
                 }
               }
             } catch (waErr) {

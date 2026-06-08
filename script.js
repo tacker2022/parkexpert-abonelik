@@ -4862,8 +4862,105 @@ function renderExpirationsDashboard() {
   });
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Update reminder conversion tracking metrics and mini logs
+  updateReminderConversionStats();
 }
 window.renderExpirationsDashboard = renderExpirationsDashboard;
+
+async function updateReminderConversionStats() {
+  const tbody = document.getElementById('reminder-mini-logs-body');
+  const rateValueEl = document.getElementById('conversion-rate-value');
+  const rateBarEl = document.getElementById('conversion-rate-bar');
+  const totalSentEl = document.getElementById('conversion-total-sent');
+  const totalRenewedEl = document.getElementById('conversion-total-renewed');
+
+  if (!tbody) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const response = await fetch(`/api/reminder_logs?_t=${Date.now()}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Hatırlatıcı günlükleri yüklenemedi.");
+    }
+
+    const logs = await response.json();
+    if (!Array.isArray(logs)) {
+      throw new Error("Geçersiz veri formatı.");
+    }
+
+    const totalSent = logs.length;
+    const convertedCount = logs.filter(l => l.converted).length;
+    const conversionRate = totalSent > 0 ? Math.round((convertedCount / totalSent) * 100) : 0;
+
+    if (rateValueEl) rateValueEl.textContent = `%${conversionRate}`;
+    if (rateBarEl) rateBarEl.style.width = `${conversionRate}%`;
+    if (totalSentEl) totalSentEl.textContent = totalSent;
+    if (totalRenewedEl) totalRenewedEl.textContent = convertedCount;
+
+    tbody.innerHTML = '';
+    if (logs.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2rem 1rem; color: var(--color-text-muted); font-style: italic;">
+            Henüz gönderim kaydı bulunmuyor.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    // Render top 5 logs
+    const topLogs = logs.slice(0, 5);
+    topLogs.forEach(log => {
+      const tr = document.createElement('tr');
+      
+      const plateFormatted = formatPlateSpacing(log.plate_number || '');
+      
+      // Channel formatting
+      let channelHtml = '';
+      if (log.channel === 'sms') {
+        channelHtml = `💬 SMS`;
+      } else if (log.channel === 'whatsapp') {
+        channelHtml = `🟢 WA`;
+      } else {
+        channelHtml = `✉️ E-Posta`;
+      }
+      
+      const dateFormatted = log.sent_at ? formatDateShortTR(log.sent_at) : '-';
+      
+      const statusBadge = log.converted 
+        ? `<span class="status-badge" style="background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.4rem; white-space: nowrap;">Yenilendi ✅</span>`
+        : `<span class="status-badge" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.4rem; white-space: nowrap;">Bekliyor ⏳</span>`;
+      
+      tr.innerHTML = `
+        <td style="padding: 0.6rem 1rem; font-weight: 700;">${plateFormatted}</td>
+        <td style="padding: 0.6rem 1rem;">${channelHtml}</td>
+        <td style="padding: 0.6rem 1rem; text-align: center; font-weight: 600;">${log.days_left} Gün</td>
+        <td style="padding: 0.6rem 1rem;">${dateFormatted}</td>
+        <td style="padding: 0.6rem 1rem; text-align: center;">${statusBadge}</td>
+      `;
+      
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Failed to load/update reminder conversion metrics:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 2rem 1rem; color: var(--color-danger); font-size: 0.8rem;">
+          Dönüşüm verileri yüklenemedi: ${err.message}
+        </td>
+      </tr>
+    `;
+  }
+}
 
 function exportExpirationsToExcel() {
   const searchQuery = (document.getElementById('expiry-search-query')?.value || '').toLowerCase().trim();
