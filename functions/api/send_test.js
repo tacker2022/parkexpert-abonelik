@@ -36,12 +36,14 @@ export async function onRequest(context) {
   let testEmail = "talha.emre.calargun@parkexpert.net";
   let testPhone = "5372939874"; // +90 537 293 98 74
   let scheduledDate = null;
+  let flashSms = false;
 
   try {
     const body = await context.request.json();
     if (body.email) testEmail = body.email.trim();
     if (body.phone) testPhone = body.phone.trim();
     if (body.scheduledDate) scheduledDate = body.scheduledDate;
+    if (body.flashSms !== undefined) flashSms = body.flashSms === true;
   } catch (e) {
     // ignore, use defaults
   }
@@ -130,7 +132,7 @@ export async function onRequest(context) {
       } else {
         smsMessage = `Bu bir test mesajidir. Takip No: ${mockAppId}. PARKEXPERT`;
       }
-      const smsResult = await sendSMS(testPhone, smsMessage, context.env, scheduledDate);
+      const smsResult = await sendSMS(testPhone, smsMessage, context.env, scheduledDate, flashSms);
       smsSuccess = smsResult.success !== false;
       if (!smsSuccess) smsError = smsResult.error;
     } catch (e) {

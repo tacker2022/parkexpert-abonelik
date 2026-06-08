@@ -80,7 +80,7 @@ async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDat
   }
 }
 
-export async function sendSMS(phone, message, env, scheduledDate) {
+export async function sendSMS(phone, message, env, scheduledDate, flashSms) {
   const usercode = env.NETGSM_USERCODE;
   const password = env.NETGSM_PASSWORD;
   const msgheader = env.NETGSM_HEADER;
@@ -89,11 +89,13 @@ export async function sendSMS(phone, message, env, scheduledDate) {
     console.log(`[SMS Simüle Gönderim] (Env Değişkenleri Eksik)
 Alıcı: ${phone}
 Mesaj: ${message}
-Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
+Planlanan Tarih: ${scheduledDate || 'Hemen'}
+Flash SMS: ${flashSms ? 'Evet' : 'Hayır'}`);
     
     // Log simulated SMS
     const mockJobId = "SIM-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    await logSMSToSupabase(phone, message, env, mockJobId, "Simüle Edildi", scheduledDate);
+    const simStatus = "Simüle Edildi" + (flashSms ? " (Flash)" : "");
+    await logSMSToSupabase(phone, message, env, mockJobId, simStatus, scheduledDate);
 
     return { success: true, simulated: true, reason: "Missing Netgsm configurations" };
   }
@@ -104,6 +106,7 @@ Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
   }
 
   const startdateValue = formatDateForNetgsm(scheduledDate);
+  const flashSmsValue = flashSms ? "1" : "0";
 
   // XML Payload format requested by Netgsm
   const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
@@ -116,6 +119,7 @@ Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
         <stopdate></stopdate>
         <type>1:n</type>
         <msgheader>${msgheader}</msgheader>
+        <flashsms>${flashSmsValue}</flashsms>
     </header>
     <body>
         <msg><![CDATA[${message}]]></msg>
@@ -148,7 +152,7 @@ Planlanan Tarih: ${scheduledDate || 'Hemen'}`);
       const jobId = responseText.substring(3).trim();
       console.log(`[Netgsm SMS API Başarılı] Alıcı: ${cleanedPhone}, JobID: ${jobId}`);
       
-      const initStatus = scheduledDate ? "Zamanlandı" : "Gönderildi";
+      const initStatus = (scheduledDate ? "Zamanlandı" : "Gönderildi") + (flashSms ? " (Flash)" : "");
       await logSMSToSupabase(cleanedPhone, message, env, jobId, initStatus, scheduledDate);
 
       return { success: true, jobId };

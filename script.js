@@ -4808,9 +4808,11 @@ async function sendTestNotification(event) {
   const scheduleEnabled = document.getElementById('test-schedule-enabled');
   const scheduleTime = document.getElementById('test-input-schedule-time');
   const scheduleContainer = document.getElementById('test-schedule-time-container');
+  const testFlashSms = document.getElementById('test-flash-sms-enabled');
   if (scheduleEnabled) scheduleEnabled.checked = false;
   if (scheduleTime) scheduleTime.value = '';
   if (scheduleContainer) scheduleContainer.style.display = 'none';
+  if (testFlashSms) testFlashSms.checked = false;
   
   const modal = document.getElementById('test-modal');
   if (modal) {
@@ -4869,13 +4871,15 @@ async function submitTestNotification(event) {
   btn.disabled = true;
   btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.25rem;"></i> Gönderiliyor...';
 
+  const flashSms = document.getElementById('test-flash-sms-enabled')?.checked || false;
+
   try {
     const res = await fetch('/api/send_test', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, phone, scheduledDate })
+      body: JSON.stringify({ email, phone, scheduledDate, flashSms })
     });
 
     if (!res.ok) {
@@ -6088,6 +6092,7 @@ async function loadSystemSettings() {
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const reminderDaysContainer = document.getElementById('settings-reminder-days-container');
+  const flashSmsCh = document.getElementById('settings-flash-sms');
   const saveBtn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh) return;
@@ -6130,6 +6135,10 @@ async function loadSystemSettings() {
       reminderDaysInput.value = settings.expiration_reminder_days || 3;
     }
 
+    if (flashSmsCh) {
+      flashSmsCh.checked = settings.flash_sms === true;
+    }
+
   } catch (err) {
     console.error("Failed to load settings:", err);
     showToastNotification("Sistem Ayarları", "Sistem ayarları yüklenirken hata oluştu.", "alert-circle");
@@ -6157,6 +6166,7 @@ async function saveSystemSettings(event) {
   const delayNightSmsCh = document.getElementById('settings-delay-night-sms');
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
+  const flashSmsCh = document.getElementById('settings-flash-sms');
   const btn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh || !btn) return;
@@ -6173,7 +6183,8 @@ async function saveSystemSettings(event) {
       sms_enabled: smsCh.checked,
       delay_night_sms: delayNightSmsCh ? delayNightSmsCh.checked : false,
       send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
-      expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3
+      expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3,
+      flash_sms: flashSmsCh ? flashSmsCh.checked : false
     };
 
     const res = await fetch('/api/settings', {

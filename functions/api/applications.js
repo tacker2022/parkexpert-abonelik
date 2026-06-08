@@ -387,7 +387,7 @@ export async function onRequest(context) {
                 }
 
                 if (smsMessage) {
-                  await sendSMS(phone, smsMessage, context.env, scheduledSMSDate);
+                  await sendSMS(phone, smsMessage, context.env, scheduledSMSDate, settings.flash_sms);
                 }
 
                 // Abonelik Bitiş Hatırlatma SMS'i Planla
@@ -404,7 +404,7 @@ export async function onRequest(context) {
                   const scheduledReminderDate = new Date(scheduledTurkey.getTime() - (3 * 60 * 60 * 1000));
                   const reminderMessage = `Sayın ${fullName}, ${appLocation} otopark aboneliğiniz ${reminderDays} gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT`;
 
-                  await sendSMS(phone, reminderMessage, context.env, scheduledReminderDate);
+                  await sendSMS(phone, reminderMessage, context.env, scheduledReminderDate, settings.flash_sms);
                 }
               }
             } catch (waErr) {

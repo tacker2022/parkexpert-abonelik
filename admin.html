@@ -539,6 +539,20 @@
                 <input type="number" id="settings-expiration-reminder-days" min="1" max="15" value="3" style="width: 70px; min-height: 34px; border: 1px solid var(--color-border-light); padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem; text-align: center;">
               </div>
 
+              <!-- Flash SMS Toggle -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px dashed var(--color-border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.4rem;">
+                    <i data-lucide="zap" style="width: 16px; height: 16px; color: #eab308; fill: rgba(234,179,8,0.15);"></i> Tüm SMS'leri Flash SMS Olarak Gönder
+                  </span>
+                  <span style="font-size: 0.775rem; color: var(--color-text-muted);">Tüm bildirim SMS'lerini ekranda anında belirecek (kilit ekranında popup) şekilde gönderir.</span>
+                </div>
+                <label class="switch-toggle" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                  <input type="checkbox" id="settings-flash-sms" style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider-round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
+                </label>
+              </div>
+
               <!-- Submit Button -->
               <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
                 <button type="submit" class="btn btn-primary" id="btn-save-settings" style="min-height: 42px; padding: 0 2rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
@@ -1164,6 +1178,14 @@
           <label for="test-input-schedule-time" style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted);">Gönderim Tarihi ve Saati (TR Saati)</label>
           <input type="datetime-local" id="test-input-schedule-time" class="form-control" style="width: 100%; min-height: 38px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); outline: none; font-size: 0.85rem;">
         </div>
+      </div>
+
+      <!-- Flash SMS Option -->
+      <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; text-align: left;">
+          <input type="checkbox" id="test-flash-sms-enabled" style="cursor: pointer; width: 15px; height: 15px;">
+          <span>Flash SMS Olarak Gönder (Ekranda doğrudan belirir)</span>
+        </label>
       </div>
       
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
