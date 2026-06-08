@@ -44,7 +44,14 @@ export async function onRequest(context) {
           delay_night_sms: false,
           send_expiration_reminder: true,
           expiration_reminder_days: 3,
-          flash_sms: false
+          flash_sms: false,
+          auto_reminders_enabled: false,
+          auto_reminders_channel: "sms",
+          auto_reminders_days: "7,3,1,0",
+          auto_reminders_template_7d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz 7 gün sonra dolacaktır. Yenilemek için plakanız: {plateNumber}. PARKEXPERT",
+          auto_reminders_template_3d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz 3 gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT",
+          auto_reminders_template_1d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz yarın dolacaktır. Plakanız: {plateNumber}. PARKEXPERT",
+          auto_reminders_template_0d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz bugün dolmuştur. Plaka tanıma sisteminiz deaktif edilmiştir. Plakanız: {plateNumber}. PARKEXPERT"
         }), { status: 200, headers });
       }
 
@@ -57,11 +64,37 @@ export async function onRequest(context) {
           delay_night_sms: false,
           send_expiration_reminder: true,
           expiration_reminder_days: 3,
-          flash_sms: false
+          flash_sms: false,
+          auto_reminders_enabled: false,
+          auto_reminders_channel: "sms",
+          auto_reminders_days: "7,3,1,0",
+          auto_reminders_template_7d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz 7 gün sonra dolacaktır. Yenilemek için plakanız: {plateNumber}. PARKEXPERT",
+          auto_reminders_template_3d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz 3 gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT",
+          auto_reminders_template_1d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz yarın dolacaktır. Plakanız: {plateNumber}. PARKEXPERT",
+          auto_reminders_template_0d: "Sayın {fullName}, {appLocation} otopark aboneliğiniz bugün dolmuştur. Plaka tanıma sisteminiz deaktif edilmiştir. Plakanız: {plateNumber}. PARKEXPERT"
         }), { status: 200, headers });
       }
 
-      return new Response(JSON.stringify(rows[0].value), { status: 200, headers });
+      // Merge defaults for newly added settings keys in existing database rows
+      const dbSettings = rows[0].value || {};
+      const mergedSettings = {
+        email_enabled: dbSettings.email_enabled !== false,
+        whatsapp_enabled: dbSettings.whatsapp_enabled !== false,
+        sms_enabled: dbSettings.sms_enabled !== false,
+        delay_night_sms: dbSettings.delay_night_sms === true,
+        send_expiration_reminder: dbSettings.send_expiration_reminder !== false,
+        expiration_reminder_days: parseInt(dbSettings.expiration_reminder_days) || 3,
+        flash_sms: dbSettings.flash_sms === true,
+        auto_reminders_enabled: dbSettings.auto_reminders_enabled === true,
+        auto_reminders_channel: dbSettings.auto_reminders_channel || "sms",
+        auto_reminders_days: dbSettings.auto_reminders_days || "7,3,1,0",
+        auto_reminders_template_7d: dbSettings.auto_reminders_template_7d || "Sayın {fullName}, {appLocation} otopark aboneliğiniz 7 gün sonra dolacaktır. Yenilemek için plakanız: {plateNumber}. PARKEXPERT",
+        auto_reminders_template_3d: dbSettings.auto_reminders_template_3d || "Sayın {fullName}, {appLocation} otopark aboneliğiniz 3 gün sonra dolacaktır. Yenilemek için lütfen ödemenizi yapıp dekontunuzu sisteme yükleyiniz. PARKEXPERT",
+        auto_reminders_template_1d: dbSettings.auto_reminders_template_1d || "Sayın {fullName}, {appLocation} otopark aboneliğiniz yarın dolacaktır. Plakanız: {plateNumber}. PARKEXPERT",
+        auto_reminders_template_0d: dbSettings.auto_reminders_template_0d || "Sayın {fullName}, {appLocation} otopark aboneliğiniz bugün dolmuştur. Plaka tanıma sisteminiz deaktif edilmiştir. Plakanız: {plateNumber}. PARKEXPERT"
+      };
+
+      return new Response(JSON.stringify(mergedSettings), { status: 200, headers });
     }
 
     // ----------------------------------------------------
@@ -126,7 +159,9 @@ export async function onRequest(context) {
       }
 
       const payload = await context.request.json();
-      const { email_enabled, whatsapp_enabled, sms_enabled, delay_night_sms, send_expiration_reminder, expiration_reminder_days, flash_sms } = payload;
+      const { email_enabled, whatsapp_enabled, sms_enabled, delay_night_sms, send_expiration_reminder, expiration_reminder_days, flash_sms,
+              auto_reminders_enabled, auto_reminders_channel, auto_reminders_days,
+              auto_reminders_template_7d, auto_reminders_template_3d, auto_reminders_template_1d, auto_reminders_template_0d } = payload;
 
       const dbPayload = {
         id: "1",
@@ -138,7 +173,14 @@ export async function onRequest(context) {
           delay_night_sms: delay_night_sms === true,
           send_expiration_reminder: send_expiration_reminder !== false,
           expiration_reminder_days: parseInt(expiration_reminder_days) || 3,
-          flash_sms: flash_sms === true
+          flash_sms: flash_sms === true,
+          auto_reminders_enabled: auto_reminders_enabled === true,
+          auto_reminders_channel: auto_reminders_channel || "sms",
+          auto_reminders_days: auto_reminders_days || "7,3,1,0",
+          auto_reminders_template_7d: auto_reminders_template_7d || "",
+          auto_reminders_template_3d: auto_reminders_template_3d || "",
+          auto_reminders_template_1d: auto_reminders_template_1d || "",
+          auto_reminders_template_0d: auto_reminders_template_0d || ""
         },
         updated_at: new Date().toISOString()
       };

@@ -156,7 +156,14 @@ export async function onRequest(context) {
 
       // Build dynamic update body
       const updateBody = {};
-      if (status !== undefined) updateBody.status = status;
+      if (status !== undefined) {
+        updateBody.status = status;
+        if (status === "Onaylandı") {
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 30);
+          updateBody.subscription_expires_at = expiryDate.toISOString();
+        }
+      }
       if (plate_number !== undefined) updateBody.plate_number = plate_number;
       if (company_name !== undefined) updateBody.company_name = company_name;
 

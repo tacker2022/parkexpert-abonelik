@@ -2426,6 +2426,7 @@ function renderTable(apps) {
       <td><span class="col-plate">${plateFormatted}</span></td>
       <td><span class="col-otopark">${app.parking_location}</span></td>
       <td>${formatDateTR(app.created_at || app.date_applied)}</td>
+      <td>${app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : '<span style="color:var(--color-text-muted);font-style:italic;font-size:0.85rem;">Belirtilmemiş</span>'}</td>
       <td><span class="status-badge ${statusClass}">${app.status}</span></td>
       <td style="text-align: center;">
         <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Başvuru Detayını Gör">
@@ -2463,6 +2464,32 @@ function formatDateTR(dateStr) {
         const seconds = String(d.getSeconds()).padStart(2, '0');
         const ms = String(d.getMilliseconds()).padStart(3, '0');
         return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}.${ms}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  const pts = dateStr.split('-');
+  if (pts.length === 3) {
+    const day = pts[2].substring(0, 2);
+    return `${day}.${pts[1]}.${pts[0]}`;
+  }
+  return dateStr;
+}
+
+function formatDateShortTR(dateStr) {
+  if (!dateStr) return '';
+  if (typeof dateStr !== 'string') return dateStr;
+  
+  if (dateStr.includes('T') || dateStr.includes(':')) {
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
       }
     } catch (e) {
       // fallback
@@ -2669,6 +2696,14 @@ function openDrawer(appId) {
 
         <span class="detail-label">Başvuru Tarihi:</span>
         <span class="detail-value">${formatDateTR(app.created_at || app.date_applied)}</span>
+
+        <span class="detail-label">Bitiş Tarihi (Abonelik):</span>
+        <span class="detail-value" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span id="expiry-date-display-${app.id}">${app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : '<span style="color:var(--color-text-muted);font-style:italic;font-size:0.85rem;">Belirtilmemiş</span>'}</span>
+          <button onclick="editSubscriptionExpiry('${app.id}')" class="btn-edit-inline" title="Bitiş Tarihini Düzenle" style="background: none; border: none; cursor: pointer; color: var(--color-primary); display: inline-flex; align-items: center;">
+            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+          </button>
+        </span>
       </div>
     </div>
 
@@ -3142,10 +3177,16 @@ async function updateCurrentAppStatus(newStatus) {
       throw new Error(data.error || "Durum güncellenirken hata oluştu.");
     }
 
+    const data = await res.json();
+    const updatedApp = data.data && data.data[0];
+
     // Find and update status in database array
     const appIndex = allApplications.findIndex(a => a.id === currentAppId);
     if (appIndex !== -1) {
       allApplications[appIndex].status = newStatus;
+      if (updatedApp && updatedApp.subscription_expires_at) {
+        allApplications[appIndex].subscription_expires_at = updatedApp.subscription_expires_at;
+      }
       
       // Refresh table rendering with current filter set
       applyFilters();
@@ -4171,6 +4212,45 @@ function editApplicationPlate(appId) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function editSubscriptionExpiry(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const modal = document.getElementById('modal-quick-edit');
+  const titleEl = document.getElementById('quick-edit-title');
+  const contentEl = document.getElementById('quick-edit-content');
+  const appIdInput = document.getElementById('quick-edit-app-id');
+  const typeInput = document.getElementById('quick-edit-type');
+
+  if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  if (titleEl) titleEl.textContent = "Abonelik Bitiş Tarihini Düzenle";
+  appIdInput.value = appId;
+  typeInput.value = 'expiry';
+
+  let formattedDate = '';
+  if (app.subscription_expires_at) {
+    const d = new Date(app.subscription_expires_at);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
+  }
+
+  contentEl.innerHTML = `
+    <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
+      <label for="edit-expiry-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Bitiş Tarihi</label>
+      <input type="date" id="edit-expiry-input" value="${formattedDate}" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); box-sizing: border-box;">
+      <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.5rem; margin-bottom: 0;">Bu abonenin otopark abonelik bitiş tarihidir. Güncel bitiş tarihine göre otomatik hatırlatma ve geçiş yetkileri ayarlanacaktır.</p>
+    </div>
+  `;
+
+  modal.classList.add('active');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
 function changeApplicationCompany(appId) {
   const app = allApplications.find(a => a.id === appId);
   if (!app) return;
@@ -4277,6 +4357,17 @@ async function saveQuickEdit(event) {
       targetCompany = selectVal === 'SERBEST ÇALIŞAN' ? '' : selectVal;
     }
     updatePayload.company_name = targetCompany;
+  } else if (type === 'expiry') {
+    const expiryInput = document.getElementById('edit-expiry-input');
+    if (expiryInput) {
+      if (!expiryInput.value) {
+        alert("Lütfen geçerli bir tarih seçiniz.");
+        return;
+      }
+      const d = new Date(expiryInput.value);
+      d.setHours(23, 59, 59, 999);
+      updatePayload.subscription_expires_at = d.toISOString();
+    }
   }
 
   try {
@@ -4300,6 +4391,8 @@ async function saveQuickEdit(event) {
       allApplications[appIndex].plate_number = inputVal;
     } else if (type === 'company') {
       allApplications[appIndex].company_name = targetCompany;
+    } else if (type === 'expiry') {
+      allApplications[appIndex].subscription_expires_at = updatePayload.subscription_expires_at;
     }
 
     // Close modal
@@ -6224,6 +6317,40 @@ function exportSingleApplicationExcel(appId, type) {
   }
 }
 
+function updateCharCount(textareaId, counterId) {
+  const textarea = document.getElementById(textareaId);
+  const counter = document.getElementById(counterId);
+  if (textarea && counter) {
+    counter.textContent = `${textarea.value.length} karakter`;
+  }
+}
+window.updateCharCount = updateCharCount;
+
+window.toggleAutoReminderFields = function() {
+  const enabledCh = document.getElementById('settings-auto-reminders-enabled');
+  const container = document.getElementById('auto-reminders-config-container');
+  if (enabledCh && container) {
+    container.style.display = enabledCh.checked ? 'flex' : 'none';
+  }
+};
+
+window.insertTemplateVar = function(textareaId, variable) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+  
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const before = text.substring(0, start);
+  const after = text.substring(end, text.length);
+  
+  textarea.value = before + variable + after;
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+  
+  textarea.dispatchEvent(new Event('input'));
+};
+
 /* ==========================================================================
    GLOBAL SYSTEM SETTINGS & NOTIFICATION CHANNELS
    ========================================================================== */
@@ -6283,6 +6410,51 @@ async function loadSystemSettings() {
       flashSmsCh.checked = settings.flash_sms === true;
     }
 
+    const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
+    const autoRemindersChannelSelect = document.getElementById('settings-auto-reminders-channel');
+    const autoRemindersDaysInput = document.getElementById('settings-auto-reminders-days');
+    const template7dTextarea = document.getElementById('settings-template-7d');
+    const template3dTextarea = document.getElementById('settings-template-3d');
+    const template1dTextarea = document.getElementById('settings-template-1d');
+    const template0dTextarea = document.getElementById('settings-template-0d');
+
+    if (autoRemindersEnabledCh) {
+      autoRemindersEnabledCh.checked = settings.auto_reminders_enabled === true;
+      window.toggleAutoReminderFields();
+    }
+    if (autoRemindersChannelSelect) {
+      autoRemindersChannelSelect.value = settings.auto_reminders_channel || 'sms';
+    }
+    if (autoRemindersDaysInput) {
+      autoRemindersDaysInput.value = settings.auto_reminders_days || '7,3,1,0';
+    }
+    if (template7dTextarea) {
+      template7dTextarea.value = settings.auto_reminders_template_7d || '';
+      updateCharCount('settings-template-7d', 'char-count-7d');
+    }
+    if (template3dTextarea) {
+      template3dTextarea.value = settings.auto_reminders_template_3d || '';
+      updateCharCount('settings-template-3d', 'char-count-3d');
+    }
+    if (template1dTextarea) {
+      template1dTextarea.value = settings.auto_reminders_template_1d || '';
+      updateCharCount('settings-template-1d', 'char-count-1d');
+    }
+    if (template0dTextarea) {
+      template0dTextarea.value = settings.auto_reminders_template_0d || '';
+      updateCharCount('settings-template-0d', 'char-count-0d');
+    }
+
+    // Bind event listeners for character counts
+    ['settings-template-7d', 'settings-template-3d', 'settings-template-1d', 'settings-template-0d'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const countId = 'char-count-' + id.split('-')[2];
+        el.addEventListener('input', () => updateCharCount(id, countId));
+        updateCharCount(id, countId);
+      }
+    });
+
   } catch (err) {
     console.error("Failed to load settings:", err);
     showToastNotification("Sistem Ayarları", "Sistem ayarları yüklenirken hata oluştu.", "alert-circle");
@@ -6311,6 +6483,15 @@ async function saveSystemSettings(event) {
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const flashSmsCh = document.getElementById('settings-flash-sms');
+  
+  const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
+  const autoRemindersChannelSelect = document.getElementById('settings-auto-reminders-channel');
+  const autoRemindersDaysInput = document.getElementById('settings-auto-reminders-days');
+  const template7dTextarea = document.getElementById('settings-template-7d');
+  const template3dTextarea = document.getElementById('settings-template-3d');
+  const template1dTextarea = document.getElementById('settings-template-1d');
+  const template0dTextarea = document.getElementById('settings-template-0d');
+
   const btn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh || !btn) return;
@@ -6328,7 +6509,14 @@ async function saveSystemSettings(event) {
       delay_night_sms: delayNightSmsCh ? delayNightSmsCh.checked : false,
       send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
       expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3,
-      flash_sms: flashSmsCh ? flashSmsCh.checked : false
+      flash_sms: flashSmsCh ? flashSmsCh.checked : false,
+      auto_reminders_enabled: autoRemindersEnabledCh ? autoRemindersEnabledCh.checked : false,
+      auto_reminders_channel: autoRemindersChannelSelect ? autoRemindersChannelSelect.value : 'sms',
+      auto_reminders_days: autoRemindersDaysInput ? autoRemindersDaysInput.value : '7,3,1,0',
+      auto_reminders_template_7d: template7dTextarea ? template7dTextarea.value : '',
+      auto_reminders_template_3d: template3dTextarea ? template3dTextarea.value : '',
+      auto_reminders_template_1d: template1dTextarea ? template1dTextarea.value : '',
+      auto_reminders_template_0d: template0dTextarea ? template0dTextarea.value : ''
     };
 
     const res = await fetch('/api/settings', {
