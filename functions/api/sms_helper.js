@@ -43,7 +43,7 @@ export function formatDateForNetgsm(date) {
 
 async function logSMSToSupabase(phone, message, env, jobId, status, scheduledDate, location = "Sistem") {
   const supabaseUrl = env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
-  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+  const supabaseAnonKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("[logSMSToSupabase] Supabase config missing, skipping DB logging");

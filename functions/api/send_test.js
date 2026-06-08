@@ -19,7 +19,7 @@ export async function onRequest(context) {
   }
 
   const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
-  const supabaseAnonKey = context.env.SUPABASE_ANON_KEY;
+  const supabaseAnonKey = context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
