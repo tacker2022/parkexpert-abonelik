@@ -30,7 +30,8 @@ def upload_file(filename, folder_id, credentials_json):
         file = service.files().create(
             body=file_metadata,
             media_body=media,
-            fields='id'
+            fields='id',
+            supportsAllDrives=True
         ).execute()
         
         print(f"Successfully uploaded backup to Google Drive! File ID: {file.get('id')}")
