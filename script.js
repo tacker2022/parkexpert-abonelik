@@ -2542,12 +2542,16 @@ async function initAdminController() {
   const token = localStorage.getItem('parkexpert_token');
   const overlay = document.getElementById('modal-login-overlay');
 
+  const adminLayout = document.querySelector('.admin-layout');
+
   if (!token) {
     if (overlay) overlay.style.display = 'flex';
+    if (adminLayout) adminLayout.style.display = 'none';
     return;
   }
 
   if (overlay) overlay.style.display = 'none';
+  if (adminLayout) adminLayout.style.display = 'flex';
 
   // Load otoparks from server
   await loadOtoparks();
