@@ -2161,6 +2161,160 @@ let allApplications = [];
 let filteredApplications = [];
 let currentAppId = null;
 
+// Privacy Mode State & Helpers
+let isPrivacyMode = localStorage.getItem('privacy_mode') === 'true';
+
+function maskName(name) {
+  if (!name) return '';
+  if (!isPrivacyMode) return name;
+  return name.split(' ').map(word => {
+    if (word.length <= 1) return word;
+    return word[0] + '*'.repeat(word.length - 1);
+  }).join(' ');
+}
+
+function maskPhone(phone) {
+  if (!phone) return '';
+  if (!isPrivacyMode) return phone;
+  let digitsCount = 0;
+  return phone.split('').map((char, index) => {
+    if (/\d/.test(char)) {
+      digitsCount++;
+      if (digitsCount > 4 && index < phone.length - 2) {
+        return '*';
+      }
+    }
+    return char;
+  }).join('');
+}
+
+function maskPlate(plate) {
+  if (!plate) return '';
+  if (!isPrivacyMode) return plate;
+  const spaced = formatPlateSpacing(plate);
+  const match = spaced.match(/^(\d{2})\s([A-Z])([A-Z]*)\s(\d*)(\d)$/);
+  if (match) {
+    const city = match[1];
+    const firstLetter = match[2];
+    const otherLetters = '*'.repeat(match[3].length);
+    const firstDigits = '*'.repeat(match[4].length);
+    const lastDigit = match[5];
+    return `${city} ${firstLetter}${otherLetters} ${firstDigits}${lastDigit}`;
+  }
+  return spaced.slice(0, 2) + '***' + spaced.slice(-2);
+}
+
+function maskEmail(email) {
+  if (!email) return '';
+  if (!isPrivacyMode) return email;
+  const parts = email.split('@');
+  if (parts.length !== 2) return '***@***';
+  const namePart = parts[0];
+  const domainPart = parts[1];
+  const maskedName = namePart.length > 2 
+    ? namePart.slice(0, 2) + '*'.repeat(namePart.length - 2)
+    : namePart[0] + '*';
+  return maskedName + '@' + domainPart;
+}
+
+function maskTC(tc) {
+  if (!tc) return '';
+  if (!isPrivacyMode) return tc;
+  if (tc.length < 4) return '***********';
+  return tc.slice(0, 2) + '*******' + tc.slice(-2);
+}
+
+function maskAddress(addr) {
+  if (!addr) return '';
+  if (!isPrivacyMode) return addr;
+  return addr.split(' ').map((word, idx) => {
+    if (idx === 0 || idx === 1) {
+      return word[0] + '*'.repeat(word.length - 1);
+    }
+    return '***';
+  }).join(' ');
+}
+
+function maskAuditDetails(details) {
+  if (!details) return '';
+  if (!isPrivacyMode) return details;
+  let masked = details;
+  masked = masked.replace(/\b[1-9]\d{10}\b/g, (match) => {
+    return match.slice(0, 2) + '*******' + match.slice(-2);
+  });
+  masked = masked.replace(/(\+?90\s?)?5\d{2}\s?\d{3}\s?\d{2}\s?\d{2}/g, (match) => {
+    return match.slice(0, 6) + '*** ** ' + match.slice(-2);
+  });
+  masked = masked.replace(/\b\d{2}\s?[A-Z]{1,3}\s?\d{2,4}\b/gi, (match) => {
+    return maskPlate(match.toUpperCase().replace(/\s+/g, ''));
+  });
+  masked = masked.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => {
+    return maskEmail(match);
+  });
+  const nameSet = new Set();
+  allApplications.forEach(app => {
+    if (app.full_name) nameSet.add(app.full_name.trim());
+    if (app.driver_name) nameSet.add(app.driver_name.trim());
+  });
+  const sortedNames = Array.from(nameSet).sort((a, b) => b.length - a.length);
+  sortedNames.forEach(name => {
+    if (name.length > 3) {
+      const escaped = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(escaped, 'gi');
+      masked = masked.replace(regex, (match) => {
+        return match.split(' ').map(w => w[0] + '*'.repeat(w.length - 1)).join(' ');
+      });
+    }
+  });
+  return masked;
+}
+
+function togglePrivacyMode() {
+  isPrivacyMode = !isPrivacyMode;
+  localStorage.setItem('privacy_mode', isPrivacyMode);
+  updatePrivacyIcon();
+  
+  // Refresh UI Components
+  applyFilters();
+  renderExpirationsDashboard();
+  if (typeof filterAuditLogs === 'function') {
+    filterAuditLogs();
+  }
+  if (currentAppId) {
+    const drawer = document.getElementById('drawer-overlay');
+    if (drawer && drawer.classList.contains('active')) {
+      openDrawer(currentAppId);
+    }
+  }
+}
+
+function updatePrivacyIcon() {
+  const icon = document.getElementById('privacy-icon');
+  const btn = document.getElementById('btn-toggle-privacy');
+  if (!icon || !btn) return;
+  
+  if (isPrivacyMode) {
+    icon.setAttribute('data-lucide', 'eye-off');
+    btn.setAttribute('title', 'Gizlilik Modunu Kapat');
+    btn.style.color = '#ef4444';
+    btn.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+    btn.style.background = 'rgba(239, 68, 68, 0.03)';
+  } else {
+    icon.setAttribute('data-lucide', 'eye');
+    btn.setAttribute('title', 'Gizlilik Modunu Aç');
+    btn.style.color = 'var(--color-primary)';
+    btn.style.borderColor = 'rgba(15, 59, 162, 0.2)';
+    btn.style.background = 'rgba(15, 59, 162, 0.03)';
+  }
+  
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+window.togglePrivacyMode = togglePrivacyMode;
+window.updatePrivacyIcon = updatePrivacyIcon;
+
 // Two-Factor Authentication temporary username storage
 let temp2FAUsername = null;
 let otpTimerInterval = null;
@@ -2553,6 +2707,9 @@ async function initAdminController() {
   if (overlay) overlay.style.display = 'none';
   if (adminLayout) adminLayout.style.display = 'flex';
 
+  // Initialize Privacy Icon
+  updatePrivacyIcon();
+
   // Load otoparks from server
   await loadOtoparks();
 
@@ -2728,19 +2885,19 @@ function renderTable(apps) {
     if (app.status === 'Onaylandı') statusClass = 'status-onaylandi';
     if (app.status === 'Reddedildi') statusClass = 'status-reddedildi';
 
-    // Format Plaka beautifully
-    const plateFormatted = formatPlateSpacing(app.plate);
+    // Format Plaka beautifully (masked if privacy mode is ON)
+    const plateFormatted = maskPlate(app.plate);
 
     tr.innerHTML = `
       <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
       <td>
         <div class="col-customer">
-          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${app.full_name}</span>
+          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${maskName(app.full_name)}</span>
           <span class="customer-details" style="margin: 0.3rem 0 0.4rem 0; display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.725rem; font-weight: 700; color: var(--color-primary-dark); background: rgba(15, 59, 162, 0.06); padding: 0.25rem 0.55rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 59, 162, 0.12); width: fit-content; text-transform: uppercase; letter-spacing: 0.02em;">
             <i data-lucide="building-2" style="width: 12px; height: 12px; color: var(--color-primary);"></i>
             <span>${app.company_name || 'SERBEST ÇALIŞAN'}</span>
           </span>
-          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${app.phone}</span>
+          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${maskPhone(app.phone)}</span>
         </div>
       </td>
       <td><span class="col-plate">${plateFormatted}</span></td>
@@ -3043,22 +3200,22 @@ function openDrawer(appId) {
         </span>
 
         <span class="detail-label">Başvuru Sahibi:</span>
-        <span class="detail-value">${app.full_name}</span>
+        <span class="detail-value">${maskName(app.full_name)}</span>
 
         <span class="detail-label">Şoför Adı:</span>
-        <span class="detail-value" style="font-weight: 700;">${app.driver_name || app.full_name}</span>
+        <span class="detail-value" style="font-weight: 700;">${maskName(app.driver_name || app.full_name)}</span>
 
         <span class="detail-label">T.C. Kimlik No:</span>
-        <span class="detail-value">${app.tc_no}</span>
+        <span class="detail-value">${maskTC(app.tc_no)}</span>
 
         <span class="detail-label">Telefon:</span>
-        <span class="detail-value">${app.phone}</span>
+        <span class="detail-value">${maskPhone(app.phone)}</span>
 
         <span class="detail-label">E-posta:</span>
-        <span class="detail-value">${app.email}</span>
+        <span class="detail-value">${maskEmail(app.email)}</span>
 
         <span class="detail-label">İşyeri Adresi:</span>
-        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${app.home_address || 'Belirtilmedi'}</span>
+        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${maskAddress(app.home_address || 'Belirtilmedi')}</span>
       </div>
     </div>
 
@@ -3068,7 +3225,7 @@ function openDrawer(appId) {
       <div class="detail-grid">
         <span class="detail-label">Araç Plakası:</span>
         <span class="detail-value" style="display: flex; align-items: center; gap: 0.5rem;">
-          <span class="col-plate">${formatPlateSpacing(app.plate)}</span>
+          <span class="col-plate">${maskPlate(app.plate)}</span>
           <button onclick="editApplicationPlate('${app.id}')" class="btn-edit-inline" title="Plakayı Düzenle" style="background: none; border: none; cursor: pointer; color: var(--color-primary); display: inline-flex; align-items: center;">
             <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
           </button>
@@ -3092,7 +3249,7 @@ function openDrawer(appId) {
       ${app.billing ? `
       <div class="detail-grid">
         <span class="detail-label">${app.billing.company_type === 'sermaye' ? 'Firma Unvanı' : (app.billing.company_type === 'sahis' ? 'Firma Sahibi' : 'Fatura Sahibi')}:</span>
-        <span class="detail-value" style="font-weight: 700;">${app.billing.company}</span>
+        <span class="detail-value" style="font-weight: 700;">${maskName(app.billing.company)}</span>
 
         ${app.billing.company_type !== 'bireysel' ? `
         <span class="detail-label">Vergi Dairesi:</span>
@@ -3100,10 +3257,10 @@ function openDrawer(appId) {
         ` : ''}
 
         <span class="detail-label">${app.billing.company_type === 'sermaye' ? 'Vergi Numarası' : 'T.C. Kimlik No'}:</span>
-        <span class="detail-value">${app.billing.tax_no}</span>
+        <span class="detail-value">${maskTC(app.billing.tax_no)}</span>
 
         <span class="detail-label">Fatura Adresi:</span>
-        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${app.billing.address}</span>
+        <span class="detail-value" style="white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4;">${maskAddress(app.billing.address)}</span>
       </div>
       ` : `
       <p style="font-size: 0.85rem; color: var(--color-text-muted); font-style: italic; margin: 0;">
@@ -4454,7 +4611,7 @@ function renderCompaniesTable(apps) {
 
     // Format combined records list
     const recordsHtml = group.records.map(rec => {
-      const formatted = formatPlateSpacing(rec.plate);
+      const formatted = maskPlate(rec.plate);
       
       let statusClass = 'status-yeni';
       let statusText = 'YENİ / BEKLEYEN';
@@ -4471,7 +4628,7 @@ function renderCompaniesTable(apps) {
           <span class="mini-tr-plate" onclick="openDrawer('${rec.appId}')" title="Abonelik Detayını Gör">${formatted}</span>
           <span class="plate-owner-info">
             <i data-lucide="user" style="width: 14px; height: 14px; color: var(--color-text-muted);"></i>
-            <span>${rec.owner}</span>
+            <span>${maskName(rec.owner)}</span>
           </span>
           <span class="status-badge-compact ${statusClass}">${statusText}</span>
         </div>
@@ -5155,7 +5312,7 @@ function renderExpirationsDashboard() {
     tr.id = `expiry-row-${app.id}`;
 
     // Format Plate
-    const plateFormatted = formatPlateSpacing(app.plate || app.plate_number || '');
+    const plateFormatted = maskPlate(app.plate || app.plate_number || '');
 
     // Kalan Gün Rozeti (Badge)
     let badgeHtml = '';
@@ -5177,8 +5334,8 @@ function renderExpirationsDashboard() {
       <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
       <td>
         <div class="col-customer">
-          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${app.full_name}</span>
-          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${app.phone}</span>
+          <span class="customer-name" style="font-weight: 700; color: var(--color-text-dark);">${maskName(app.full_name)}</span>
+          <span class="customer-details" style="display: block; font-size: 0.75rem; color: var(--color-text-muted);">${app.subscription_type} &bull; ${maskPhone(app.phone)}</span>
         </div>
       </td>
       <td><span class="col-plate">${plateFormatted}</span></td>
@@ -5260,7 +5417,7 @@ async function updateReminderConversionStats() {
     topLogs.forEach(log => {
       const tr = document.createElement('tr');
       
-      const plateFormatted = formatPlateSpacing(log.plate_number || '');
+      const plateFormatted = maskPlate(log.plate_number || '');
       
       // Channel formatting
       let channelHtml = '';
@@ -6786,7 +6943,7 @@ function renderOcrResult(app, candidates, userPlateNormalized, imageSrc = null) 
           </span>
         </div>
         <span style="font-size: 0.8rem; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">
-          Okunan: <strong style="color: var(--color-accent-orange); font-family: monospace; font-size: 0.9rem;">${formatPlateSpacing(bestCandidate)}</strong>
+          Okunan: <strong style="color: var(--color-accent-orange); font-family: monospace; font-size: 0.9rem;">${maskPlate(bestCandidate)}</strong>
         </span>
         <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; width: 100%;">
           <button onclick="applyOcrPlate('${app.id}', '${bestCandidate}')" class="btn btn-ocr-apply">
@@ -8074,7 +8231,7 @@ function renderAuditLogsTable(logs) {
       <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
         <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
       </td>
-      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; line-height: 1.4; white-space: normal; word-break: break-word; min-width: 350px;">${log.details || ''}</td>
+      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; line-height: 1.4; white-space: normal; word-break: break-word; min-width: 350px;">${maskAuditDetails(log.details || '')}</td>
       <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
     `;
 
