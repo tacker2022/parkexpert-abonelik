@@ -1,0 +1,58 @@
+name: Database Backup 🛡️
+
+on:
+  schedule:
+    # Runs every day at 03:00 UTC (06:00 Turkey Time)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions panel
+
+jobs:
+  backup:
+    name: Backup Supabase to Cloudflare R2
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install PostgreSQL Client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Run pg_dump
+      env:
+        DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      run: |
+        # Generate filename with timestamp
+        FILENAME="backup-$(date +%Y-%m-%d-%H%M%S).dump"
+        echo "FILENAME=$FILENAME" >> $GITHUB_ENV
+        
+        # Run pg_dump in custom compressed binary format
+        pg_dump "$DB_URL" -F c -b -v -f "$FILENAME"
+        
+        # Verify file size is not empty
+        if [ ! -s "$FILENAME" ]; then
+          echo "Error: Backup file is empty!"
+          exit 1
+        fi
+        
+        echo "Database backup completed successfully: $FILENAME"
+
+    - name: Configure AWS CLI (S3 API compatibility for Cloudflare R2)
+      env:
+        R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      run: |
+        aws configure set aws_access_key_id "$R2_ACCESS_KEY_ID"
+        aws configure set aws_secret_access_key "$R2_SECRET_ACCESS_KEY"
+        aws configure set default.region auto
+
+    - name: Upload Backup to Cloudflare R2
+      env:
+        R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET_NAME }}
+      run: |
+        # Upload using AWS CLI pointing to Cloudflare R2 endpoint
+        aws s3 cp "${{ env.FILENAME }}" "s3://$R2_BUCKET/${{ env.FILENAME }}" --endpoint-url "$R2_ENDPOINT"
+        echo "Successfully uploaded backup to Cloudflare R2: ${{ env.FILENAME }}"
