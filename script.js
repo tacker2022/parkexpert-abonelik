@@ -2202,30 +2202,34 @@ async function handleAdminLogin(event) {
       if (credentialsBlock) credentialsBlock.style.display = 'none';
       if (twoFactorBlock) twoFactorBlock.style.display = 'block';
 
-      // Hide or show backup email link based on whether they have a registered email
-      const resendEmailBtn = document.getElementById('btn-resend-otp-email');
-      if (resendEmailBtn) {
-        resendEmailBtn.style.display = data.has_email ? 'inline-block' : 'none';
+      // Hide or show backup buttons based on active channels and admin data
+      const resendWhatsappBtn = document.getElementById('btn-resend-otp-whatsapp');
+      const resendSmsBtn = document.getElementById('btn-resend-otp-sms');
+      if (resendWhatsappBtn) {
+        resendWhatsappBtn.style.display = data.has_whatsapp ? 'inline-block' : 'none';
+      }
+      if (resendSmsBtn) {
+        resendSmsBtn.style.display = data.has_sms ? 'inline-block' : 'none';
       }
 
-      // Mask details display
+      // Mask details display (prioritizing email since it's first automatically)
       const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
       if (maskedPhoneEl) {
         const span = maskedPhoneEl.querySelector('span');
         const icon = maskedPhoneEl.querySelector('i');
-        if (data.phone_masked) {
-          span.textContent = data.phone_masked;
-          if (icon) {
-            icon.setAttribute('data-lucide', 'message-square');
-            icon.style.color = '#16a34a';
-            icon.style.fill = 'rgba(22, 163, 74, 0.1)';
-          }
-        } else if (data.email_masked) {
+        if (data.email_masked) {
           span.textContent = data.email_masked;
           if (icon) {
             icon.setAttribute('data-lucide', 'mail');
             icon.style.color = '#3b82f6';
             icon.style.fill = 'rgba(59, 130, 246, 0.1)';
+          }
+        } else if (data.phone_masked) {
+          span.textContent = data.phone_masked;
+          if (icon) {
+            icon.setAttribute('data-lucide', 'message-square');
+            icon.style.color = '#16a34a';
+            icon.style.fill = 'rgba(22, 163, 74, 0.1)';
           }
         } else {
           span.textContent = 'Doğrulama Kanalı';
@@ -2333,52 +2337,64 @@ async function verifyAdminOTP(event) {
   }
 }
 
-async function sendOTPEmail() {
+async function sendOTPChannel(channel) {
   const errorMsg = document.getElementById('login-2fa-error-msg');
   const successMsg = document.getElementById('login-2fa-success-msg');
-  const resendBtn = document.getElementById('btn-resend-otp-email');
+  const resendWhatsappBtn = document.getElementById('btn-resend-otp-whatsapp');
+  const resendSmsBtn = document.getElementById('btn-resend-otp-sms');
 
   if (!temp2FAUsername) return;
 
   if (errorMsg) errorMsg.style.display = 'none';
   if (successMsg) successMsg.style.display = 'none';
 
+  const activeBtn = channel === 'whatsapp' ? resendWhatsappBtn : resendSmsBtn;
   let originalHTML = '';
-  if (resendBtn) {
-    originalHTML = resendBtn.innerHTML;
-    resendBtn.disabled = true;
-    resendBtn.textContent = 'Gönderiliyor...';
+  if (activeBtn) {
+    originalHTML = activeBtn.innerHTML;
+    activeBtn.disabled = true;
+    activeBtn.textContent = 'Gönderiliyor...';
   }
 
   try {
-    const res = await fetch("/api/send_otp_email", {
+    const res = await fetch("/api/send_otp_channel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: temp2FAUsername })
+      body: JSON.stringify({ username: temp2FAUsername, channel })
     });
 
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "E-posta gönderimi başarısız oldu.");
+      throw new Error(data.error || "Kod gönderimi başarısız oldu.");
     }
 
     const data = await res.json();
 
     if (successMsg) {
-      successMsg.textContent = `Güvenlik kodu ${data.email_masked} e-posta adresine gönderildi.`;
+      if (channel === 'whatsapp') {
+        successMsg.textContent = `Güvenlik kodu ${data.phone_masked} numaralı WhatsApp hattınıza gönderildi.`;
+      } else {
+        successMsg.textContent = `Güvenlik kodu ${data.phone_masked} numaralı telefonunuza SMS olarak gönderildi.`;
+      }
       successMsg.style.display = 'block';
     }
 
     // Mask details display update
     const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
-    if (maskedPhoneEl && data.email_masked) {
+    if (maskedPhoneEl && data.phone_masked) {
       const span = maskedPhoneEl.querySelector('span');
       const icon = maskedPhoneEl.querySelector('i');
-      span.textContent = data.email_masked;
+      span.textContent = data.phone_masked;
       if (icon) {
-        icon.setAttribute('data-lucide', 'mail');
-        icon.style.color = '#3b82f6';
-        icon.style.fill = 'rgba(59, 130, 246, 0.1)';
+        if (channel === 'whatsapp') {
+          icon.setAttribute('data-lucide', 'message-square');
+          icon.style.color = '#16a34a';
+          icon.style.fill = 'rgba(22, 163, 74, 0.1)';
+        } else {
+          icon.setAttribute('data-lucide', 'smartphone');
+          icon.style.color = '#f97316';
+          icon.style.fill = 'rgba(249, 115, 22, 0.15)';
+        }
       }
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -2389,9 +2405,9 @@ async function sendOTPEmail() {
       errorMsg.style.display = 'block';
     }
   } finally {
-    if (resendBtn) {
-      resendBtn.disabled = false;
-      resendBtn.innerHTML = originalHTML;
+    if (activeBtn) {
+      activeBtn.disabled = false;
+      activeBtn.innerHTML = originalHTML;
     }
   }
 }
@@ -2413,7 +2429,7 @@ function cancel2FA() {
 }
 
 window.verifyAdminOTP = verifyAdminOTP;
-window.sendOTPEmail = sendOTPEmail;
+window.sendOTPChannel = sendOTPChannel;
 window.cancel2FA = cancel2FA;
 
 function handleAdminLogout() {
@@ -7020,8 +7036,9 @@ async function loadSystemSettings() {
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const reminderDaysContainer = document.getElementById('settings-reminder-days-container');
   const flashSmsCh = document.getElementById('settings-flash-sms');
+  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
   const twoFactorWhatsappEnabledCh = document.getElementById('settings-two-factor-whatsapp-enabled');
-  const twoFactorEmailEnabledCh = document.getElementById('settings-two-factor-email-enabled');
+  const twoFactorSmsEnabledCh = document.getElementById('settings-two-factor-sms-enabled');
   const saveBtn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh) return;
@@ -7068,11 +7085,14 @@ async function loadSystemSettings() {
       flashSmsCh.checked = settings.flash_sms === true;
     }
 
+    if (twoFactorEnabledCh) {
+      twoFactorEnabledCh.checked = settings.two_factor_enabled === true;
+    }
     if (twoFactorWhatsappEnabledCh) {
       twoFactorWhatsappEnabledCh.checked = settings.two_factor_whatsapp_enabled === true;
     }
-    if (twoFactorEmailEnabledCh) {
-      twoFactorEmailEnabledCh.checked = settings.two_factor_email_enabled === true;
+    if (twoFactorSmsEnabledCh) {
+      twoFactorSmsEnabledCh.checked = settings.two_factor_sms_enabled === true;
     }
 
     const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
@@ -7148,8 +7168,9 @@ async function saveSystemSettings(event) {
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const flashSmsCh = document.getElementById('settings-flash-sms');
+  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
   const twoFactorWhatsappEnabledCh = document.getElementById('settings-two-factor-whatsapp-enabled');
-  const twoFactorEmailEnabledCh = document.getElementById('settings-two-factor-email-enabled');
+  const twoFactorSmsEnabledCh = document.getElementById('settings-two-factor-sms-enabled');
   
   const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
   const autoRemindersChannelSelect = document.getElementById('settings-auto-reminders-channel');
@@ -7177,8 +7198,9 @@ async function saveSystemSettings(event) {
       send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
       expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3,
       flash_sms: flashSmsCh ? flashSmsCh.checked : false,
+      two_factor_enabled: twoFactorEnabledCh ? twoFactorEnabledCh.checked : false,
       two_factor_whatsapp_enabled: twoFactorWhatsappEnabledCh ? twoFactorWhatsappEnabledCh.checked : false,
-      two_factor_email_enabled: twoFactorEmailEnabledCh ? twoFactorEmailEnabledCh.checked : false,
+      two_factor_sms_enabled: twoFactorSmsEnabledCh ? twoFactorSmsEnabledCh.checked : false,
       auto_reminders_enabled: autoRemindersEnabledCh ? autoRemindersEnabledCh.checked : false,
       auto_reminders_channel: autoRemindersChannelSelect ? autoRemindersChannelSelect.value : 'sms',
       auto_reminders_days: autoRemindersDaysInput ? autoRemindersDaysInput.value : '7,3,1,0',
