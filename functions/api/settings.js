@@ -52,6 +52,8 @@ export async function onRequest(context) {
           expiration_reminder_days: 3,
           flash_sms: false,
           two_factor_enabled: false,
+          two_factor_whatsapp_enabled: false,
+          two_factor_email_enabled: false,
           auto_reminders_enabled: false,
           auto_reminders_channel: "sms",
           auto_reminders_days: "7,3,1,0",
@@ -73,6 +75,8 @@ export async function onRequest(context) {
           expiration_reminder_days: 3,
           flash_sms: false,
           two_factor_enabled: false,
+          two_factor_whatsapp_enabled: false,
+          two_factor_email_enabled: false,
           auto_reminders_enabled: false,
           auto_reminders_channel: "sms",
           auto_reminders_days: "7,3,1,0",
@@ -94,6 +98,8 @@ export async function onRequest(context) {
         expiration_reminder_days: parseInt(dbSettings.expiration_reminder_days) || 3,
         flash_sms: dbSettings.flash_sms === true,
         two_factor_enabled: dbSettings.two_factor_enabled === true,
+        two_factor_whatsapp_enabled: dbSettings.two_factor_whatsapp_enabled !== undefined ? dbSettings.two_factor_whatsapp_enabled === true : dbSettings.two_factor_enabled === true,
+        two_factor_email_enabled: dbSettings.two_factor_email_enabled !== undefined ? dbSettings.two_factor_email_enabled === true : dbSettings.two_factor_enabled === true,
         auto_reminders_enabled: dbSettings.auto_reminders_enabled === true,
         auto_reminders_channel: dbSettings.auto_reminders_channel || "sms",
         auto_reminders_days: dbSettings.auto_reminders_days || "7,3,1,0",
@@ -168,7 +174,7 @@ export async function onRequest(context) {
       }
 
       const payload = await context.request.json();
-      const { email_enabled, whatsapp_enabled, sms_enabled, delay_night_sms, send_expiration_reminder, expiration_reminder_days, flash_sms, two_factor_enabled,
+      const { email_enabled, whatsapp_enabled, sms_enabled, delay_night_sms, send_expiration_reminder, expiration_reminder_days, flash_sms, two_factor_enabled, two_factor_whatsapp_enabled, two_factor_email_enabled,
               auto_reminders_enabled, auto_reminders_channel, auto_reminders_days,
               auto_reminders_template_7d, auto_reminders_template_3d, auto_reminders_template_1d, auto_reminders_template_0d } = payload;
 
@@ -183,7 +189,9 @@ export async function onRequest(context) {
           send_expiration_reminder: send_expiration_reminder !== false,
           expiration_reminder_days: parseInt(expiration_reminder_days) || 3,
           flash_sms: flash_sms === true,
-          two_factor_enabled: two_factor_enabled === true,
+          two_factor_enabled: two_factor_enabled === true || two_factor_whatsapp_enabled === true || two_factor_email_enabled === true,
+          two_factor_whatsapp_enabled: two_factor_whatsapp_enabled === true,
+          two_factor_email_enabled: two_factor_email_enabled === true,
           auto_reminders_enabled: auto_reminders_enabled === true,
           auto_reminders_channel: auto_reminders_channel || "sms",
           auto_reminders_days: auto_reminders_days || "7,3,1,0",

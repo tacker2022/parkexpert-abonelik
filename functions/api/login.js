@@ -1,4 +1,5 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
+import { sendEmail } from "./email_helper.js";
 
 // Helper for safe base64 encoding (supports Unicode)
 function base64Encode(str) {
@@ -115,7 +116,8 @@ export async function onRequest(context) {
     }
 
     // 1. Check if 2FA is enabled in settings
-    let twoFactorEnabled = false; // default false to prevent locking out existing users
+    let twoFactorWhatsappEnabled = false;
+    let twoFactorEmailEnabled = false;
     try {
       const settingsRes = await fetch(`${supabaseUrl}/rest/v1/system_settings?key=eq.notification_toggles&select=*`, {
         headers: {
@@ -126,7 +128,15 @@ export async function onRequest(context) {
       if (settingsRes.ok) {
         const rows = await settingsRes.json();
         if (rows.length > 0 && rows[0].value) {
-          twoFactorEnabled = rows[0].value.two_factor_enabled === true;
+          const val = rows[0].value;
+          twoFactorWhatsappEnabled = val.two_factor_whatsapp_enabled === true;
+          twoFactorEmailEnabled = val.two_factor_email_enabled === true;
+          
+          // Fallback if the new columns aren't configured yet
+          if (val.two_factor_whatsapp_enabled === undefined && val.two_factor_email_enabled === undefined) {
+            twoFactorWhatsappEnabled = val.two_factor_enabled === true;
+            twoFactorEmailEnabled = val.two_factor_enabled === true;
+          }
         }
       }
     } catch (e) {
@@ -141,8 +151,11 @@ export async function onRequest(context) {
       ? context.env.SUPERADMIN_EMAIL
       : userObj.email;
 
-    // Force 2FA only if enabled AND we have at least a phone or email to send the code to
-    if (twoFactorEnabled && (targetPhone || targetEmail)) {
+    const useWhatsapp2FA = twoFactorWhatsappEnabled && targetPhone;
+    const useEmail2FA = twoFactorEmailEnabled && targetEmail;
+
+    // Force 2FA only if enabled on at least one channel where contact details exist
+    if (useWhatsapp2FA || useEmail2FA) {
       const otpCode = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -164,13 +177,30 @@ export async function onRequest(context) {
       if (!otpRes.ok) {
         const otpErr = await otpRes.text();
         console.error("Failed to save OTP in database:", otpErr);
-        // Fallback: if table doesn't exist, we bypass 2FA for now so we don't break login
-        twoFactorEnabled = false;
       } else {
-        // Send via WhatsApp if phone is present
-        if (targetPhone) {
+        // Send via WhatsApp if enabled and phone is present
+        if (useWhatsapp2FA) {
           const waMessage = `PARKEXPERT Yönetici Giriş Doğrulama Kodunuz: ${otpCode}\nBu kod 5 dakika boyunca geçerlidir.`;
           await sendWhatsApp(targetPhone, waMessage, context.env);
+        }
+
+        // Send via Email if enabled and email is present
+        if (useEmail2FA) {
+          const mailHtml = `
+            <p>Merhaba,</p>
+            <p><strong>PARKEXPERT Yönetici Paneli</strong> giriş işleminizi tamamlamak için kullanabileceğiniz güvenlik kodu aşağıdadır:</p>
+            <div style="text-align: center; margin: 2rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1;">
+              <span style="font-family: monospace; font-size: 2.25rem; font-weight: 800; letter-spacing: 0.1em; color: #0f3ba2;">${otpCode}</span>
+            </div>
+            <p>Bu kod güvenlik amacıyla <strong>5 dakika</strong> süreyle geçerlidir.</p>
+            <p>Giriş talebini siz yapmadıysanız lütfen şifrenizi değiştirin ve sistem yöneticinizle iletişime geçin.</p>
+          `;
+          await sendEmail({
+            to: targetEmail,
+            subject: `PARKEXPERT Giriş Güvenlik Kodu: ${otpCode}`,
+            html: mailHtml,
+            env: context.env
+          });
         }
 
         // Mask phone
@@ -206,8 +236,8 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({
           twoFactorRequired: true,
           username: userObj.username,
-          phone_masked: phoneMasked,
-          email_masked: emailMasked
+          phone_masked: useWhatsapp2FA ? phoneMasked : "",
+          email_masked: useEmail2FA ? emailMasked : ""
         }), { status: 200, headers });
       }
     }

@@ -7014,7 +7014,8 @@ async function loadSystemSettings() {
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const reminderDaysContainer = document.getElementById('settings-reminder-days-container');
   const flashSmsCh = document.getElementById('settings-flash-sms');
-  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
+  const twoFactorWhatsappEnabledCh = document.getElementById('settings-two-factor-whatsapp-enabled');
+  const twoFactorEmailEnabledCh = document.getElementById('settings-two-factor-email-enabled');
   const saveBtn = document.getElementById('btn-save-settings');
 
   if (!emailCh || !whatsappCh || !smsCh) return;
@@ -7061,8 +7062,11 @@ async function loadSystemSettings() {
       flashSmsCh.checked = settings.flash_sms === true;
     }
 
-    if (twoFactorEnabledCh) {
-      twoFactorEnabledCh.checked = settings.two_factor_enabled === true;
+    if (twoFactorWhatsappEnabledCh) {
+      twoFactorWhatsappEnabledCh.checked = settings.two_factor_whatsapp_enabled === true;
+    }
+    if (twoFactorEmailEnabledCh) {
+      twoFactorEmailEnabledCh.checked = settings.two_factor_email_enabled === true;
     }
 
     const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
@@ -7138,7 +7142,8 @@ async function saveSystemSettings(event) {
   const sendReminderCh = document.getElementById('settings-send-expiration-reminder');
   const reminderDaysInput = document.getElementById('settings-expiration-reminder-days');
   const flashSmsCh = document.getElementById('settings-flash-sms');
-  const twoFactorEnabledCh = document.getElementById('settings-two-factor-enabled');
+  const twoFactorWhatsappEnabledCh = document.getElementById('settings-two-factor-whatsapp-enabled');
+  const twoFactorEmailEnabledCh = document.getElementById('settings-two-factor-email-enabled');
   
   const autoRemindersEnabledCh = document.getElementById('settings-auto-reminders-enabled');
   const autoRemindersChannelSelect = document.getElementById('settings-auto-reminders-channel');
@@ -7166,7 +7171,8 @@ async function saveSystemSettings(event) {
       send_expiration_reminder: sendReminderCh ? sendReminderCh.checked : false,
       expiration_reminder_days: reminderDaysInput ? (parseInt(reminderDaysInput.value, 10) || 3) : 3,
       flash_sms: flashSmsCh ? flashSmsCh.checked : false,
-      two_factor_enabled: twoFactorEnabledCh ? twoFactorEnabledCh.checked : false,
+      two_factor_whatsapp_enabled: twoFactorWhatsappEnabledCh ? twoFactorWhatsappEnabledCh.checked : false,
+      two_factor_email_enabled: twoFactorEmailEnabledCh ? twoFactorEmailEnabledCh.checked : false,
       auto_reminders_enabled: autoRemindersEnabledCh ? autoRemindersEnabledCh.checked : false,
       auto_reminders_channel: autoRemindersChannelSelect ? autoRemindersChannelSelect.value : 'sms',
       auto_reminders_days: autoRemindersDaysInput ? autoRemindersDaysInput.value : '7,3,1,0',
