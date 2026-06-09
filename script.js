@@ -2163,6 +2163,7 @@ let currentAppId = null;
 
 // Two-Factor Authentication temporary username storage
 let temp2FAUsername = null;
+let otpTimerInterval = null;
 
 async function handleAdminLogin(event) {
   if (event) event.preventDefault();
@@ -2254,6 +2255,8 @@ async function handleAdminLogin(event) {
       if (twoFactorError) twoFactorError.style.display = 'none';
       if (twoFactorSuccess) twoFactorSuccess.style.display = 'none';
 
+      start2FACountdown();
+
       return;
     }
     
@@ -2312,6 +2315,12 @@ async function verifyAdminOTP(event) {
     localStorage.setItem('parkexpert_token', data.token);
     localStorage.setItem('parkexpert_user', JSON.stringify(data.user));
     localStorage.setItem('parkexpert_current_admin', data.user.id);
+
+    // Clear OTP countdown timer
+    if (otpTimerInterval) {
+      clearInterval(otpTimerInterval);
+      otpTimerInterval = null;
+    }
 
     // Hide overlay
     const overlay = document.getElementById('modal-login-overlay');
@@ -2414,6 +2423,8 @@ async function sendOTPChannel(channel) {
       }
     }
 
+    start2FACountdown();
+
   } catch (err) {
     if (errorMsg) {
       errorMsg.textContent = err.message;
@@ -2428,6 +2439,10 @@ async function sendOTPChannel(channel) {
 }
 
 function cancel2FA() {
+  if (otpTimerInterval) {
+    clearInterval(otpTimerInterval);
+    otpTimerInterval = null;
+  }
   temp2FAUsername = null;
   const credentialsBlock = document.getElementById('login-credentials-block');
   const twoFactorBlock = document.getElementById('login-2fa-block');
@@ -2435,12 +2450,79 @@ function cancel2FA() {
   if (twoFactorBlock) twoFactorBlock.style.display = 'none';
 
   const otpInput = document.getElementById('login-otp-code');
-  if (otpInput) otpInput.value = '';
+  if (otpInput) {
+    otpInput.value = '';
+    otpInput.removeAttribute('disabled');
+    otpInput.style.backgroundColor = '';
+  }
+
+  const submitBtn = document.querySelector('#admin-2fa-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.removeAttribute('disabled');
+  }
 
   const twoFactorError = document.getElementById('login-2fa-error-msg');
   const twoFactorSuccess = document.getElementById('login-2fa-success-msg');
   if (twoFactorError) twoFactorError.style.display = 'none';
   if (twoFactorSuccess) twoFactorSuccess.style.display = 'none';
+}
+
+function start2FACountdown() {
+  if (otpTimerInterval) {
+    clearInterval(otpTimerInterval);
+  }
+
+  const timerEl = document.getElementById('login-2fa-timer');
+  const otpInput = document.getElementById('login-otp-code');
+  const submitBtn = document.querySelector('#admin-2fa-form button[type="submit"]');
+
+  // Reactivate elements in case they were disabled from previous timeout
+  if (otpInput) {
+    otpInput.removeAttribute('disabled');
+    otpInput.style.backgroundColor = '';
+  }
+  if (submitBtn) {
+    submitBtn.removeAttribute('disabled');
+  }
+
+  let secondsLeft = 300; // 5 minutes
+
+  const updateTimerDisplay = () => {
+    if (!timerEl) return;
+    const minutes = Math.floor(secondsLeft / 60);
+    const secs = secondsLeft % 60;
+    const minutesStr = String(minutes).padStart(2, '0');
+    const secsStr = String(secs).padStart(2, '0');
+    timerEl.textContent = `Kalan Süre: ${minutesStr}:${secsStr}`;
+    timerEl.style.color = secondsLeft <= 30 ? '#ef4444' : '#64748b'; // red color for last 30 seconds
+  };
+
+  updateTimerDisplay();
+
+  otpTimerInterval = setInterval(() => {
+    secondsLeft--;
+    updateTimerDisplay();
+
+    if (secondsLeft <= 0) {
+      clearInterval(otpTimerInterval);
+      otpTimerInterval = null;
+
+      if (timerEl) {
+        timerEl.textContent = "Güvenlik kodunun süresi doldu! Geri dönüp tekrar giriş yapın.";
+        timerEl.style.color = '#ef4444';
+      }
+
+      // Disable inputs
+      if (otpInput) {
+        otpInput.setAttribute('disabled', 'true');
+        otpInput.value = '';
+        otpInput.style.backgroundColor = '#f1f5f9';
+      }
+      if (submitBtn) {
+        submitBtn.setAttribute('disabled', 'true');
+      }
+    }
+  }, 1000);
 }
 
 window.verifyAdminOTP = verifyAdminOTP;
@@ -7849,10 +7931,27 @@ async function loadAuditLogs() {
 function filterAuditLogs() {
   const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
   const filterAction = document.getElementById('audit-filter-action')?.value || '';
+  const startDateVal = document.getElementById('audit-filter-start-date')?.value || '';
+  const endDateVal = document.getElementById('audit-filter-end-date')?.value || '';
 
   const filtered = allAuditLogs.filter(log => {
     // Action Type Filter
     if (filterAction && log.action_type !== filterAction) return false;
+
+    // Date Range Filter
+    if (log.created_at) {
+      const logDate = new Date(log.created_at);
+      if (startDateVal) {
+        const start = new Date(startDateVal + "T00:00:00");
+        if (logDate < start) return false;
+      }
+      if (endDateVal) {
+        const end = new Date(endDateVal + "T23:59:59");
+        if (logDate > end) return false;
+      }
+    } else if (startDateVal || endDateVal) {
+      return false;
+    }
 
     // Search Query (username or details)
     if (searchQuery) {
@@ -7992,9 +8091,26 @@ function downloadAuditLogsCSV() {
   // Get filtered logs
   const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
   const filterAction = document.getElementById('audit-filter-action')?.value || '';
+  const startDateVal = document.getElementById('audit-filter-start-date')?.value || '';
+  const endDateVal = document.getElementById('audit-filter-end-date')?.value || '';
 
   const filtered = allAuditLogs.filter(log => {
     if (filterAction && log.action_type !== filterAction) return false;
+    
+    if (log.created_at) {
+      const logDate = new Date(log.created_at);
+      if (startDateVal) {
+        const start = new Date(startDateVal + "T00:00:00");
+        if (logDate < start) return false;
+      }
+      if (endDateVal) {
+        const end = new Date(endDateVal + "T23:59:59");
+        if (logDate > end) return false;
+      }
+    } else if (startDateVal || endDateVal) {
+      return false;
+    }
+
     if (searchQuery) {
       const matchesUsername = log.admin_username?.toLowerCase().includes(searchQuery);
       const matchesDetails = log.details?.toLowerCase().includes(searchQuery);
@@ -8052,6 +8168,86 @@ function downloadAuditLogsCSV() {
 }
 
 window.downloadAuditLogsCSV = downloadAuditLogsCSV;
+
+function downloadSMSReportsCSV() {
+  const logs = window.allSMSLogs;
+  if (!logs || logs.length === 0) {
+    showToastNotification("Hata", "İndirilecek SMS kaydı bulunamadı.", "alert-triangle");
+    return;
+  }
+
+  const searchVal = document.getElementById('sms-search-input')?.value.toLowerCase().trim() || '';
+  
+  let filtered = logs;
+
+  // Apply status filter
+  if (window.currentSMSFilter === 'delivered') {
+    filtered = filtered.filter(log => log.status === 'İletildi' || log.status === 'Simüle Edildi');
+  } else if (window.currentSMSFilter === 'pending') {
+    filtered = filtered.filter(log => log.status === 'Beklemede' || log.status === 'Zamanlandı');
+  } else if (window.currentSMSFilter === 'failed') {
+    filtered = filtered.filter(log => log.status && (log.status.startsWith('Hata') || log.status.startsWith('İletilemedi')));
+  }
+
+  // Apply search filter
+  if (searchVal) {
+    filtered = filtered.filter(log => 
+      log.phone.toLowerCase().includes(searchVal) || 
+      log.message.toLowerCase().includes(searchVal) ||
+      (log.location && log.location.toLowerCase().includes(searchVal)) ||
+      (log.job_id && log.job_id.toLowerCase().includes(searchVal))
+    );
+  }
+
+  if (filtered.length === 0) {
+    showToastNotification("Hata", "Filtreleme kriterlerine uygun SMS kaydı bulunamadı.", "alert-triangle");
+    return;
+  }
+
+  // Helper to format date
+  const formatCSVDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+
+  // Build CSV content
+  // Headers with UTF-8 BOM so Turkish characters display correctly in Excel
+  let csvContent = "\uFEFF";
+  csvContent += "Alıcı Telefon;Lokasyon;Mesaj İçeriği;Zamanlama / Gönderim Tarihi;Netgsm Job ID;Durum\n";
+
+  filtered.forEach(log => {
+    const phone = log.phone || '';
+    const location = log.location || 'Sistem';
+    const message = (log.message || '').replace(/;/g, ',').replace(/\n/g, ' '); // escape semi-colons and newlines
+    const date = formatCSVDate(log.scheduled_at || log.created_at);
+    const jobId = log.job_id || '-';
+    const status = log.status || '';
+
+    csvContent += `"${phone}";"${location}";"${message}";"${date}";"${jobId}";"${status}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `sms_raporlari_${new Date().toISOString().substring(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+window.downloadSMSReportsCSV = downloadSMSReportsCSV;
 
 
 
