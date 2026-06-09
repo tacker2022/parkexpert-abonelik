@@ -2212,6 +2212,12 @@ async function handleAdminLogin(event) {
         resendSmsBtn.style.display = data.has_sms ? 'inline-block' : 'none';
       }
 
+      // Set description text to email first since it's automatically sent first
+      const descEl = document.getElementById('login-2fa-description');
+      if (descEl) {
+        descEl.textContent = 'E-posta adresinize gönderilen 6 haneli güvenlik kodunu giriniz.';
+      }
+
       // Mask details display (prioritizing email since it's first automatically)
       const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
       if (maskedPhoneEl) {
@@ -2397,6 +2403,15 @@ async function sendOTPChannel(channel) {
         }
       }
       if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    const descEl = document.getElementById('login-2fa-description');
+    if (descEl) {
+      if (channel === 'whatsapp') {
+        descEl.textContent = 'WhatsApp numaranıza gönderilen 6 haneli güvenlik kodunu giriniz.';
+      } else if (channel === 'sms') {
+        descEl.textContent = 'Telefonunuza SMS olarak gönderilen 6 haneli güvenlik kodunu giriniz.';
+      }
     }
 
   } catch (err) {
