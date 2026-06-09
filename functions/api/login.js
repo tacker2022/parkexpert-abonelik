@@ -237,7 +237,8 @@ export async function onRequest(context) {
           twoFactorRequired: true,
           username: userObj.username,
           phone_masked: useWhatsapp2FA ? phoneMasked : "",
-          email_masked: useEmail2FA ? emailMasked : ""
+          email_masked: useEmail2FA ? emailMasked : "",
+          has_email: !!targetEmail
         }), { status: 200, headers });
       }
     }

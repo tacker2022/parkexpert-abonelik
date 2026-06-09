@@ -2202,6 +2202,12 @@ async function handleAdminLogin(event) {
       if (credentialsBlock) credentialsBlock.style.display = 'none';
       if (twoFactorBlock) twoFactorBlock.style.display = 'block';
 
+      // Hide or show backup email link based on whether they have a registered email
+      const resendEmailBtn = document.getElementById('btn-resend-otp-email');
+      if (resendEmailBtn) {
+        resendEmailBtn.style.display = data.has_email ? 'inline-block' : 'none';
+      }
+
       // Mask details display
       const maskedPhoneEl = document.getElementById('login-2fa-masked-phone');
       if (maskedPhoneEl) {
