@@ -58,3 +58,20 @@ jobs:
         # Upload using AWS CLI pointing to Cloudflare R2 endpoint
         aws s3 cp "${{ env.FILENAME }}" "s3://$R2_BUCKET/${{ env.FILENAME }}" --endpoint-url "$R2_ENDPOINT"
         echo "Successfully uploaded backup to Cloudflare R2: ${{ env.FILENAME }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Google Drive API Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-auth google-api-python-client
+
+    - name: Upload Backup to Google Drive
+      env:
+        GOOGLE_DRIVE_CREDENTIALS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+        GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+      run: |
+        python scripts/upload_to_drive.py "${{ env.FILENAME }}" "$GOOGLE_DRIVE_FOLDER_ID"
