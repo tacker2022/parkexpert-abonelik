@@ -2162,7 +2162,7 @@ let filteredApplications = [];
 let currentAppId = null;
 
 // Privacy Mode State & Helpers
-let isPrivacyMode = localStorage.getItem('privacy_mode') === 'true';
+let isPrivacyMode = true;
 
 function maskName(name) {
   if (!name) return '';
@@ -2707,7 +2707,9 @@ async function initAdminController() {
   if (overlay) overlay.style.display = 'none';
   if (adminLayout) adminLayout.style.display = 'flex';
 
-  // Initialize Privacy Icon
+  // Always enable Privacy Mode by default on fresh session / login
+  isPrivacyMode = true;
+  localStorage.setItem('privacy_mode', 'true');
   updatePrivacyIcon();
 
   // Load otoparks from server
