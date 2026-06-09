@@ -7983,5 +7983,75 @@ function renderAuditLogsTable(logs) {
 window.loadAuditLogs = loadAuditLogs;
 window.filterAuditLogs = filterAuditLogs;
 
+function downloadAuditLogsCSV() {
+  if (!allAuditLogs || allAuditLogs.length === 0) {
+    showToastNotification("Hata", "İndirilecek denetim kaydı bulunamadı.", "alert-triangle");
+    return;
+  }
+
+  // Get filtered logs
+  const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
+  const filterAction = document.getElementById('audit-filter-action')?.value || '';
+
+  const filtered = allAuditLogs.filter(log => {
+    if (filterAction && log.action_type !== filterAction) return false;
+    if (searchQuery) {
+      const matchesUsername = log.admin_username?.toLowerCase().includes(searchQuery);
+      const matchesDetails = log.details?.toLowerCase().includes(searchQuery);
+      if (!matchesUsername && !matchesDetails) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    showToastNotification("Hata", "Filtreleme kriterlerine uygun kayıt bulunamadı.", "alert-triangle");
+    return;
+  }
+
+  // Helper to format date
+  const formatCSVDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+
+  // Build CSV content
+  // Headers with UTF-8 BOM so Turkish characters display correctly in Excel
+  let csvContent = "\uFEFF";
+  csvContent += "Tarih;Yönetici;Yetki Rolü;İşlem Türü;İşlem Detayı;IP Adresi\n";
+
+  filtered.forEach(log => {
+    const date = formatCSVDate(log.created_at);
+    const username = log.admin_username || '';
+    const role = log.admin_role === 'superadmin' ? 'Süper Admin' : 'Otopark Admin';
+    const action = log.action_type || '';
+    const details = (log.details || '').replace(/;/g, ',').replace(/\n/g, ' '); // escape semi-colons and newlines
+    const ip = log.ip_address || '';
+
+    csvContent += `"${date}";"${username}";"${role}";"${action}";"${details}";"${ip}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `denetim_gunlukleri_${new Date().toISOString().substring(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+window.downloadAuditLogsCSV = downloadAuditLogsCSV;
+
 
 
