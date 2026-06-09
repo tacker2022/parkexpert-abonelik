@@ -8,7 +8,7 @@ on:
 
 jobs:
   backup:
-    name: Backup Supabase to Cloudflare R2
+    name: Backup Supabase to Cloudflare R2 & Google Drive
     runs-on: ubuntu-latest
 
     steps:
@@ -22,13 +22,27 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y postgresql-client-17
 
-    - name: Run pg_dump
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-auth google-api-python-client pandas openpyxl psycopg2-binary sqlalchemy
+
+    - name: Prepare Filenames and Run pg_dump
       env:
         DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       run: |
-        # Generate filename with timestamp
-        FILENAME="backup-$(date +%Y-%m-%d-%H%M%S).dump"
+        # Generate unified timestamped filenames
+        TS=$(date +%Y-%m-%d-%H%M%S)
+        FILENAME="backup-$TS.dump"
+        EXCEL_FILENAME="backup-$TS.xlsx"
+        
         echo "FILENAME=$FILENAME" >> $GITHUB_ENV
+        echo "EXCEL_FILENAME=$EXCEL_FILENAME" >> $GITHUB_ENV
         
         # Run pg_dump in custom compressed binary format using the explicit PG 17 path
         /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" -F c -b -v -f "$FILENAME"
@@ -39,7 +53,13 @@ jobs:
           exit 1
         fi
         
-        echo "Database backup completed successfully: $FILENAME"
+        echo "Database backup dump completed successfully: $FILENAME"
+
+    - name: Export Database Tables to Excel
+      env:
+        DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      run: |
+        python scripts/db_to_excel.py "$DB_URL" "${{ env.EXCEL_FILENAME }}"
 
     - name: Configure AWS CLI (S3 API compatibility for Cloudflare R2)
       env:
@@ -50,28 +70,21 @@ jobs:
         aws configure set aws_secret_access_key "$R2_SECRET_ACCESS_KEY"
         aws configure set default.region auto
 
-    - name: Upload Backup to Cloudflare R2
+    - name: Upload Backups to Cloudflare R2
       env:
         R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET_NAME }}
       run: |
-        # Upload using AWS CLI pointing to Cloudflare R2 endpoint
+        # Upload .dump and .xlsx files using AWS CLI
         aws s3 cp "${{ env.FILENAME }}" "s3://$R2_BUCKET/${{ env.FILENAME }}" --endpoint-url "$R2_ENDPOINT"
-        echo "Successfully uploaded backup to Cloudflare R2: ${{ env.FILENAME }}"
+        aws s3 cp "${{ env.EXCEL_FILENAME }}" "s3://$R2_BUCKET/${{ env.EXCEL_FILENAME }}" --endpoint-url "$R2_ENDPOINT"
+        echo "Successfully uploaded backups to Cloudflare R2"
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
-
-    - name: Install Google Drive API Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install google-auth google-api-python-client
-
-    - name: Upload Backup to Google Drive
+    - name: Upload Backups to Google Drive
       env:
         GOOGLE_DRIVE_CREDENTIALS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
         GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
       run: |
+        # Upload both .dump and .xlsx files to Google Drive
         python scripts/upload_to_drive.py "${{ env.FILENAME }}" "$GOOGLE_DRIVE_FOLDER_ID"
+        python scripts/upload_to_drive.py "${{ env.EXCEL_FILENAME }}" "$GOOGLE_DRIVE_FOLDER_ID"
