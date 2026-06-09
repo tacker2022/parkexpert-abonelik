@@ -137,7 +137,7 @@ export async function onRequest(context) {
       }
 
       // Check access: Fetch application first
-      const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}&select=parking_location`, {
+      const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}&select=parking_location,status,plate_number,company_name,subscription_expires_at,full_name`, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
@@ -153,7 +153,8 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: "Application not found" }), { status: 404, headers });
       }
 
-      const appLocation = apps[0].parking_location;
+      const oldApp = apps[0];
+      const appLocation = oldApp.parking_location;
 
       // Access verification
       if (user.role !== "superadmin" && !user.otoparks.includes(appLocation)) {
@@ -200,30 +201,38 @@ export async function onRequest(context) {
         let auditDetails = `Başvuru #${id} (${updatedApp.full_name || ''}) güncellendi:`;
         const detailParts = [];
         
-        if (status !== undefined) {
+        if (status !== undefined && oldApp.status !== status) {
           if (status === "Onaylandı") {
             auditActionType = "approve_app";
-            detailParts.push(`Durum "Onaylandı" olarak güncellendi.`);
           } else if (status === "Reddedildi") {
             auditActionType = "reject_app";
-            detailParts.push(`Durum "Reddedildi" olarak güncellendi.`);
           } else {
             auditActionType = "update_status";
-            detailParts.push(`Durum "${status}" olarak güncellendi.`);
+          }
+          detailParts.push(`Durum: "${oldApp.status || 'Belirsiz'}" ➔ "${status}".`);
+        }
+        
+        if (subscription_expires_at !== undefined || (status === "Onaylandı" && updateBody.subscription_expires_at)) {
+          auditActionType = "extend_subscription";
+          const oldDate = oldApp.subscription_expires_at ? oldApp.subscription_expires_at.substring(0, 10) : "Tanımsız";
+          const newDate = updateBody.subscription_expires_at ? updateBody.subscription_expires_at.substring(0, 10) : "Tanımsız";
+          if (oldDate !== newDate) {
+            detailParts.push(`Bitiş Tarihi: ${oldDate} ➔ ${newDate}.`);
           }
         }
-        if (subscription_expires_at !== undefined) {
-          auditActionType = "extend_subscription";
-          detailParts.push(`Abonelik bitiş tarihi ${subscription_expires_at.substring(0, 10)} olarak güncellendi.`);
+        if (plate_number !== undefined && oldApp.plate_number !== plate_number) {
+          detailParts.push(`Plaka: "${oldApp.plate_number || ''}" ➔ "${plate_number}".`);
         }
-        if (plate_number !== undefined) {
-          detailParts.push(`Plaka "${plate_number}" olarak değiştirildi.`);
-        }
-        if (company_name !== undefined) {
-          detailParts.push(`Firma adı "${company_name}" olarak değiştirildi.`);
+        if (company_name !== undefined && oldApp.company_name !== company_name) {
+          detailParts.push(`Firma adı: "${oldApp.company_name || ''}" ➔ "${company_name}".`);
         }
 
-        auditDetails += " " + detailParts.join(" ");
+        if (detailParts.length > 0) {
+          auditDetails += " " + detailParts.join(" ");
+        } else {
+          auditDetails += " (Değişiklik yapılmadı veya şifre güncellendi)";
+        }
+        
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
 
         context.waitUntil(

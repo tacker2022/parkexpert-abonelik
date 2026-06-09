@@ -120,6 +120,25 @@ export async function onRequest(context) {
       }
 
       if (id) {
+        // Fetch old admin profile first to compare changes
+        let oldAdmin = {};
+        try {
+          const oldRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?id=eq.${id}&select=*`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          if (oldRes.ok) {
+            const oldRows = await oldRes.json();
+            if (oldRows.length > 0) {
+              oldAdmin = oldRows[0];
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to fetch old admin for auditing:", e);
+        }
+
         // If username is provided, check if it's taken by another user
         if (username) {
           const checkRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${username.toLowerCase()}&id=neq.${id}&select=id`, {
@@ -169,6 +188,33 @@ export async function onRequest(context) {
         const data = await updateRes.json();
 
         // Log audit action
+        const changes = [];
+        if (oldAdmin.name !== name) {
+          changes.push(`Ad Soyad: "${oldAdmin.name || ''}" ➔ "${name}"`);
+        }
+        if (oldAdmin.username !== username.toLowerCase()) {
+          changes.push(`Kullanıcı Adı: "${oldAdmin.username || ''}" ➔ "${username.toLowerCase()}"`);
+        }
+        if (password) {
+          changes.push(`Şifre güncellendi`);
+        }
+        const oldOtoparks = (oldAdmin.otoparks || []).join(", ");
+        const newOtoparks = (otoparks || []).join(", ");
+        if (oldOtoparks !== newOtoparks) {
+          changes.push(`Yetkili Otoparklar: [${oldOtoparks}] ➔ [${newOtoparks}]`);
+        }
+        if (oldAdmin.phone !== phone) {
+          changes.push(`Telefon: "${oldAdmin.phone || ''}" ➔ "${phone || ''}"`);
+        }
+        if (oldAdmin.email !== email) {
+          changes.push(`E-posta: "${oldAdmin.email || ''}" ➔ "${email || ''}"`);
+        }
+
+        let details = `"${name}" (${username}) yöneticisinin bilgileri güncellendi.`;
+        if (changes.length > 0) {
+          details += " (Değişenler: " + changes.join(", ") + ")";
+        }
+
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
         context.waitUntil(
           logAudit({
@@ -178,7 +224,7 @@ export async function onRequest(context) {
             role: user.role,
             actionType: "update_admin",
             targetId: id,
-            details: `"${name}" (${username}) yöneticisinin bilgileri güncellendi.`,
+            details,
             ipAddress
           })
         );

@@ -179,6 +179,25 @@ export async function onRequest(context) {
               auto_reminders_enabled, auto_reminders_channel, auto_reminders_days,
               auto_reminders_template_7d, auto_reminders_template_3d, auto_reminders_template_1d, auto_reminders_template_0d } = payload;
 
+      // 1. Fetch old settings first to compare changes
+      let oldSettings = {};
+      try {
+        const oldRes = await fetch(`${supabaseUrl}/rest/v1/system_settings?key=eq.notification_toggles&select=*`, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+        if (oldRes.ok) {
+          const oldRows = await oldRes.json();
+          if (oldRows.length > 0 && oldRows[0].value) {
+            oldSettings = oldRows[0].value;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch old settings for auditing:", e);
+      }
+
       const dbPayload = {
         id: "1",
         key: "notification_toggles",
@@ -224,6 +243,42 @@ export async function onRequest(context) {
 
       const data = await res.json();
 
+      // Compare changes
+      const changes = [];
+      const keysToCompare = [
+        { key: "email_enabled", name: "E-posta Bildirimi" },
+        { key: "whatsapp_enabled", name: "WhatsApp Bildirimi" },
+        { key: "sms_enabled", name: "SMS Bildirimi" },
+        { key: "delay_night_sms", name: "Gece SMS Erteleme" },
+        { key: "send_expiration_reminder", name: "Bitiş Hatırlatması" },
+        { key: "expiration_reminder_days", name: "Hatırlatma Gün Sayısı" },
+        { key: "flash_sms", name: "Flash SMS" },
+        { key: "two_factor_enabled", name: "E-posta 2FA" },
+        { key: "two_factor_whatsapp_enabled", name: "WhatsApp 2FA Yedek" },
+        { key: "two_factor_sms_enabled", name: "SMS 2FA Yedek" },
+        { key: "auto_reminders_enabled", name: "Otomatik Hatırlatıcı" },
+        { key: "auto_reminders_channel", name: "Hatırlatıcı Kanalı" }
+      ];
+
+      for (const item of keysToCompare) {
+        const oldVal = oldSettings[item.key];
+        const newVal = dbPayload.value[item.key];
+        if (oldVal !== newVal) {
+          const formatVal = (v) => {
+            if (v === true) return "Aktif";
+            if (v === false) return "Pasif";
+            if (v === undefined || v === null) return "Tanımsız";
+            return String(v);
+          };
+          changes.push(`${item.name}: ${formatVal(oldVal)} ➔ ${formatVal(newVal)}`);
+        }
+      }
+
+      let details = "Sistem bildirim ve otomatik hatırlatma ayarları güncellendi.";
+      if (changes.length > 0) {
+        details += " (Değişenler: " + changes.join(", ") + ")";
+      }
+
       // Log audit action
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
       context.waitUntil(
@@ -234,7 +289,7 @@ export async function onRequest(context) {
           role: user.role,
           actionType: "update_settings",
           targetId: "notification_toggles",
-          details: "Sistem bildirim ve otomatik hatırlatma ayarları güncellendi.",
+          details,
           ipAddress
         })
       );
