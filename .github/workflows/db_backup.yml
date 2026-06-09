@@ -30,8 +30,8 @@ jobs:
         FILENAME="backup-$(date +%Y-%m-%d-%H%M%S).dump"
         echo "FILENAME=$FILENAME" >> $GITHUB_ENV
         
-        # Run pg_dump in custom compressed binary format
-        pg_dump "$DB_URL" -F c -b -v -f "$FILENAME"
+        # Run pg_dump in custom compressed binary format using the explicit PG 17 path
+        /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" -F c -b -v -f "$FILENAME"
         
         # Verify file size is not empty
         if [ ! -s "$FILENAME" ]; then
