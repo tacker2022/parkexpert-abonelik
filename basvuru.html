@@ -111,49 +111,73 @@
 
               <!-- Otopark & Tarih Grid -->
               <div class="form-grid">
-                <!-- Location Selection -->
-                <div class="form-group">
-                  <label for="otopark-selection">
-                    <span>Abonelik Yapılacak Otopark / AVM</span>
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                  </label>
-                  <select id="otopark-selection" name="parking_location" required style="display: none;">
-                    <option value="" disabled selected>Lütfen bir otopark seçin...</option>
-                  </select>
+                <!-- Left Column: Fields -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                  <!-- Location Selection -->
+                  <div class="form-group">
+                    <label for="otopark-selection">
+                      <span>Abonelik Yapılacak Otopark / AVM</span>
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <select id="otopark-selection" name="parking_location" required style="display: none;">
+                      <option value="" disabled selected>Lütfen bir otopark seçin...</option>
+                    </select>
 
-                  <!-- Premium Custom Dropdown UI component -->
-                  <div class="custom-select-container" id="custom-otopark-select-container">
-                    <button type="button" class="custom-select-trigger" id="custom-otopark-select-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Otopark seçimi">
-                      <span class="custom-select-trigger-text">Lütfen bir otopark seçin...</span>
-                      <i data-lucide="chevron-down" class="custom-select-chevron" style="width: 18px; height: 18px;"></i>
-                    </button>
-                    
-                    <div class="custom-select-panel" id="custom-otopark-select-panel">
-                      <!-- Live Search Filter Box -->
-                      <div class="custom-select-search-container">
-                        <i data-lucide="search" class="custom-select-search-icon" style="width: 15px; height: 15px;"></i>
-                        <input type="text" class="custom-select-search-input" id="custom-otopark-select-search" placeholder="Otopark ara..." autocomplete="off">
-                      </div>
+                    <!-- Premium Custom Dropdown UI component -->
+                    <div class="custom-select-container" id="custom-otopark-select-container">
+                      <button type="button" class="custom-select-trigger" id="custom-otopark-select-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Otopark seçimi">
+                        <span class="custom-select-trigger-text">Lütfen bir otopark seçin...</span>
+                        <i data-lucide="chevron-down" class="custom-select-chevron" style="width: 18px; height: 18px;"></i>
+                      </button>
                       
-                      <!-- Scrollable List of category groups and option items -->
-                      <div class="custom-select-options-list" id="custom-otopark-select-options" role="listbox">
-                        <!-- Populated dynamically via JS -->
+                      <div class="custom-select-panel" id="custom-otopark-select-panel">
+                        <!-- Live Search Filter Box -->
+                        <div class="custom-select-search-container">
+                          <i data-lucide="search" class="custom-select-search-icon" style="width: 15px; height: 15px;"></i>
+                          <input type="text" class="custom-select-search-input" id="custom-otopark-select-search" placeholder="Otopark ara..." autocomplete="off">
+                        </div>
+                        
+                        <!-- Scrollable List of category groups and option items -->
+                        <div class="custom-select-options-list" id="custom-otopark-select-options" role="listbox">
+                          <!-- Populated dynamically via JS -->
+                        </div>
                       </div>
                     </div>
+
+                    <span class="error-message" id="error-parking"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir konum seçin.</span>
                   </div>
 
-                  <span class="error-message" id="error-parking"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir konum seçin.</span>
+                  <!-- Start Date -->
+                  <div class="form-group">
+                    <label for="start-date">
+                      <span>Abonelik Başvuru Tarihi</span>
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <input type="date" id="start-date" name="start_date" required readonly style="pointer-events: none; background-color: #f8fafc; border-color: var(--color-border-light); cursor: not-allowed; opacity: 0.85;">
+                    <span class="error-message" id="error-date"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir tarih seçin.</span>
+                    <span class="form-hint">Başvuru tarihi otomatik olarak atanmıştır ve değiştirilemez.</span>
+                  </div>
                 </div>
 
-                <!-- Start Date -->
-                <div class="form-group">
-                  <label for="start-date">
-                    <span>Abonelik Başvuru Tarihi</span>
-                    <span class="required-indicator" aria-hidden="true">*</span>
-                  </label>
-                  <input type="date" id="start-date" name="start_date" required readonly style="pointer-events: none; background-color: #f8fafc; border-color: var(--color-border-light); cursor: not-allowed; opacity: 0.85;">
-                  <span class="error-message" id="error-date"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen geçerli bir tarih seçin.</span>
-                  <span class="form-hint">Başvuru tarihi otomatik olarak atanmıştır ve değiştirilemez.</span>
+                <!-- Right Column: Legacy Notice Panel -->
+                <div class="legacy-alert-panel" style="background: rgba(15, 59, 162, 0.03); border: 1px dashed rgba(15, 59, 162, 0.25); border-radius: var(--radius-md); padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-primary-dark); font-weight: 700; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                    <i data-lucide="info" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+                    <span>Maltepe Park & Piazza Başvuruları</span>
+                  </div>
+                  <p style="font-size: 0.825rem; color: var(--color-text-muted); line-height: 1.5; margin: 0 0 1.25rem 0;">
+                    Maltepe Park AVM ve Maltepe Piazza AVM otopark abonelik başvuruları geçici olarak mevcut Google Forms altyapısı üzerinden alınmaktadır. Bu lokasyonlar için aşağıdaki bağlantılardan başvurabilirsiniz:
+                  </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="https://forms.gle/mV6bf4j4pQMVXUfi8" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.6rem; border-radius: var(--radius-sm); font-weight: 700; min-height: 38px; text-decoration: none; width: 100%; background: rgba(15, 59, 162, 0.06); color: var(--color-primary); border: 1px solid rgba(15, 59, 162, 0.15);">
+                      <span>Maltepe Park Başvuru Formu</span>
+                      <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+                    </a>
+                    <a href="https://forms.gle/rg4WE4KXwz7Z2kAM7" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.6rem; border-radius: var(--radius-sm); font-weight: 700; min-height: 38px; text-decoration: none; width: 100%; background: rgba(15, 59, 162, 0.06); color: var(--color-primary); border: 1px solid rgba(15, 59, 162, 0.15);">
+                      <span>Maltepe Piazza Başvuru Formu</span>
+                      <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
