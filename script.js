@@ -4421,6 +4421,57 @@ async function saveOtoparkConfig(event) {
   }
 }
 
+async function sendTestDailySummary(event) {
+  if (event) event.preventDefault();
+
+  const emailVal = document.getElementById('edit-otopark-summary-emails').value.trim();
+  const otoparkName = document.getElementById('edit-otopark-name').value.trim();
+
+  if (!emailVal) {
+    alert("Lütfen önce Günlük Özet Rapor E-postaları alanına en az bir e-posta adresi yazın.");
+    return;
+  }
+
+  const btn = document.getElementById('btn-test-summary-send');
+  if (!btn) return;
+  
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="spinner-border spinner-border-sm" role="status" style="width: 10px; height: 10px; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite; margin-right: 0.2rem;"></i> Gönderiliyor...';
+
+  try {
+    const res = await fetch('/api/send_test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'summary',
+        email: emailVal,
+        parkingLocation: otoparkName
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Rapor testi gönderilirken sunucu hatası oluştu.");
+    }
+
+    const data = await res.json();
+    if (data.email && data.email.success) {
+      alert(`Daily Summary test e-postası başarıyla gönderildi!\n\nAlıcılar: ${emailVal}\nKonum: ${otoparkName}`);
+    } else {
+      throw new Error(data.email?.error || "E-posta gönderimi başarısız oldu.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert(`Test Raporu Gönderimi Başarısız!\n\nHata: ${err.message}`);
+  } finally {
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+  }
+}
+
 async function toggleOtoparkStatus(otoparkId) {
   const token = localStorage.getItem('parkexpert_token');
   if (!token) {

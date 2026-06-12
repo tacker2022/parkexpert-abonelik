@@ -42,6 +42,8 @@ export async function onRequest(context) {
   let testPhone = "5372939874"; // +90 537 293 98 74
   let scheduledDate = null;
   let flashSms = false;
+  let requestType = "standard";
+  let selectedParkingLocation = "Birlik Sanayi Sitesi - Beylikdüzü";
 
   try {
     const body = await context.request.json();
@@ -49,11 +51,110 @@ export async function onRequest(context) {
     if (body.phone) testPhone = body.phone.trim();
     if (body.scheduledDate) scheduledDate = body.scheduledDate;
     if (body.flashSms !== undefined) flashSms = body.flashSms === true;
+    if (body.type) requestType = body.type.trim();
+    if (body.parkingLocation) selectedParkingLocation = body.parkingLocation.trim();
   } catch (e) {
     // ignore, use defaults
   }
-  
-  const parkingLocation = "Birlik Sanayi Sitesi - Beylikdüzü";
+
+  // Handle Daily Summary test request
+  if (requestType === "summary") {
+    try {
+      const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(selectedParkingLocation)}&select=*`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+
+      let parkName = selectedParkingLocation;
+      if (otoparkRes.ok) {
+        const parks = await otoparkRes.json();
+        if (parks.length > 0) {
+          parkName = parks[0].name;
+        }
+      }
+
+      // Generate mock applications for testing summary layout
+      const mockApps = [
+        { id: "PE-TEST-X9Y2", full_name: "Ahmet Yılmaz", plate_number: "34ABC123", subscription_type: "Bireysel (1 Aylık)", date_applied: new Date().toISOString(), status: "Onaylandı" },
+        { id: "PE-TEST-M4N8", full_name: "Mehmet Kaya", plate_number: "34XYZ789", subscription_type: "Kurumsal (3 Aylık)", date_applied: new Date().toISOString(), status: "Beklemede" },
+        { id: "PE-TEST-K7L3", full_name: "Ayşe Demir", plate_number: "34KLM456", subscription_type: "Bireysel (6 Aylık)", date_applied: new Date().toISOString(), status: "Reddedildi" }
+      ];
+
+      let rowsHtml = "";
+      for (const app of mockApps) {
+        const dateStr = new Date(app.date_applied).toLocaleDateString("tr-TR");
+        rowsHtml += `
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">${app.id}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${app.full_name}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-transform: uppercase;">${app.plate_number}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${app.subscription_type}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${dateStr}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: ${app.status === 'Onaylandı' ? '#047857' : (app.status === 'Reddedildi' ? '#b91c1c' : '#b45309')}">${app.status}</td>
+          </tr>
+        `;
+      }
+
+      const htmlContent = `
+        <div style="border: 2px dashed #0f3ba2; padding: 12px; margin-bottom: 20px; background-color: #f8fafc; border-radius: 8px; text-align: center; font-family: sans-serif;">
+          <strong style="color: #0f3ba2; font-size: 0.95rem;">⚠️ BU BİR TEST GÖNDERİMİDİR</strong><br>
+          <span style="font-size: 0.8rem; color: #64748b;">Bu e-posta otopark ayarlarından "Şimdi Test Raporu Gönder" butonuna basılarak tetiklenmiştir.</span>
+        </div>
+        <div style="font-family: sans-serif; color: #334155; max-width: 600px; margin: 0 auto;">
+          <h3 style="color: #0f3ba2; margin-top: 0; font-size: 1.25rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">📊 Günlük Başvuru Özet Raporu (TEST)</h3>
+          <p style="font-size: 0.9rem;"><strong>Otopark Konumu:</strong> ${parkName}</p>
+          <p style="font-size: 0.9rem;">Son 24 saat içerisinde alınan toplam başvuru sayısı: <strong>${mockApps.length}</strong> (Mock Veri)</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem;">
+            <thead>
+              <tr style="background: #f1f5f9; text-align: left; font-weight: bold; color: #1e293b;">
+                <th style="padding: 8px; border: 1px solid #ddd;">Takip No</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Müşteri</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Plaka</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Abonelik Tipi</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Tarih</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <p style="margin-top: 1.5rem; font-size: 0.8rem; color: #64748b;">Detaylı inceleme ve onay işlemleri için lütfen <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; font-weight: 600; text-decoration: none;">Yönetici Paneli</a>'ne giriş yapınız.</p>
+        </div>
+      `;
+
+      let emailSuccess = false;
+      let emailError = null;
+      try {
+        const emailResult = await sendEmail({
+          to: testEmail,
+          subject: `📊 Günlük Başvuru Raporu (TEST) - ${parkName}`,
+          html: htmlContent,
+          env: context.env
+        });
+        emailSuccess = emailResult.success !== false;
+        if (!emailSuccess) emailError = emailResult.error;
+      } catch (e) {
+        emailError = e.message;
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        mockAppId: "SUMMARY-TEST",
+        email: { success: emailSuccess, error: emailError },
+        whatsapp: { success: false, error: "N/A" },
+        sms: { success: false, error: "N/A" }
+      }), { status: 200, headers });
+
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
+    }
+  }
+
+  const parkingLocation = selectedParkingLocation;
   const fullName = "TEST KULLANICI (AHMET YILMAZ)";
   const plateNumber = "34TEST34";
   const subscriptionType = "Bireysel Abonelik (1 Aylık)";
