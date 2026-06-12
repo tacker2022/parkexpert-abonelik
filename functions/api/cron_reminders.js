@@ -119,11 +119,9 @@ export async function onRequest(context) {
     }
 
     const rows = await settingsRes.json();
-    if (rows.length === 0 || !rows[0].value?.auto_reminders_enabled) {
-      return new Response(JSON.stringify({ success: true, message: "Auto reminders are disabled in settings." }), { status: 200, headers });
-    }
+    const settings = rows.length > 0 ? (rows[0].value || {}) : {};
+    const autoRemindersEnabled = settings.auto_reminders_enabled === true;
 
-    const settings = rows[0].value;
     const channel = settings.auto_reminders_channel || "sms";
     const daysStr = settings.auto_reminders_days || "7,3,1,0";
     const reminderDays = daysStr.split(",").map(d => parseInt(d.trim())).filter(d => !isNaN(d));
@@ -140,7 +138,8 @@ export async function onRequest(context) {
     const executionResults = [];
 
     // 4. Process reminders for each configured day
-    for (const daysLeft of reminderDays) {
+    if (autoRemindersEnabled) {
+      for (const daysLeft of reminderDays) {
       // Calculate date range for target day in UTC
       const startRange = new Date();
       startRange.setUTCHours(0, 0, 0, 0);
@@ -319,6 +318,9 @@ export async function onRequest(context) {
         failed: failCount,
         errors
       });
+    }
+    } else {
+      executionResults.push({ message: "Customer reminders are disabled (auto_reminders_enabled = false)" });
     }
 
     // 5. Send Daily Summaries to Otopark Admins (if daily_summary is enabled)
