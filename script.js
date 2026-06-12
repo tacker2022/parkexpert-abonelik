@@ -7634,7 +7634,11 @@ async function runCronManually(event) {
     let msg = "Süre hatırlatıcıları ve günlük özet raporları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
     if (data.results && Array.isArray(data.results)) {
       data.results.forEach(r => {
-        msg += `- Bitişine ${r.daysLeft} gün kalanlar: İşlenen: ${r.processed}, Başarılı: ${r.success}, Başarısız: ${r.failed}\n`;
+        if (r.daysLeft !== undefined) {
+          msg += `- Bitişine ${r.daysLeft} gün kalanlar: İşlenen: ${r.processed}, Başarılı: ${r.success}, Başarısız: ${r.failed}\n`;
+        } else if (r.message) {
+          msg += `- Müşteri Bildirimleri: ${r.message}\n`;
+        }
       });
     } else {
       msg += data.message || "Tüm kanallar başarıyla işlendi.";
