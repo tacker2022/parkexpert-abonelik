@@ -1653,10 +1653,12 @@ function updateWizardUI() {
   const wizardFooter = document.getElementById('wizard-footer');
 
   if (currentStep === 1) {
+    if (wizardFooter) wizardFooter.style.display = 'flex';
     prevBtn.style.visibility = 'hidden';
     nextBtn.style.display = 'inline-flex';
     nextBtn.querySelector('span').textContent = 'Devam Et';
   } else if (currentStep > 1 && currentStep < 5) {
+    if (wizardFooter) wizardFooter.style.display = 'flex';
     prevBtn.style.visibility = 'visible';
     nextBtn.style.display = 'inline-flex';
     if (currentStep === 4) {
