@@ -1713,6 +1713,9 @@ function updateWizardUI() {
   if (currentStep === 3) {
     updatePaymentPanel();
   }
+
+  // Scroll to top of the page smoothly on step changes
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function updatePaymentPanel() {
