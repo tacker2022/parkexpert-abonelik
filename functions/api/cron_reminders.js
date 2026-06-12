@@ -260,6 +260,80 @@ export async function onRequest(context) {
       });
     }
 
+    // 5. Send Daily Summaries to Otopark Admins (if daily_summary is enabled)
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayIso = yesterday.toISOString();
+
+      // Fetch all applications in the last 24 hours
+      const recentAppsRes = await fetch(`${supabaseUrl}/rest/v1/applications?date_applied=gte.${yesterdayIso}&select=*`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+
+      if (recentAppsRes.ok) {
+        const recentApps = await recentAppsRes.json();
+        
+        for (const park of otoparks) {
+          if (park.notification_type === "daily_summary" && park.notification_emails) {
+            const parkApps = recentApps.filter(app => app.parking_location === park.name);
+            if (parkApps.length > 0) {
+              // Construct HTML Summary
+              let rowsHtml = "";
+              for (const app of parkApps) {
+                const dateStr = app.date_applied ? new Date(app.date_applied).toLocaleDateString("tr-TR") : "-";
+                rowsHtml += `
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">${app.id}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${app.full_name}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-transform: uppercase;">${app.plate_number || ""}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${app.subscription_type || ""}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${dateStr}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: ${app.status === 'Onaylandı' ? '#047857' : (app.status === 'Reddedildi' ? '#b91c1c' : '#b45309')}">${app.status}</td>
+                  </tr>
+                `;
+              }
+
+              const htmlContent = `
+                <h3 style="color: #0f3ba2; margin-top: 0;">📊 Günlük Başvuru Özet Raporu</h3>
+                <p><strong>Otopark Konumu:</strong> ${park.name}</p>
+                <p>Son 24 saat içerisinde alınan toplam başvuru sayısı: <strong>${parkApps.length}</strong></p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="background: #f1f5f9; text-align: left; font-weight: bold;">
+                      <th style="padding: 8px; border: 1px solid #ddd;">Takip No</th>
+                      <th style="padding: 8px; border: 1px solid #ddd;">Müşteri</th>
+                      <th style="padding: 8px; border: 1px solid #ddd;">Plaka</th>
+                      <th style="padding: 8px; border: 1px solid #ddd;">Abonelik Tipi</th>
+                      <th style="padding: 8px; border: 1px solid #ddd;">Tarih</th>
+                      <th style="padding: 8px; border: 1px solid #ddd;">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                  </tbody>
+                </table>
+                <p style="margin-top: 1.5rem; font-size: 0.8rem; color: #64748b;">Detaylı inceleme ve onay işlemleri için lütfen <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; font-weight: 600; text-decoration: none;">Yönetici Paneli</a>'ne giriş yapınız.</p>
+              `;
+
+              await sendEmail({
+                to: park.notification_emails,
+                subject: `📊 Günlük Başvuru Raporu - ${park.name}`,
+                html: htmlContent,
+                env: context.env
+              });
+            }
+          }
+        }
+      }
+    } catch (summaryErr) {
+      console.error("[Cron Summary Error]:", summaryErr);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       timestamp: new Date().toISOString(),

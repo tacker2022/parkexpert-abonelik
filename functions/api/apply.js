@@ -272,6 +272,34 @@ export async function onRequest(context) {
             await sendEmail({ to: email, subject: emailSubject, html: emailHtml, env: context.env });
           }
 
+          // 4b. Dispatch Admin Email Notification if configured
+          if (park.notification_type === "realtime" && park.notification_emails) {
+            const adminSubject = `🚨 [YENİ BAŞVURU] ${parkingLocation} - ${fullName} (${plateNumber})`;
+            const adminHtml = `
+              <h3 style="color: #0f3ba2; margin-top: 0;">🚨 Yeni Abonelik Başvurusu Alındı!</h3>
+              <p><strong>Otopark Konumu:</strong> ${parkingLocation}</p>
+              <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-left: 4px solid #0f3ba2;">
+                <div style="font-size: 0.9rem; line-height: 1.6; color: #334155;">
+                  <div><strong>Müşteri Ad Soyad:</strong> ${fullName}</div>
+                  <div><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: bold;">${plateNumber}</span></div>
+                  <div><strong>Abonelik Tipi:</strong> ${subscriptionType}</div>
+                  <div><strong>Takip No:</strong> <span style="font-family: monospace; font-weight: bold; color: #0f3ba2;">${appId}</span></div>
+                  <div><strong>Telefon:</strong> ${phone}</div>
+                  <div><strong>E-posta:</strong> ${email}</div>
+                  <div><strong>Araç Marka/Model:</strong> ${carModel || 'Belirtilmedi'}</div>
+                </div>
+              </div>
+              <p style="font-size: 0.85rem; color: #64748b;">Başvuru evraklarını kontrol etmek ve onay/ret işlemini gerçekleştirmek için lütfen <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; font-weight: bold; text-decoration: none;">Yönetici Paneli</a>'ne giriş yapınız.</p>
+            `;
+            
+            await sendEmail({
+              to: park.notification_emails,
+              subject: adminSubject,
+              html: adminHtml,
+              env: context.env
+            });
+          }
+
           // 5. Dispatch SMS Notification if enabled
           if (settings.sms_enabled) {
             let smsMessage = "";

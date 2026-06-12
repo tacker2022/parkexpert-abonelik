@@ -4265,6 +4265,8 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-price-ext').value = park.priceExternal || '';
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
+  document.getElementById('edit-otopark-notif-emails').value = park.notificationEmails || '';
+  document.getElementById('edit-otopark-notif-type').value = park.notificationType || 'none';
 
   document.getElementById('otopark-modal-title').textContent = 'Otopark İşletmesi Düzenle';
   openModal('modal-otopark-edit');
@@ -4277,16 +4279,18 @@ async function loadOtoparks() {
     const res = await fetch('/api/otoparks');
     if (res.ok) {
       otoparks = await res.json();
-      otoparks.forEach(p => {
-        if (p.is_active !== undefined) p.isActive = p.is_active;
-        if (p.company_title !== undefined) p.companyTitle = p.company_title;
-        if (p.tax_office !== undefined) p.taxOffice = p.tax_office;
-        if (p.tax_number !== undefined) p.taxNumber = p.tax_number;
-        if (p.bank_name !== undefined) p.bankName = p.bank_name;
-        if (p.price_employee !== undefined) p.priceEmployee = p.price_employee;
-        if (p.price_external !== undefined) p.priceExternal = p.price_external;
-        if (p.support_phone !== undefined) p.supportPhone = p.support_phone;
-      });
+        otoparks.forEach(p => {
+          if (p.is_active !== undefined) p.isActive = p.is_active;
+          if (p.company_title !== undefined) p.companyTitle = p.company_title;
+          if (p.tax_office !== undefined) p.taxOffice = p.tax_office;
+          if (p.tax_number !== undefined) p.taxNumber = p.tax_number;
+          if (p.bank_name !== undefined) p.bankName = p.bank_name;
+          if (p.price_employee !== undefined) p.priceEmployee = p.price_employee;
+          if (p.price_external !== undefined) p.priceExternal = p.price_external;
+          if (p.support_phone !== undefined) p.supportPhone = p.support_phone;
+          if (p.notification_emails !== undefined) p.notificationEmails = p.notification_emails;
+          if (p.notification_type !== undefined) p.notificationType = p.notification_type;
+        });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     }
   } catch (err) {
@@ -4315,6 +4319,8 @@ async function saveOtoparkConfig(event) {
   const priceExternalVal = document.getElementById('edit-otopark-price-ext').value.trim().toLocaleUpperCase('tr-TR');
   const supportPhoneVal = document.getElementById('edit-otopark-support').value.trim();
   const statusVal = document.getElementById('edit-otopark-status').value;
+  const notificationEmailsVal = document.getElementById('edit-otopark-notif-emails').value.trim();
+  const notificationTypeVal = document.getElementById('edit-otopark-notif-type').value;
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   let existingTemplates = undefined;
@@ -4339,7 +4345,9 @@ async function saveOtoparkConfig(event) {
     priceExternal: priceExternalVal,
     supportPhone: supportPhoneVal,
     isActive: statusVal === 'active',
-    templates: existingTemplates
+    templates: existingTemplates,
+    notificationEmails: notificationEmailsVal,
+    notificationType: notificationTypeVal
   };
 
   try {

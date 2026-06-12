@@ -63,11 +63,7 @@ Konu: ${subject}
           name: senderName,
           email: senderEmail
         },
-        to: [
-          {
-            email: to
-          }
-        ],
+        to: to.split(",").map(email => ({ email: email.trim() })).filter(item => item.email),
         subject: subject,
         htmlContent: wrappedHtml
       })

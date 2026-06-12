@@ -126,7 +126,9 @@ export async function onRequest(context) {
         priceExternal,
         supportPhone,
         isActive,
-        templates
+        templates,
+        notificationEmails,
+        notificationType
       } = payload;
 
       if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
@@ -144,7 +146,9 @@ export async function onRequest(context) {
         price_employee: priceEmployee,
         price_external: priceExternal,
         support_phone: supportPhone,
-        is_active: isActive !== false
+        is_active: isActive !== false,
+        notification_emails: notificationEmails || null,
+        notification_type: notificationType || 'none'
       };
 
       if (templates !== undefined) {
