@@ -7600,7 +7600,7 @@ async function saveSystemSettings(event) {
   }
 }
 
-async function runCronManually(event) {
+async function runCronManually(event, runType = 'all') {
   if (event) event.preventDefault();
 
   const token = localStorage.getItem('parkexpert_token');
@@ -7609,7 +7609,11 @@ async function runCronManually(event) {
     return;
   }
 
-  const btn = document.getElementById('btn-run-cron-manually');
+  let btnId = 'btn-run-cron-manually';
+  if (runType === 'reminders') btnId = 'btn-run-reminders-manually';
+  else if (runType === 'summaries') btnId = 'btn-run-summaries-manually';
+
+  const btn = document.getElementById(btnId);
   if (!btn) return;
 
   const originalHTML = btn.innerHTML;
@@ -7617,7 +7621,7 @@ async function runCronManually(event) {
   btn.innerHTML = '<span class="ocr-spinner"></span> <span>Çalıştırılıyor...</span>';
 
   try {
-    const res = await fetch('/api/cron_reminders', {
+    const res = await fetch(`/api/cron_reminders?run=${runType}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -7631,23 +7635,31 @@ async function runCronManually(event) {
 
     const data = await res.json();
     
-    let msg = "Süre hatırlatıcıları ve günlük özet raporları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
+    let msg = "";
+    if (runType === 'reminders') {
+      msg = "Müşteri bitiş hatırlatıcıları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
+    } else if (runType === 'summaries') {
+      msg = "Günlük özet raporları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
+    } else {
+      msg = "Süre hatırlatıcıları ve günlük özet raporları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
+    }
+
     if (data.results && Array.isArray(data.results)) {
       data.results.forEach(r => {
         if (r.daysLeft !== undefined) {
           msg += `- Bitişine ${r.daysLeft} gün kalanlar: İşlenen: ${r.processed}, Başarılı: ${r.success}, Başarısız: ${r.failed}\n`;
         } else if (r.message) {
-          msg += `- Müşteri Bildirimleri: ${r.message}\n`;
+          msg += `- Durum: ${r.message}\n`;
         }
       });
     } else {
-      msg += data.message || "Tüm kanallar başarıyla işlendi.";
+      msg += data.message || "Tüm işlemler başarıyla tamamlandı.";
     }
 
     alert(msg);
   } catch (err) {
     console.error("Failed to run cron manually:", err);
-    alert(`Cron Tetikleme Başarısız!\n\nHata: ${err.message}`);
+    alert(`Tetikleme Başarısız!\n\nHata: ${err.message}`);
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHTML;

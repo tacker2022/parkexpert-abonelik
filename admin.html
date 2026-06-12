@@ -811,15 +811,33 @@
                 <span>Otomatik Bitiş Hatırlatıcıları (Cron)</span>
               </h4>
 
-              <!-- Manual Cron Trigger Option -->
-              <div style="background: rgba(15, 59, 162, 0.05); border: 1px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 0.15rem;">
-                  <span style="font-size: 0.8rem; color: var(--color-primary-dark); font-weight: 700;">Hatırlatıcıları & Özet Raporları Tetikleyin</span>
-                  <span style="font-size: 0.725rem; color: var(--color-text-muted);">Süre hatırlatmalarını kontrol eder ve son 24 saat içinde yeni başvuru almış otoparklar için günlük raporları anında gönderir.</span>
+              <!-- Manual Cron Trigger Options -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <!-- 1. Customer Reminders Trigger -->
+                <div style="background: rgba(15, 59, 162, 0.03); border: 1px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
+                  <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                    <span style="font-size: 0.8rem; color: var(--color-primary-dark); font-weight: 700; display: flex; align-items: center; gap: 0.3rem;">
+                      <i data-lucide="bell" style="width: 14px; height: 14px; color: var(--color-primary);"></i> Müşteri Hatırlatıcıları
+                    </span>
+                    <span style="font-size: 0.725rem; color: var(--color-text-muted);">Abonelik bitiş tarihi yaklaşan müşterilere otomatik SMS/WhatsApp/E-posta uyarılarını şimdi gönderir.</span>
+                  </div>
+                  <button type="button" onclick="runCronManually(event, 'reminders')" id="btn-run-reminders-manually" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); width: 100%; text-align: center;">
+                    Müşteri Uyarılarını Tetikle
+                  </button>
                 </div>
-                <button type="button" onclick="runCronManually(event)" id="btn-run-cron-manually" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); white-space: nowrap;">
-                  Şimdi Çalıştır (Tetikle)
-                </button>
+
+                <!-- 2. Daily Summary Trigger -->
+                <div style="background: rgba(15, 59, 162, 0.03); border: 1px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
+                  <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                    <span style="font-size: 0.8rem; color: var(--color-primary-dark); font-weight: 700; display: flex; align-items: center; gap: 0.3rem;">
+                      <i data-lucide="mail" style="width: 14px; height: 14px; color: var(--color-primary);"></i> Günlük Özet Raporları
+                    </span>
+                    <span style="font-size: 0.725rem; color: var(--color-text-muted);">Son 24 saat içinde yeni başvuru almış tüm otoparkların günlük özet e-postalarını yöneticilere şimdi gönderir.</span>
+                  </div>
+                  <button type="button" onclick="runCronManually(event, 'summaries')" id="btn-run-summaries-manually" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); width: 100%; text-align: center;">
+                    Günlük Raporları Tetikle
+                  </button>
+                </div>
               </div>
 
               <!-- Toggle Reminders -->
