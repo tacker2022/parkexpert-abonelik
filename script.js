@@ -7600,6 +7600,56 @@ async function saveSystemSettings(event) {
   }
 }
 
+async function runCronManually(event) {
+  if (event) event.preventDefault();
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  const btn = document.getElementById('btn-run-cron-manually');
+  if (!btn) return;
+
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ocr-spinner"></span> <span>Çalıştırılıyor...</span>';
+
+  try {
+    const res = await fetch('/api/cron_reminders', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Cron tetiklenirken sunucu hatası oluştu.");
+    }
+
+    const data = await res.json();
+    
+    let msg = "Süre hatırlatıcıları ve günlük özet raporları başarıyla tetiklendi! ✅\n\nSonuçlar:\n";
+    if (data.results && Array.isArray(data.results)) {
+      data.results.forEach(r => {
+        msg += `- Bitişine ${r.daysLeft} gün kalanlar: İşlenen: ${r.processed}, Başarılı: ${r.success}, Başarısız: ${r.failed}\n`;
+      });
+    } else {
+      msg += data.message || "Tüm kanallar başarıyla işlendi.";
+    }
+
+    alert(msg);
+  } catch (err) {
+    console.error("Failed to run cron manually:", err);
+    alert(`Cron Tetikleme Başarısız!\n\nHata: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
 window.activeTemplates = {};
 window.currentTemplateTab = 'apply';
 

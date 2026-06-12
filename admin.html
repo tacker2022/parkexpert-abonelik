@@ -811,6 +811,17 @@
                 <span>Otomatik Bitiş Hatırlatıcıları (Cron)</span>
               </h4>
 
+              <!-- Manual Cron Trigger Option -->
+              <div style="background: rgba(15, 59, 162, 0.05); border: 1px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                  <span style="font-size: 0.8rem; color: var(--color-primary-dark); font-weight: 700;">Hatırlatıcıları & Özet Raporları Tetikleyin</span>
+                  <span style="font-size: 0.725rem; color: var(--color-text-muted);">Süre hatırlatmalarını kontrol eder ve son 24 saat içinde yeni başvuru almış otoparklar için günlük raporları anında gönderir.</span>
+                </div>
+                <button type="button" onclick="runCronManually(event)" id="btn-run-cron-manually" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); white-space: nowrap;">
+                  Şimdi Çalıştır (Tetikle)
+                </button>
+              </div>
+
               <!-- Toggle Reminders -->
               <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px dashed var(--color-border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.25rem;">

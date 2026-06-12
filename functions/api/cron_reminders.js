@@ -38,10 +38,71 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
   }
 
-  // 1. Verify Authorization (secure trigger)
+  // 1. Verify Authorization (either Bearer cronSecret OR Bearer adminToken)
   const authHeader = context.request.headers.get("Authorization");
-  if (authHeader !== `Bearer ${cronSecret}`) {
-    return new Response(JSON.stringify({ error: "Unauthorized cron trigger. Invalid or missing secret." }), { status: 401, headers });
+  let isAuthorized = false;
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    if (token === cronSecret) {
+      isAuthorized = true;
+    } else {
+      // Validate as admin JWT token
+      const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
+      
+      const verifyTokenInline = async (tok, sec) => {
+        try {
+          const parts = tok.split(".");
+          if (parts.length !== 2) return null;
+          
+          const binString = atob(parts[0]);
+          const bytes = new Uint8Array(binString.length);
+          for (let i = 0; i < binString.length; i++) {
+            bytes[i] = binString.charCodeAt(i);
+          }
+          const payloadStr = new TextDecoder().decode(bytes);
+          const signatureHex = parts[1];
+          
+          const encoder = new TextEncoder();
+          const keyData = encoder.encode(sec);
+          const key = await crypto.subtle.importKey(
+            "raw",
+            keyData,
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"]
+          );
+          
+          const signatureBuffer = await crypto.subtle.sign(
+            "HMAC",
+            key,
+            encoder.encode(payloadStr)
+          );
+          const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+          const reSignatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
+          
+          if (signatureHex === reSignatureHex) {
+            const payload = JSON.parse(payloadStr);
+            if (payload.exp && payload.exp < Date.now()) {
+              return null; // Expired
+            }
+            return payload;
+          }
+        } catch (e) {
+          return null;
+        }
+        return null;
+      };
+
+      const user = await verifyTokenInline(token, jwtSecret);
+      if (user && user.role === "superadmin") {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized access. Invalid or missing credentials." }), { status: 401, headers });
   }
 
   try {
