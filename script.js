@@ -758,6 +758,23 @@ function initWizardController() {
 
   // Handle corporate type billing initial labels sync
   handleBillingCorpTypeChange();
+
+  // Setup step indicators click listeners
+  setupStepIndicatorsClickListeners();
+}
+
+function setupStepIndicatorsClickListeners() {
+  const indicators = document.querySelectorAll('.step-indicator');
+  indicators.forEach(ind => {
+    ind.addEventListener('click', () => {
+      const targetStep = parseInt(ind.getAttribute('data-step'));
+      // Only allow navigating back to previously completed steps
+      if (targetStep < currentStep && currentStep < 5) {
+        currentStep = targetStep;
+        updateWizardUI();
+      }
+    });
+  });
 }
 
 // ==========================================================================
@@ -1640,12 +1657,15 @@ function updateWizardUI() {
   indicators.forEach(ind => {
     const stepNum = parseInt(ind.getAttribute('data-step'));
     
-    ind.classList.remove('active', 'completed');
+    ind.classList.remove('active', 'completed', 'clickable');
     
     if (stepNum === currentStep) {
       ind.classList.add('active');
     } else if (stepNum < currentStep) {
       ind.classList.add('completed');
+      if (currentStep < 5) {
+        ind.classList.add('clickable');
+      }
     }
   });
 
