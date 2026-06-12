@@ -712,6 +712,16 @@ function initWizardController() {
     });
   }
 
+  const emailInput = document.getElementById('email-address');
+  if (emailInput) {
+    emailInput.addEventListener('input', (e) => {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      e.target.value = e.target.value.toLowerCase().replace(/\s/g, '');
+      e.target.setSelectionRange(start, end);
+    });
+  }
+
   // Setup Date picker default min as today
   const dateInput = document.getElementById('start-date');
   if (dateInput) {
@@ -1885,7 +1895,7 @@ async function handleFormSubmit() {
   const startDate = document.getElementById('start-date').value;
   const tcNo = document.getElementById('tc-identity').value.trim();
   const phone = document.getElementById('phone-number').value.trim();
-  const email = document.getElementById('email-address').value.trim();
+  const email = document.getElementById('email-address').value.trim().toLowerCase();
   const plate = document.getElementById('license-plate').value.trim().toUpperCase();
   const carModel = document.getElementById('car-model').value.trim().toLocaleUpperCase('tr-TR');
   const driverName = document.getElementById('driver-name').value.trim().toLocaleUpperCase('tr-TR');
