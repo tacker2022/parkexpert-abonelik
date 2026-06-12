@@ -13,6 +13,8 @@ function resolveTemplate(template, vars) {
   return result;
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const runType = url.searchParams.get("run") || "all";
@@ -313,6 +315,12 @@ export async function onRequest(context) {
             } catch (singleAppErr) {
               failCount++;
               errors.push(`${app.phone}: ${singleAppErr.message}`);
+            }
+
+            // Anti-ban human-like random delay (2 to 5 seconds) after processing each application
+            if (expiringApps.indexOf(app) < expiringApps.length - 1) {
+              const delayMs = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
+              await sleep(delayMs);
             }
           }
 
