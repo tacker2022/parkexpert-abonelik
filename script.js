@@ -2063,7 +2063,7 @@ function triggerWhatsAppNotification(app) {
     'whatsapp-sim-code': app.id,
     'whatsapp-sim-plate': app.plate,
     'whatsapp-sim-location': app.parking_location,
-    'whatsapp-sim-price': app.subscription_type.includes('Kurumsal') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL'),
+    'whatsapp-sim-price': (app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL'),
     'whatsapp-sim-phone': park.supportPhone || '0216 504 47 22',
     'whatsapp-sim-bank': park.bankName || 'Vakıfbank',
     'whatsapp-sim-iban': park.iban || 'TR23 0001 5001 5800 7302 9104 88',
@@ -3435,7 +3435,7 @@ function adminOpenWhatsAppSimulation(appId) {
           <div><strong>📦 Başvuru Kodu:</strong> <span style="color: #075e54; font-weight: 700;">${app.id}</span></div>
           <div><strong>🚗 Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700;">${app.plate}</span></div>
           <div><strong>📍 Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
-          <div><strong>💸 Personel / Harici Fiyatı:</strong> <span>${app.subscription_type.includes('Kurumsal') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL')}</span></div>
+          <div><strong>💸 Personel / Harici Fiyatı:</strong> <span>${(app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL')}</span></div>
           <div><strong>📞 Destek Telefonu:</strong> <span>${park.supportPhone || '0216 504 47 22'}</span></div>
         </div>
 
@@ -3443,7 +3443,7 @@ function adminOpenWhatsAppSimulation(appId) {
           💳 <strong>Ödeme ve Dekont Bilgilendirmesi:</strong>
         </p>
         <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
-          Yüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz <strong>en geç 1 saat içerisinde</strong> onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.
+          Yüklemiş olduğunuz ödeme dekontunuz ve başvuru bilgileriniz yetkililerimiz tarafından incelenmek üzere teslim alınmıştır. Kontroller tamamlanıp başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktifleşecektir.
         </p>
       `;
     }
@@ -6222,7 +6222,7 @@ function updateAnalyticsCharts(apps) {
   apps.forEach(app => {
     if (app.status === 'Onaylandı') {
       const park = otoparks.find(p => p.name === app.parking_location) || {};
-      const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+      const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü';
       const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
       const price = parsePrice(priceStr);
 
@@ -6310,7 +6310,7 @@ function updateAnalyticsCharts(apps) {
         const name = app.parking_location;
 
         const park = otoparks.find(p => p.name === name) || {};
-        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && name !== 'Birlik Sanayi Sitesi - Beylikdüzü';
         const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
         const price = parsePrice(priceStr);
 

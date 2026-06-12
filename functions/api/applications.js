@@ -294,7 +294,8 @@ export async function onRequest(context) {
               const bankName = park.bank_name || "Vakıfbank";
               const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
               const companyTitle = park.company_title || "PARKEXPERT";
-              const price = updatedApp.subscription_type?.includes("Kurumsal") 
+              const isBirlikSanayi = appLocation === "Birlik Sanayi Sitesi - Beylikdüzü";
+              const price = (updatedApp.subscription_type?.includes("Kurumsal") && !isBirlikSanayi) 
                 ? (park.price_external || "2400 TL") 
                 : (park.price_employee || "1200 TL");
 

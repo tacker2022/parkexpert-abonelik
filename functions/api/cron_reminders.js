@@ -130,7 +130,8 @@ export async function onRequest(context) {
       for (const app of expiringApps) {
         try {
           const park = otoparks.find(p => p.name === app.parking_location) || {};
-          const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal');
+          const isBirlikSanayi = app.parking_location === "Birlik Sanayi Sitesi - Beylikdüzü";
+          const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && !isBirlikSanayi;
           const price = isKurumsal 
             ? (park.price_external || "2400 TL") 
             : (park.price_employee || "1200 TL");

@@ -176,7 +176,8 @@ export async function onRequest(context) {
           const bankName = park.bank_name || "Vakıfbank";
           const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
           const companyTitle = park.company_title || "PARKEXPERT";
-          const price = subscriptionType.includes("Kurumsal") 
+          const isBirlikSanayi = parkingLocation === "Birlik Sanayi Sitesi - Beylikdüzü";
+          const price = (subscriptionType.includes("Kurumsal") && !isBirlikSanayi) 
             ? (park.price_external || "2400 TL") 
             : (park.price_employee || "1200 TL");
           const supportPhone = park.support_phone || "0216 504 47 22";
@@ -214,7 +215,7 @@ export async function onRequest(context) {
             if (applyTemplates.whatsapp) {
               message = replaceVars(applyTemplates.whatsapp, templateVars);
             } else {
-              message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz yetkililerimiz tarafından incelenerek başvurunuz en geç 1 saat içerisinde onaylanacaktır. Başvurunuz onaylandığında plaka tanıma sistemimiz anında aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}\nAlıcı: ${companyTitle}`;
+              message = `Merhaba Sayın ${fullName}, 🌟\n\nAbonelik başvuru bilgileriniz ve yüklediğiniz belgeler yetkililerimizce kontrol edilmek üzere başarıyla teslim alınmıştır! Yapılacak hızlı kontrollerin ardından aboneliğiniz onaylanacaktır. Başvuru detaylarınız aşağıda yer almaktadır:\n\n📦 Başvuru Kodu: ${appId}\n🚗 Araç Plakası: ${plateNumber}\n📍 Otopark Konumu: ${parkingLocation}\n💸 Ücret: ${price}\n📞 Destek Telefonu: ${supportPhone}\n\n💳 Ödeme ve Dekont Bilgilendirmesi:\nYüklemiş olduğunuz ödeme dekontunuz ve başvuru bilgileriniz yetkililerimiz tarafından incelenmek üzere teslim alınmıştır. Kontroller tamamlanıp başvurunuz onaylandığında plaka tanıma sistemimiz otomatik olarak aktifleşecektir.\n\nBanka: ${bankName}\nIBAN: ${iban}\nAlıcı: ${companyTitle}`;
             }
             await sendWhatsApp(phone, message, context.env);
           }
