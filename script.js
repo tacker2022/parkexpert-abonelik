@@ -7865,6 +7865,19 @@ function filterSMSLogs(filterType) {
   renderSMSReportsTable(filtered);
 }
 
+function formatTurkishPhoneNumber(phone) {
+  if (!phone) return '-';
+  let clean = phone.toString().replace(/\D/g, '');
+  if (clean.length === 10) {
+    return `0 (${clean.substring(0, 3)}) ${clean.substring(3, 6)} ${clean.substring(6, 8)} ${clean.substring(8, 10)}`;
+  } else if (clean.length === 11 && clean.startsWith('0')) {
+    return `0 (${clean.substring(1, 4)}) ${clean.substring(4, 7)} ${clean.substring(7, 9)} ${clean.substring(9, 11)}`;
+  } else if (clean.length === 12 && clean.startsWith('90')) {
+    return `0 (${clean.substring(2, 5)}) ${clean.substring(5, 8)} ${clean.substring(8, 10)} ${clean.substring(10, 12)}`;
+  }
+  return phone;
+}
+
 function renderSMSReportsTable(logs) {
   const tbody = document.getElementById('sms-reports-table-body');
   if (!tbody) return;
@@ -7872,8 +7885,11 @@ function renderSMSReportsTable(logs) {
   if (logs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
-          <span>SMS kaydı bulunamadı.</span>
+        <td colspan="6" style="text-align: center; padding: 4rem; color: var(--color-text-muted);">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+            <i data-lucide="mail-warning" style="width: 32px; height: 32px; color: #94a3b8;"></i>
+            <span style="font-size: 0.9rem; font-weight: 500;">Herhangi bir SMS gönderim kaydı bulunamadı.</span>
+          </div>
         </td>
       </tr>
     `;
@@ -7893,37 +7909,93 @@ function renderSMSReportsTable(logs) {
     }
 
     // Determine status badge style
-    let badgeStyle = 'background: #f1f5f9; color: #475569;'; // default fallback
+    let badgeStyle = 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;'; // default fallback
     let statusText = log.status || 'Beklemede';
+    let statusIcon = 'info';
 
     if (statusText === 'İletildi') {
-      badgeStyle = 'background: #def7ec; color: #03543f;'; // green
+      badgeStyle = 'background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;'; // green
+      statusIcon = 'check-circle-2';
     } else if (statusText === 'Simüle Edildi') {
-      badgeStyle = 'background: #e1effe; color: #1e429f;'; // blue
+      badgeStyle = 'background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;'; // blue
+      statusIcon = 'laptop';
     } else if (statusText === 'Zamanlandı') {
-      badgeStyle = 'background: #fdf2f2; color: #9b1c1c; border: 1px dashed #f8b4b4;'; // light pink border for future SMS
-      statusText = `⏳ Zamanlandı (${scheduledStr})`;
+      badgeStyle = 'background: #faf5ff; color: #6b21a8; border: 1px dashed #d8b4fe;'; // purple/scheduled
+      statusText = 'Zamanlandı';
+      statusIcon = 'alarm-clock';
     } else if (statusText === 'Beklemede') {
-      badgeStyle = 'background: #fef08a; color: #713f12;'; // yellow
+      badgeStyle = 'background: #fefcbf; color: #744210; border: 1px solid #fef08a;'; // yellow
+      statusIcon = 'clock';
     } else if (statusText.startsWith('Hata') || statusText.startsWith('İletilemedi')) {
-      badgeStyle = 'background: #fde8e8; color: #9b1c1c;'; // red
+      badgeStyle = 'background: #fdf2f2; color: #9b1c1c; border: 1px solid #fcd3d3;'; // red
+      statusIcon = 'alert-triangle';
     }
 
+    const formattedPhone = formatTurkishPhoneNumber(log.phone);
+
+    // Format job ID representation
+    const displayJobId = log.job_id 
+      ? (log.job_id.length > 12 
+          ? log.job_id.substring(0, 6) + '...' + log.job_id.substring(log.job_id.length - 6) 
+          : log.job_id) 
+      : '-';
+
     return `
-      <tr style="border-bottom: 1px solid var(--color-border-light);">
-        <td style="padding: 1rem 1.5rem; font-weight: 600; color: var(--color-text-dark);">${log.phone}</td>
-        <td style="padding: 1rem 1.5rem; color: var(--color-text-dark); font-weight: 500;">${log.location || 'Sistem'}</td>
-        <td style="padding: 1rem 1.5rem; max-width: 350px; white-space: normal; word-break: break-word; line-height: 1.4;">${log.message}</td>
-        <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">
-          <div style="display: flex; flex-direction: column; gap: 0.15rem;">
-            <span>${createdStr}</span>
-            ${log.scheduled_at ? `<span style="font-size: 0.75rem; color: #7c3aed; font-weight: 600;">⏰ Planlanan: ${scheduledStr}</span>` : ''}
+      <tr style="border-bottom: 1px solid var(--color-border-light); transition: background-color var(--transition-fast);">
+        <!-- Recipient Phone -->
+        <td style="padding: 1.25rem 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="background: rgba(15, 59, 162, 0.08); padding: 0.4rem; border-radius: var(--radius-sm); color: var(--color-primary); display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
+            </div>
+            <span style="font-weight: 700; color: var(--color-text-dark); font-size: 0.875rem; font-family: var(--font-mono, monospace); letter-spacing: 0.02em;">${formattedPhone}</span>
           </div>
         </td>
-        <td style="padding: 1rem 1.5rem; font-family: monospace; color: var(--color-text-muted); font-size: 0.8rem;">${log.job_id || '-'}</td>
-        <td style="padding: 1rem 1.5rem;">
-          <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.775rem; font-weight: 700; ${badgeStyle}">
-            ${statusText}
+
+        <!-- Location -->
+        <td style="padding: 1.25rem 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.35rem; font-weight: 600; color: var(--color-text-dark); font-size: 0.85rem;">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px; color: #64748b;"></i>
+            <span>${log.location || 'Sistem'}</span>
+          </div>
+        </td>
+
+        <!-- Message Content -->
+        <td style="padding: 1.25rem 1.5rem; max-width: 400px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem 0.85rem; max-height: 85px; overflow-y: auto; font-size: 0.8rem; color: #475569; line-height: 1.45; font-family: inherit; white-space: pre-wrap; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+            ${log.message}
+          </div>
+        </td>
+
+        <!-- Timestamp -->
+        <td style="padding: 1.25rem 1.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.8rem; color: var(--color-text-muted);">
+            <div style="display: flex; align-items: center; gap: 0.3rem; color: var(--color-text-dark); font-weight: 500;">
+              <i data-lucide="calendar" style="width: 13px; height: 13px; color: #94a3b8;"></i>
+              <span>${createdStr}</span>
+            </div>
+            ${log.scheduled_at ? `
+            <div style="display: flex; align-items: center; gap: 0.3rem; color: #7c3aed; font-weight: 600; font-size: 0.75rem;">
+              <i data-lucide="alarm-clock" style="width: 13px; height: 13px;"></i>
+              <span>Planlanan: ${scheduledStr}</span>
+            </div>` : ''}
+          </div>
+        </td>
+
+        <!-- Netgsm Job ID -->
+        <td style="padding: 1.25rem 1.5rem;">
+          ${log.job_id ? `
+          <span style="font-family: var(--font-mono, monospace); background: #f1f5f9; padding: 0.2rem 0.45rem; border-radius: 4px; font-size: 0.75rem; color: #475569; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 500;" title="${log.job_id}">
+            <i data-lucide="hash" style="width: 11px; height: 11px; color: #94a3b8;"></i>
+            <span>${displayJobId}</span>
+          </span>` : `<span style="color: #94a3b8;">-</span>`}
+        </td>
+
+        <!-- Status -->
+        <td style="padding: 1.25rem 1.5rem;">
+          <span style="display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; ${badgeStyle}">
+            <i data-lucide="${statusIcon}" style="width: 12px; height: 12px;"></i>
+            <span>${statusText}</span>
           </span>
         </td>
       </tr>
