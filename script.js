@@ -4266,7 +4266,7 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
   document.getElementById('edit-otopark-notif-emails').value = park.notificationEmails || '';
-  document.getElementById('edit-otopark-notif-type').value = park.notificationType || 'none';
+  document.getElementById('edit-otopark-summary-emails').value = park.summaryEmails || '';
 
   document.getElementById('otopark-modal-title').textContent = 'Otopark İşletmesi Düzenle';
   openModal('modal-otopark-edit');
@@ -4289,7 +4289,7 @@ async function loadOtoparks() {
           if (p.price_external !== undefined) p.priceExternal = p.price_external;
           if (p.support_phone !== undefined) p.supportPhone = p.support_phone;
           if (p.notification_emails !== undefined) p.notificationEmails = p.notification_emails;
-          if (p.notification_type !== undefined) p.notificationType = p.notification_type;
+          if (p.summary_emails !== undefined) p.summaryEmails = p.summary_emails;
         });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     }
@@ -4320,7 +4320,7 @@ async function saveOtoparkConfig(event) {
   const supportPhoneVal = document.getElementById('edit-otopark-support').value.trim();
   const statusVal = document.getElementById('edit-otopark-status').value;
   const notificationEmailsVal = document.getElementById('edit-otopark-notif-emails').value.trim();
-  const notificationTypeVal = document.getElementById('edit-otopark-notif-type').value;
+  const summaryEmailsVal = document.getElementById('edit-otopark-summary-emails').value.trim();
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   let existingTemplates = undefined;
@@ -4347,7 +4347,7 @@ async function saveOtoparkConfig(event) {
     isActive: statusVal === 'active',
     templates: existingTemplates,
     notificationEmails: notificationEmailsVal,
-    notificationType: notificationTypeVal
+    summaryEmails: summaryEmailsVal
   };
 
   try {

@@ -278,7 +278,7 @@ export async function onRequest(context) {
         const recentApps = await recentAppsRes.json();
         
         for (const park of otoparks) {
-          if (park.notification_type === "daily_summary" && park.notification_emails) {
+          if (park.summary_emails) {
             const parkApps = recentApps.filter(app => app.parking_location === park.name);
             if (parkApps.length > 0) {
               // Construct HTML Summary
@@ -321,7 +321,7 @@ export async function onRequest(context) {
               `;
 
               await sendEmail({
-                to: park.notification_emails,
+                to: park.summary_emails,
                 subject: `📊 Günlük Başvuru Raporu - ${park.name}`,
                 html: htmlContent,
                 env: context.env

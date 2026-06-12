@@ -272,8 +272,7 @@ export async function onRequest(context) {
             await sendEmail({ to: email, subject: emailSubject, html: emailHtml, env: context.env });
           }
 
-          // 4b. Dispatch Admin Email Notification if configured
-          if (park.notification_type === "realtime" && park.notification_emails) {
+          if (park.notification_emails) {
             const adminSubject = `🚨 [YENİ BAŞVURU] ${parkingLocation} - ${fullName} (${plateNumber})`;
             const adminHtml = `
               <h3 style="color: #0f3ba2; margin-top: 0;">🚨 Yeni Abonelik Başvurusu Alındı!</h3>
