@@ -1600,11 +1600,20 @@ function validateStep(step) {
   
   else if (step === 4) {
     const chkKvkkTerms = document.getElementById('chk-kvkk-terms');
+    const chkMarketing = document.getElementById('chk-marketing');
 
     if (chkKvkkTerms && !chkKvkkTerms.checked) {
       const errorEl = document.getElementById('error-chk-kvkk-terms');
       if (errorEl) errorEl.style.display = 'flex';
       const wrapper = document.getElementById('item-chk-kvkk-terms');
+      if (wrapper) wrapper.classList.add('is-invalid');
+      isValid = false;
+    }
+
+    if (chkMarketing && !chkMarketing.checked) {
+      const errorEl = document.getElementById('error-chk-marketing');
+      if (errorEl) errorEl.style.display = 'flex';
+      const wrapper = document.getElementById('item-chk-marketing');
       if (wrapper) wrapper.classList.add('is-invalid');
       isValid = false;
     }
