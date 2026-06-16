@@ -2740,8 +2740,8 @@ textarea.is-invalid {
   gap: 0.5rem;
   align-items: center;
   flex-grow: 1;
-  justify-content: flex-end;
-  max-width: 480px;
+  justify-content: flex-start;
+  max-width: 550px;
   width: 100%;
 }
 
@@ -2750,7 +2750,8 @@ textarea.is-invalid {
   flex-grow: 1;
 }
 
-.sms-search-wrapper i {
+.sms-search-wrapper i,
+.sms-search-wrapper svg {
   position: absolute;
   left: 12px;
   top: 50%;
