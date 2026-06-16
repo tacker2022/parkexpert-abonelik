@@ -7503,6 +7503,9 @@ async function loadSystemSettings() {
       }
     });
 
+    // Load backups list in settings panel
+    loadBackupsList();
+
   } catch (err) {
     console.error("Failed to load settings:", err);
     showToastNotification("Sistem Ayarları", "Sistem ayarları yüklenirken hata oluştu.", "alert-circle");
@@ -8652,6 +8655,194 @@ function downloadSMSReportsCSV() {
 }
 
 window.downloadSMSReportsCSV = downloadSMSReportsCSV;
+
+/* ==========================================================================
+   DATABASE BACKUPS MANAGEMENT FUNCTIONS
+   ========================================================================== */
+
+async function loadBackupsList() {
+  const container = document.getElementById('backup-list-container');
+  if (!container) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    container.innerHTML = '<span style="font-size: 0.8rem; color: var(--color-accent-red);">Oturum bulunamadı. Lütfen tekrar giriş yapın.</span>';
+    return;
+  }
+
+  container.innerHTML = '<span style="font-size: 0.8rem; color: var(--color-text-muted);"><span class="ocr-spinner"></span> Yedekler yükleniyor...</span>';
+
+  try {
+    const res = await fetch('/api/backups?action=list', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error('Yedekler listesi alınamadı.');
+    }
+
+    const data = await res.json();
+    if (!data.success) {
+      if (data.error === 'BACKUP_BUCKET_MISSING') {
+        container.innerHTML = `
+          <div style="background: rgba(245,158,11,0.05); border: 1px dashed rgba(245,158,11,0.25); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.75rem; color: #b45309; line-height: 1.5;">
+            <strong>Bilgi:</strong> ${data.message}<br><br>
+            Yedekleriniz şu anda GitHub Actions aracılığıyla Google Drive'a ve R2'ye otomatik olarak yedeklenmeye devam ediyor ancak panelde listelenmesi için Cloudflare Pages'te R2 binding ayarının (BACKUP_BUCKET) yapılması gereklidir.
+          </div>
+        `;
+      } else {
+        container.innerHTML = `<span style="font-size: 0.8rem; color: var(--color-accent-red);">${data.message || 'Bir hata oluştu.'}</span>`;
+      }
+      return;
+    }
+
+    const files = data.files || [];
+    if (files.length === 0) {
+      container.innerHTML = '<span style="font-size: 0.8rem; color: var(--color-text-muted);">Henüz alınmış bir veritabanı yedeği bulunmuyor.</span>';
+      return;
+    }
+
+    // Render table
+    let html = `
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.775rem; text-align: left; margin-top: 0.5rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--color-border-light); font-weight: 700; color: var(--color-primary-dark); height: 32px;">
+            <th style="padding: 0.25rem 0.5rem;">Tarih / Saat</th>
+            <th style="padding: 0.25rem 0.5rem;">Dosya Türü</th>
+            <th style="padding: 0.25rem 0.5rem; text-align: right; width: 80px;">Boyut</th>
+            <th style="padding: 0.25rem 0.5rem; text-align: right; width: 80px;">İndir</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    files.forEach(f => {
+      const dateObj = new Date(f.uploaded);
+      const displayTime = dateObj.toLocaleString('tr-TR');
+      const isExcel = f.key.endsWith('.xlsx');
+      const fileTypeLabel = isExcel ? 'Excel Rapor 📊' : 'Veritabanı Dump 💾';
+      const sizeMb = (f.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+      html += `
+        <tr style="border-bottom: 1px solid var(--color-border-light); height: 36px; transition: background var(--transition-fast);" onmouseover="this.style.background='rgba(15, 59, 162, 0.02)'" onmouseout="this.style.background='transparent'">
+          <td style="padding: 0.25rem 0.5rem; font-weight: 500;">${displayTime}</td>
+          <td style="padding: 0.25rem 0.5rem;"><code style="background:#f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px;">${fileTypeLabel}</code></td>
+          <td style="padding: 0.25rem 0.5rem; text-align: right; color: var(--color-text-muted);">${sizeMb}</td>
+          <td style="padding: 0.25rem 0.5rem; text-align: right;">
+            <button type="button" onclick="downloadBackupFile('${f.key}')" class="btn btn-secondary" style="padding: 0.15rem 0.5rem; font-size: 0.7rem; min-height: 24px; display: inline-flex; align-items: center; gap: 0.2rem;">
+              <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+              <span>İndir</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    container.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  } catch (error) {
+    console.error('loadBackupsList error:', error);
+    container.innerHTML = `<span style="font-size: 0.8rem; color: var(--color-accent-red);">Yedek listesi yüklenemedi: ${error.message}</span>`;
+  }
+}
+
+async function triggerManualBackup() {
+  const btn = document.getElementById('btn-trigger-backup');
+  if (!btn) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  if (!confirm("Manuel veritabanı yedekleme işlemini başlatmak istediğinize emin misiniz?\nBu işlem GitHub Actions üzerinde yedekleme workflow'unu tetikleyecektir.")) {
+    return;
+  }
+
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="ocr-spinner"></span> <span>Tetikleniyor...</span>';
+
+  try {
+    const res = await fetch('/api/backups?action=trigger', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Yedekleme tetiklenemedi.");
+
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      showToastNotification("Yedekleme", "Manuel yedekleme başarıyla tetiklendi.", "check-circle");
+    } else {
+      if (data.error === 'GITHUB_PAT_MISSING') {
+        alert("Hata: GITHUB_PAT (GitHub Personal Access Token) Cloudflare Dashboard'da tanımlanmış olmalıdır.\n\nEğer tanımlı değilse bu işlemi gerçekleştiremezsiniz. Ancak her gün sabaha karşı 06:00'da otomatik yedek alınmaya devam eder.");
+      } else {
+        alert(data.message || "Bir hata oluştu.");
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Tetikleme başarısız: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    setTimeout(loadBackupsList, 3000);
+  }
+}
+
+async function downloadBackupFile(filename) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/backups?action=download&file=${encodeURIComponent(filename)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("Yedek dosyası indirilemedi.");
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    showToastNotification("Dosya İndirme", `${filename} başarıyla indirildi.`, "check-circle");
+  } catch (err) {
+    console.error(err);
+    alert("İndirme hatası: " + err.message);
+  }
+}
+
+window.loadBackupsList = loadBackupsList;
+window.triggerManualBackup = triggerManualBackup;
+window.downloadBackupFile = downloadBackupFile;
 
 
 

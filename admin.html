@@ -951,6 +951,32 @@
               </div>
             </form>
           </div>
+
+          <!-- Database Backup Card -->
+          <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 2rem; max-width: 600px; margin-top: 1.5rem; box-shadow: var(--shadow-sm);">
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem;">
+              <i data-lucide="database" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+              <span>Veritabanı Yedekleme Yönetimi 🛡️</span>
+            </h4>
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.5;">
+              GitHub Actions üzerinden her gün 06:00'da (TSİ) otomatik yedek alınmakta ve Cloudflare R2 ile Google Drive hesaplarınıza yüklenmektedir. Buradan manuel yedekleme başlatabilir ve mevcut yedekleri indirebilirsiniz.
+            </p>
+
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+              <button type="button" onclick="triggerManualBackup()" id="btn-trigger-backup" class="btn btn-primary" style="min-height: 38px; padding: 0 1.25rem; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="play" style="width: 14px; height: 14px;"></i>
+                <span>Yedeklemeyi Şimdi Başlat</span>
+              </button>
+              <button type="button" onclick="loadBackupsList()" id="btn-refresh-backups" class="btn btn-secondary" style="min-height: 38px; padding: 0 1rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                <span>Yenile</span>
+              </button>
+            </div>
+
+            <div id="backup-list-container" style="max-height: 300px; overflow-y: auto;">
+              <span style="font-size: 0.8rem; color: var(--color-text-muted);">Yedekler yükleniyor...</span>
+            </div>
+          </div>
         </div>
 
         <!-- Panel 7: SMS Reports Dashboard -->
@@ -1865,6 +1891,6 @@
   <!-- Chart.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260609_1410"></script>
+  <script src="script.js?v=20260616_2035"></script>
 </body>
 </html>
