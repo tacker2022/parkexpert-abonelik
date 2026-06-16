@@ -13,6 +13,16 @@ function resolveTemplate(template, vars) {
   return result;
 }
 
+// Helper to mask first and last name for privacy compliance
+function maskName(name) {
+  if (!name) return "";
+  return name.trim().split(/\s+/).map(word => {
+    if (!word) return "";
+    if (word.length <= 2) return word;
+    return word.substring(0, 2) + "*".repeat(word.length - 2);
+  }).filter(Boolean).join(" ");
+}
+
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function onRequest(context) {
@@ -371,7 +381,7 @@ export async function onRequest(context) {
                   rowsHtml += `
                     <tr>
                       <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">${app.id}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd;">${app.full_name}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${maskName(app.full_name)}</td>
                       <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-transform: uppercase;">${app.plate_number || ""}</td>
                       <td style="padding: 8px; border: 1px solid #ddd;">${app.subscription_type || ""}</td>
                       <td style="padding: 8px; border: 1px solid #ddd;">${dateStr}</td>

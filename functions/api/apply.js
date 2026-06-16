@@ -2,6 +2,16 @@ import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
 import { sendSMS } from "./sms_helper.js";
 
+// Helper to mask first and last name for privacy compliance
+function maskName(name) {
+  if (!name) return "";
+  return name.trim().split(/\s+/).map(word => {
+    if (!word) return "";
+    if (word.length <= 2) return word;
+    return word.substring(0, 2) + "*".repeat(word.length - 2);
+  }).filter(Boolean).join(" ");
+}
+
 export async function onRequest(context) {
   const origin = context.request.headers.get("Origin") || "";
   const allowOrigin = (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin === "https://parkexpertabonelik.net")
@@ -273,13 +283,14 @@ export async function onRequest(context) {
           }
 
           if (park.notification_emails) {
-            const adminSubject = `🚨 [YENİ BAŞVURU] ${parkingLocation} - ${fullName} (${plateNumber})`;
+            const maskedFullName = maskName(fullName);
+            const adminSubject = `🚨 [YENİ BAŞVURU] ${parkingLocation} - ${maskedFullName} (${plateNumber})`;
             const adminHtml = `
               <h3 style="color: #0f3ba2; margin-top: 0;">🚨 Yeni Abonelik Başvurusu Alındı!</h3>
               <p><strong>Otopark Konumu:</strong> ${parkingLocation}</p>
               <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-left: 4px solid #0f3ba2;">
                 <div style="font-size: 0.9rem; line-height: 1.6; color: #334155;">
-                  <div><strong>Müşteri Ad Soyad:</strong> ${fullName}</div>
+                  <div><strong>Müşteri Ad Soyad:</strong> ${maskedFullName}</div>
                   <div><strong>Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: bold;">${plateNumber}</span></div>
                   <div><strong>Abonelik Tipi:</strong> ${subscriptionType}</div>
                   <div><strong>Takip No:</strong> <span style="font-family: monospace; font-weight: bold; color: #0f3ba2;">${appId}</span></div>
