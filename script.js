@@ -7909,7 +7909,13 @@ ALTER TABLE sms_logs DISABLE ROW LEVEL SECURITY;</pre>
       throw new Error(errData.error || "SMS raporları yüklenirken hata oluştu.");
     }
 
-    window.allSMSLogs = await res.json();
+    const rawLogs = await res.json();
+    window.allSMSLogs = rawLogs.map(log => {
+      if (log.status === 'Durum: 16') {
+        log.status = 'İletilemedi (İYS Engeli)';
+      }
+      return log;
+    });
     updateSMSCountBadges();
     filterSMSLogs();
 
@@ -8044,6 +8050,9 @@ function renderSMSReportsTable(logs) {
     // Determine status badge style
     let badgeStyle = 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;'; // default fallback
     let statusText = log.status || 'Beklemede';
+    if (statusText === 'Durum: 16') {
+      statusText = 'İletilemedi (İYS Engeli)';
+    }
     let statusIcon = 'info';
 
     if (statusText === 'İletildi') {
