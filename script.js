@@ -1498,7 +1498,7 @@ function validateStep(step) {
     }
 
     // Validation Email
-    const emailRegex = /^[^s@]+@[^s@]+\.[^s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.value || !emailRegex.test(email.value)) {
       document.getElementById('error-email').style.display = 'flex';
       email.classList.add('is-invalid');
