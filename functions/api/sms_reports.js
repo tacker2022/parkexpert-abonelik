@@ -153,6 +153,8 @@ export async function onRequest(context) {
                   newStatus = log.scheduled_at ? "Zamanlandı" : "Beklemede";
                 } else if (["2", "3", "4"].includes(statusCode)) {
                   newStatus = `İletilemedi (Kod ${statusCode})`;
+                } else if (statusCode === "16") {
+                  newStatus = "İletilemedi (İYS Engeli)";
                 } else if (statusCode) {
                   newStatus = `Durum: ${statusCode}`;
                 }
