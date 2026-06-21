@@ -37,6 +37,14 @@ async function signToken(data, secret, clientIp) {
   return base64Encode(payloadStr) + "." + signatureHex;
 }
 
+async function hashPassword(password, salt = "parkexpert-salt-key-98765") {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function getLockoutState(username, supabaseUrl, supabaseAnonKey) {
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/login_attempts?username=eq.${encodeURIComponent(username.toLowerCase())}&select=*`, {
@@ -189,8 +197,8 @@ export async function onRequest(context) {
         };
       }
     } else {
-      // Query admin user in Supabase
-      const res = await fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${username.toLowerCase()}&password=eq.${password}&select=*`, {
+      // Query admin user in Supabase by username only
+      const res = await fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${username.toLowerCase()}&select=*`, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
@@ -201,15 +209,53 @@ export async function onRequest(context) {
         const admins = await res.json();
         if (admins.length > 0) {
           const admin = admins[0];
-          userObj = {
-            id: admin.id,
-            name: admin.name,
-            username: admin.username,
-            role: "admin",
-            otoparks: admin.otoparks || [],
-            phone: admin.phone,
-            email: admin.email
-          };
+          const salt = context.env.PASSWORD_SALT || "parkexpert-salt-key-98765";
+          const inputHash = await hashPassword(password, salt);
+          
+          let passwordMatches = false;
+          let needsMigration = false;
+          
+          // Check if stored password is a 64-char hex SHA-256 hash
+          const isHashed = /^[0-9a-fA-F]{64}$/.test(admin.password || "");
+          
+          if (isHashed) {
+            passwordMatches = (admin.password === inputHash);
+          } else {
+            // Old plain-text password comparison
+            passwordMatches = (admin.password === password);
+            if (passwordMatches) {
+              needsMigration = true;
+            }
+          }
+
+          if (passwordMatches) {
+            userObj = {
+              id: admin.id,
+              name: admin.name,
+              username: admin.username,
+              role: "admin",
+              otoparks: admin.otoparks || [],
+              phone: admin.phone,
+              email: admin.email
+            };
+
+            // Migrate plain-text password to hashed in Supabase
+            if (needsMigration) {
+              try {
+                await fetch(`${supabaseUrl}/rest/v1/admin_users?id=eq.${admin.id}`, {
+                  method: "PATCH",
+                  headers: {
+                    "apikey": supabaseAnonKey,
+                    "Authorization": `Bearer ${supabaseAnonKey}`,
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({ password: inputHash })
+                });
+              } catch (e) {
+                console.error("Failed to migrate plain-text password:", e);
+              }
+            }
+          }
         }
       }
     }

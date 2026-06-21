@@ -11,6 +11,14 @@ function validatePassword(password) {
   return hasUppercase && hasLowercase && hasDigit && hasSpecial;
 }
 
+async function hashPassword(password, salt = "parkexpert-salt-key-98765") {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -247,7 +255,7 @@ export async function onRequest(context) {
               error: "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir." 
             }), { status: 400, headers });
           }
-          updatePayload.password = password;
+          updatePayload.password = await hashPassword(password, context.env.PASSWORD_SALT || "parkexpert-salt-key-98765");
         }
 
         const updateRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?id=eq.${id}`, {
@@ -356,7 +364,7 @@ export async function onRequest(context) {
           id: newAdminId,
           name,
           username: username.toLowerCase(),
-          password,
+          password: await hashPassword(password, context.env.PASSWORD_SALT || "parkexpert-salt-key-98765"),
           otoparks,
           phone: phone || null,
           email: email || null
