@@ -65,7 +65,7 @@ export async function onRequest(context) {
       // Validate as admin JWT token
       const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
       
-      const verifyTokenInline = async (tok, sec) => {
+      const verifyTokenInline = async (tok, sec, clientIp) => {
         try {
           const parts = tok.split(".");
           if (parts.length !== 2) return null;
@@ -101,6 +101,12 @@ export async function onRequest(context) {
             if (payload.exp && payload.exp < Date.now()) {
               return null; // Expired
             }
+            // Enforce IP binding for superadmin
+            if (payload.role === "superadmin") {
+              if (!payload.ip || payload.ip !== clientIp) {
+                return null; // IP mismatch or missing IP claim!
+              }
+            }
             return payload;
           }
         } catch (e) {
@@ -109,7 +115,8 @@ export async function onRequest(context) {
         return null;
       };
 
-      const user = await verifyTokenInline(token, jwtSecret);
+      const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+      const user = await verifyTokenInline(token, jwtSecret, clientIp);
       if (user && user.role === "superadmin") {
         isAuthorized = true;
       }

@@ -1,5 +1,6 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 
 // Helper for safe base64 encoding (supports Unicode)
 function base64Encode(str) {
@@ -12,7 +13,7 @@ function base64Encode(str) {
 }
 
 // Helper to sign token using HMAC-SHA256
-async function signToken(data, secret) {
+async function signToken(data, secret, clientIp) {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
   const key = await crypto.subtle.importKey(
@@ -23,7 +24,7 @@ async function signToken(data, secret) {
     ["sign"]
   );
 
-  const payloadStr = JSON.stringify({ ...data, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
+  const payloadStr = JSON.stringify({ ...data, ip: clientIp, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
   const signatureBuffer = await crypto.subtle.sign(
     "HMAC",
     key,
@@ -188,6 +189,18 @@ export async function onRequest(context) {
           env: context.env
         });
 
+        // Send Telegram alert for superadmin login attempt
+        const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+        if (userObj.role === "superadmin") {
+          await sendTelegramAlert(
+            `<b>🔑 Oturum Giriş Girişimi (2FA)</b>\n\n` +
+            `<b>Kullanıcı:</b> superadmin\n` +
+            `<b>IP Adresi:</b> ${clientIp}\n` +
+            `<b>Durum:</b> İki aşamalı doğrulama kodu e-posta adresine gönderildi.`,
+            context.env
+          );
+        }
+
         // Mask phone
         let phoneMasked = "";
         if (targetPhone) {
@@ -229,7 +242,19 @@ export async function onRequest(context) {
     }
 
     // Sign session token directly (no 2FA or disabled/missing contact details)
-    const token = await signToken(userObj, jwtSecret);
+    const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+    const token = await signToken(userObj, jwtSecret, clientIp);
+    
+    if (userObj.role === "superadmin") {
+      await sendTelegramAlert(
+        `<b>✅ Doğrudan Giriş Başarılı</b>\n\n` +
+        `<b>Kullanıcı:</b> superadmin\n` +
+        `<b>IP Adresi:</b> ${clientIp}\n` +
+        `<b>Durum:</b> Oturum iki aşamalı doğrulama olmadan (devre dışı olduğu için) doğrudan başlatıldı.`,
+        context.env
+      );
+    }
+    
     return new Response(JSON.stringify({ success: true, user: userObj, token }), { status: 200, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });

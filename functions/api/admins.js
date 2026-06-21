@@ -1,5 +1,6 @@
 // Helper for safe base64 decoding (supports Unicode)
 import { logAudit } from "./audit_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -29,7 +30,7 @@ async function uploadAvatarToR2(adminId, photoBase64, bucket) {
 }
 
 // Helper to verify JWT token using HMAC-SHA256
-async function verifyToken(token, secret) {
+async function verifyToken(token, secret, clientIp) {
   try {
     const parts = token.split(".");
     if (parts.length !== 2) return null;
@@ -58,6 +59,12 @@ async function verifyToken(token, secret) {
       const payload = JSON.parse(payloadStr);
       if (payload.exp && payload.exp < Date.now()) {
         return null;
+      }
+      // Enforce IP binding for superadmin
+      if (payload.role === "superadmin") {
+        if (!payload.ip || payload.ip !== clientIp) {
+          return null; // IP mismatch or missing IP claim!
+        }
       }
       return payload;
     }
@@ -99,7 +106,8 @@ export async function onRequest(context) {
   }
 
   const token = authHeader.substring(7);
-  const user = await verifyToken(token, jwtSecret);
+  const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+  const user = await verifyToken(token, jwtSecret, clientIp);
   if (!user || user.role !== "superadmin") {
     return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
   }
@@ -266,6 +274,16 @@ export async function onRequest(context) {
           })
         );
 
+        context.waitUntil(
+          sendTelegramAlert(
+            `<b>✏️ Yönetici Güncellendi</b>\n\n` +
+            `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+            `<b>IP Adresi:</b> ${ipAddress}\n` +
+            `<b>Detay:</b> ${details}`,
+            context.env
+          )
+        );
+
         if (photo_base64) {
           await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);
         }
@@ -336,6 +354,16 @@ export async function onRequest(context) {
           })
         );
 
+        context.waitUntil(
+          sendTelegramAlert(
+            `<b>👤 Yeni Yönetici Oluşturuldu</b>\n\n` +
+            `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+            `<b>IP Adresi:</b> ${ipAddress}\n` +
+            `<b>Yeni Yönetici:</b> ${name} (${username.toLowerCase()}, Yetki: [${otoparks.join(", ")}])`,
+            context.env
+          )
+        );
+
         if (photo_base64) {
           await uploadAvatarToR2(newAdminId, photo_base64, context.env.BUCKET);
         }
@@ -387,6 +415,16 @@ export async function onRequest(context) {
           details: `"${adminName}" (${adminUsername}) yetkili yöneticisi silindi.`,
           ipAddress
         })
+      );
+
+      context.waitUntil(
+        sendTelegramAlert(
+          `<b>❌ Yönetici Silindi</b>\n\n` +
+          `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+          `<b>IP Adresi:</b> ${ipAddress}\n` +
+          `<b>Silinen Yönetici:</b> ${adminName} (${adminUsername})`,
+          context.env
+        )
       );
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });

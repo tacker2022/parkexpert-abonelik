@@ -1,7 +1,8 @@
 import { logAudit } from "./audit_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 
 // Inline JWT validator for Cloudflare Workers
-async function verifyTokenInline(token, secret) {
+async function verifyTokenInline(token, secret, clientIp) {
   try {
     const parts = token.split(".");
     if (parts.length !== 2) return null;
@@ -36,6 +37,12 @@ async function verifyTokenInline(token, secret) {
       const payload = JSON.parse(payloadStr);
       if (payload.exp && payload.exp < Date.now()) {
         return null; // Expired
+      }
+      // Enforce IP binding for superadmin
+      if (payload.role === "superadmin") {
+        if (!payload.ip || payload.ip !== clientIp) {
+          return null; // IP mismatch or missing IP claim!
+        }
       }
       return payload;
     }
@@ -77,7 +84,8 @@ export async function onRequest(context) {
   }
 
   const token = authHeader.substring(7);
-  const adminUser = await verifyTokenInline(token, jwtSecret);
+  const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+  const adminUser = await verifyTokenInline(token, jwtSecret, clientIp);
   
   if (!adminUser || adminUser.role !== "superadmin") {
     return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
@@ -85,7 +93,6 @@ export async function onRequest(context) {
 
   const url = new URL(context.request.url);
   const action = url.searchParams.get("action") || "list";
-  const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
 
   try {
     // ----------------------------------------------------
@@ -145,6 +152,16 @@ export async function onRequest(context) {
         ipAddress: clientIp
       });
 
+      context.waitUntil(
+        sendTelegramAlert(
+          `<b>📥 Veritabanı Yedeği İndirildi</b>\n\n` +
+          `<b>Yapan:</b> ${adminUser.username} (Rol: ${adminUser.role})\n` +
+          `<b>IP Adresi:</b> ${clientIp}\n` +
+          `<b>Dosya:</b> ${filename}`,
+          context.env
+        )
+      );
+
       const responseHeaders = {
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Content-Type": filename.endsWith(".xlsx") 
@@ -203,6 +220,16 @@ export async function onRequest(context) {
         details: "Yönetici paneli üzerinden manuel veritabanı yedekleme işlemi (GitHub Actions) tetiklendi.",
         ipAddress: clientIp
       });
+
+      context.waitUntil(
+        sendTelegramAlert(
+          `<b>💾 Veritabanı Yedekleme Tetiklendi</b>\n\n` +
+          `<b>Yapan:</b> ${adminUser.username} (Rol: ${adminUser.role})\n` +
+          `<b>IP Adresi:</b> ${clientIp}\n` +
+          `<b>Durum:</b> GitHub Actions yedekleme iş akışı manuel başlatıldı.`,
+          context.env
+        )
+      );
 
       return new Response(JSON.stringify({ 
         success: true, 

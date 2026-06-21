@@ -1,3 +1,5 @@
+import { sendTelegramAlert } from "./telegram_helper.js";
+
 // POST endpoint for verifying two-factor login OTP code
 function base64Encode(str) {
   const bytes = new TextEncoder().encode(str);
@@ -8,7 +10,7 @@ function base64Encode(str) {
   return btoa(binString);
 }
 
-async function signToken(data, secret) {
+async function signToken(data, secret, clientIp) {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
   const key = await crypto.subtle.importKey(
@@ -19,7 +21,7 @@ async function signToken(data, secret) {
     ["sign"]
   );
 
-  const payloadStr = JSON.stringify({ ...data, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
+  const payloadStr = JSON.stringify({ ...data, ip: clientIp, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
   const signatureBuffer = await crypto.subtle.sign(
     "HMAC",
     key,
@@ -139,7 +141,18 @@ export async function onRequest(context) {
     });
 
     // 4. Sign final session token
-    const token = await signToken(userObj, jwtSecret);
+    const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+    const token = await signToken(userObj, jwtSecret, clientIp);
+
+    if (userObj.role === "superadmin") {
+      await sendTelegramAlert(
+        `<b>✅ İki Aşamalı Giriş Başarılı</b>\n\n` +
+        `<b>Kullanıcı:</b> superadmin\n` +
+        `<b>IP Adresi:</b> ${clientIp}\n` +
+        `<b>Durum:</b> İki aşamalı doğrulama kodu başarıyla doğrulandı ve oturum açıldı.`,
+        context.env
+      );
+    }
 
     return new Response(JSON.stringify({ success: true, user: userObj, token }), { status: 200, headers });
   } catch (err) {

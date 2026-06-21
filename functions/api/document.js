@@ -9,7 +9,7 @@ function base64Decode(base64) {
 }
 
 // Helper to verify JWT token using HMAC-SHA256
-async function verifyToken(token, secret) {
+async function verifyToken(token, secret, clientIp) {
   try {
     const parts = token.split(".");
     if (parts.length !== 2) return null;
@@ -38,6 +38,12 @@ async function verifyToken(token, secret) {
       const payload = JSON.parse(payloadStr);
       if (payload.exp && payload.exp < Date.now()) {
         return null; // Expired
+      }
+      // Enforce IP binding for superadmin
+      if (payload.role === "superadmin") {
+        if (!payload.ip || payload.ip !== clientIp) {
+          return null; // IP mismatch or missing IP claim!
+        }
       }
       return payload;
     }
@@ -108,7 +114,8 @@ export async function onRequest(context) {
     }
 
     const token = authHeader.substring(7);
-    user = await verifyToken(token, jwtSecret);
+    const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+    user = await verifyToken(token, jwtSecret, clientIp);
     if (!user) {
       return new Response(JSON.stringify({ error: "Geçersiz oturum!" }), {
         status: 401,

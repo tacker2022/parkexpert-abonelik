@@ -6,3 +6,5 @@ scratch/
 node_modules/
 dist/
 sablon.xlsx
+.dev.vars
+

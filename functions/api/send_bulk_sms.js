@@ -1,4 +1,5 @@
 import { sendSMS } from "./sms_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -11,7 +12,7 @@ function base64Decode(base64) {
 }
 
 // Helper to verify JWT token using HMAC-SHA256
-async function verifyToken(token, secret) {
+async function verifyToken(token, secret, clientIp) {
   try {
     const parts = token.split(".");
     if (parts.length !== 2) return null;
@@ -40,6 +41,12 @@ async function verifyToken(token, secret) {
       const payload = JSON.parse(payloadStr);
       if (payload.exp && payload.exp < Date.now()) {
         return null; // Expired
+      }
+      // Enforce IP binding for superadmin
+      if (payload.role === "superadmin") {
+        if (!payload.ip || payload.ip !== clientIp) {
+          return null; // IP mismatch or missing IP claim!
+        }
       }
       return payload;
     }
@@ -85,7 +92,8 @@ export async function onRequest(context) {
   }
 
   const token = authHeader.substring(7);
-  const user = await verifyToken(token, jwtSecret);
+  const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+  const user = await verifyToken(token, jwtSecret, clientIp);
   if (!user || user.role !== "superadmin") {
     return new Response(JSON.stringify({ error: "Yetkisiz işlem! Yalnızca Süper Yönetici bu işlemi yapabilir." }), { status: 403, headers });
   }
@@ -112,6 +120,20 @@ export async function onRequest(context) {
   if (!message) {
     return new Response(JSON.stringify({ error: "Mesaj içeriği boş olamaz!" }), { status: 400, headers });
   }
+
+  // Send Telegram alert
+  context.waitUntil(
+    sendTelegramAlert(
+      `<b>💬 Toplu SMS Kampanyası Tetiklendi</b>\n\n` +
+      `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+      `<b>IP Adresi:</b> ${clientIp}\n` +
+      `<b>Hedef Kitle:</b> ${targetType}\n` +
+      `<b>Ticari Onay Filtresi:</b> ${isCommercial ? 'Evet' : 'Hayır'}\n` +
+      `<b>Flash SMS:</b> ${flashSms ? 'Evet' : 'Hayır'}\n` +
+      `<b>Mesaj:</b>\n<code>${message}</code>`,
+      context.env
+    )
+  );
 
   const filter = isCommercial ? "11" : "0";
   let targetUsers = [];
