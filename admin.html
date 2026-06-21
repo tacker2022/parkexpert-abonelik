@@ -27,6 +27,9 @@
   
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="style.css?v=20260609_1410">
+  
+  <!-- Cloudflare Turnstile bot protection -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body style="background-color: #f1f5f9;">
 
@@ -1815,6 +1818,11 @@
               
               <div id="login-error-msg" style="display: none; color: #ef4444; font-size: 0.775rem; font-weight: 700; background: rgba(239, 68, 68, 0.05); padding: 0.5rem 0.75rem; border-radius: var(--radius-xs); border: 1px solid rgba(239, 68, 68, 0.15); text-align: center;">
                 Hatalı şifre veya kullanıcı adı!
+              </div>
+
+              <!-- Turnstile Bot Koruması -->
+              <div id="login-turnstile-container" style="display: flex; justify-content: center; margin: 0.25rem 0;">
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAADowiELI7MlFQpxT"></div>
               </div>
               
               <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 700; margin-top: 0.5rem;">

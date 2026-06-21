@@ -2543,14 +2543,24 @@ async function handleAdminLogin(event) {
 
   if (errorMsg) errorMsg.style.display = 'none';
 
+  const turnstileResponse = document.getElementsByName('cf-turnstile-response')[0]?.value;
+  if (!turnstileResponse) {
+    if (errorMsg) {
+      errorMsg.textContent = "Lütfen güvenlik doğrulamasını (Turnstile) tamamlayın.";
+      errorMsg.style.display = 'block';
+    }
+    return;
+  }
+
   try {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, turnstileResponse })
     });
 
     if (!res.ok) {
+      if (typeof turnstile !== 'undefined') turnstile.reset();
       const data = await res.json();
       throw new Error(data.error || "Giriş başarısız.");
     }
@@ -2641,6 +2651,7 @@ async function handleAdminLogin(event) {
     initAdminController();
 
   } catch (err) {
+    if (typeof turnstile !== 'undefined') turnstile.reset();
     if (errorMsg) {
       errorMsg.textContent = err.message;
       errorMsg.style.display = 'block';

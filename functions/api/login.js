@@ -173,10 +173,33 @@ export async function onRequest(context) {
   }
 
   try {
-    const { username, password } = await context.request.json();
+    const { username, password, turnstileResponse } = await context.request.json();
 
     if (!username || !password) {
       return new Response(JSON.stringify({ error: "Username and password are required" }), { status: 400, headers });
+    }
+
+    // Verify Cloudflare Turnstile token
+    if (!turnstileResponse) {
+      return new Response(JSON.stringify({ error: "Güvenlik doğrulama kodu bulunamadı." }), { status: 400, headers });
+    }
+
+    const turnstileSecret = context.env.TURNSTILE_SECRET || "1x00000000000000000000000000000000";
+    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        secret: turnstileSecret,
+        response: turnstileResponse,
+        remoteip: context.request.headers.get("CF-Connecting-IP") || ""
+      })
+    });
+
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      return new Response(JSON.stringify({ error: "Güvenlik doğrulaması (Turnstile) başarısız oldu! Lütfen tekrar deneyin." }), { status: 400, headers });
     }
 
     // Check account lockout status first
