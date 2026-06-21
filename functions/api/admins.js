@@ -92,7 +92,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
   }
 
-  // Authenticate Request (Super Admin Only)
+  // Authenticate Request
   const authHeader = context.request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
@@ -100,11 +100,16 @@ export async function onRequest(context) {
 
   const token = authHeader.substring(7);
   const user = await verifyToken(token, jwtSecret);
-  if (!user || user.role !== "superadmin") {
-    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
   }
 
   const method = context.request.method;
+
+  // GET and DELETE methods still require superadmin
+  if ((method === "GET" || method === "DELETE") && user.role !== "superadmin") {
+    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
+  }
 
   try {
     // ----------------------------------------------------
@@ -132,7 +137,26 @@ export async function onRequest(context) {
     // ----------------------------------------------------
     if (method === "POST") {
       const payload = await context.request.json();
-      const { id, name, username, password, otoparks, phone, email, photo_base64 } = payload;
+      const { id, name, username, password, otoparks, phone, email, photo_base64, is_self_avatar } = payload;
+
+      // Handle self avatar upload
+      if (is_self_avatar) {
+        if (!id || !photo_base64) {
+          return new Response(JSON.stringify({ error: "Eksik bilgi! ID veya fotoğraf verisi bulunamadı." }), { status: 400, headers });
+        }
+        // Authorize: Must be superadmin editing superadmin OR a representative editing their own avatar
+        const isAuthorized = (user.role === "superadmin" && id === "superadmin") || (user.id === id);
+        if (!isAuthorized) {
+          return new Response(JSON.stringify({ error: "Bu işlem için yetkiniz bulunmamaktadır!" }), { status: 403, headers });
+        }
+        await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);
+        return new Response(JSON.stringify({ success: true, message: "Profil fotoğrafı başarıyla güncellendi." }), { status: 200, headers });
+      }
+
+      // Normal admin creation/update requires superadmin role
+      if (user.role !== "superadmin") {
+        return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
+      }
 
       if (!name || !username || !otoparks || otoparks.length === 0) {
         return new Response(JSON.stringify({ error: "Ad Soyad, kullanıcı adı ve otopark bilgisi zorunludur." }), { status: 400, headers });

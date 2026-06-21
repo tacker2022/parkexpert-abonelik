@@ -5285,8 +5285,8 @@ function handleUserRoleChange() {
 
   if (val === 'superadmin') {
     if (avatarImg) {
-      avatarImg.style.display = 'none';
-      avatarImg.src = '';
+      avatarImg.src = `/api/document?path=avatars/superadmin.jpg&_t=${Date.now()}`;
+      avatarImg.style.display = 'block';
     }
     if (avatarInitials) {
       avatarInitials.textContent = 'SA';
@@ -5346,6 +5346,68 @@ function handleUserRoleChange() {
   loadApplications();
   populateLocationFilter();
   applyFilters();
+}
+
+async function handleHeaderAvatarUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Profil fotoğrafı boyutu en fazla 2MB olabilir.");
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Oturumunuz bulunamadı! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  const photoBase64 = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.readAsDataURL(file);
+  });
+
+  const select = document.getElementById('active-user-role');
+  if (!select) return;
+  const currentAdminVal = select.value;
+
+  try {
+    const res = await fetch('/api/admins', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id: currentAdminVal,
+        photo_base64: photoBase64,
+        is_self_avatar: true
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Profil fotoğrafı yüklenirken hata oluştu.");
+    }
+
+    const avatarImg = document.getElementById('current-user-avatar-img');
+    if (avatarImg) {
+      avatarImg.src = `/api/document?path=avatars/${currentAdminVal}.jpg&_t=${Date.now()}`;
+      avatarImg.style.display = 'block';
+    }
+    
+    if (currentAdminVal !== 'superadmin') {
+      renderAdminsTable();
+    }
+    
+    alert("Profil fotoğrafınız başarıyla güncellendi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    input.value = '';
+  }
 }
 
 function populateLocationFilter() {
