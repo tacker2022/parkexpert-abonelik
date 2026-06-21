@@ -4670,4 +4670,74 @@ textarea.is-invalid {
   background: #94a3b8;
 }
 
+/* ==========================================================================
+   SIDEBAR USER PROFILE OVERRIDES
+   ========================================================================== */
+.admin-sidebar .admin-user {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  width: 100%;
+  margin-top: 0.25rem;
+  box-sizing: border-box;
+}
+
+.admin-sidebar .admin-user .user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.admin-sidebar .admin-user .user-info select {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.admin-sidebar .admin-user #active-user-subtext {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+  text-align: center;
+}
+
+.admin-sidebar .admin-user #session-countdown-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: 0.65rem;
+  width: 100%;
+  margin-top: 0.25rem;
+  box-sizing: border-box;
+}
+
+.admin-sidebar .admin-user #session-countdown-container span:first-child {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+.admin-sidebar .admin-user #session-countdown-container #session-countdown-timer {
+  font-family: monospace;
+  font-size: 0.775rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  transition: color 0.3s ease;
+}
+
 

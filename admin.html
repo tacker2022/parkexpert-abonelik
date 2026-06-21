@@ -39,6 +39,26 @@
           <img src="assets/logo.png" alt="PARKEXPERT Logo" style="height: 48px; width: auto; display: block; margin: 0 auto;">
         </a>
       </div>
+
+      <!-- User Profile Card in Sidebar -->
+      <div class="admin-user" id="admin-user-selector-block">
+        <div class="user-avatar" id="current-user-avatar" style="position: relative; overflow: hidden; width: 56px; height: 56px;">
+          <img id="current-user-avatar-img" src="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;">
+          <span id="current-user-avatar-initials" style="font-size: 1.25rem;">SA</span>
+        </div>
+        <input type="file" id="header-avatar-upload-input" accept="image/*" style="display: none;" onchange="handleHeaderAvatarUpload(this)">
+        <div class="user-info">
+          <select id="active-user-role" onchange="handleUserRoleChange()">
+            <option value="superadmin">Süper Yönetici</option>
+          </select>
+          <p id="active-user-subtext">Sistem Sahibi (Tüm Yetkiler)</p>
+        </div>
+        <!-- Session Countdown Badge -->
+        <div id="session-countdown-container">
+          <span>Oturum Süresi</span>
+          <span id="session-countdown-timer">03:00:00</span>
+        </div>
+      </div>
       
       <nav style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding-right: 0.25rem;">
         <!-- Category 1: Navigation Links -->
@@ -181,26 +201,8 @@
           <p>Tüm gelen başvuruları anlık olarak inceleyin, belgeleri doğrulayın ve durumlarını güncelleyin.</p>
         </div>
         
-        <!-- Logged in Admin Avatar / Switcher -->
+        <!-- Logged in Admin Avatar / Switcher moved to sidebar. Only quick buttons remain in header. -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <div class="admin-user" id="admin-user-selector-block">
-            <div class="user-avatar" id="current-user-avatar" style="position: relative; overflow: hidden;">
-              <img id="current-user-avatar-img" src="" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;">
-              <span id="current-user-avatar-initials">SA</span>
-            </div>
-            <input type="file" id="header-avatar-upload-input" accept="image/*" style="display: none;" onchange="handleHeaderAvatarUpload(this)">
-            <div class="user-info">
-              <select id="active-user-role" onchange="handleUserRoleChange()">
-                <option value="superadmin">Süper Yönetici</option>
-              </select>
-              <p id="active-user-subtext">Sistem Sahibi (Tüm Yetkiler)</p>
-            </div>
-            <!-- Session Countdown Badge -->
-            <div id="session-countdown-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; border-left: 1px solid rgba(0,0,0,0.06); padding-left: 0.75rem; height: 32px; min-width: 65px;">
-              <span id="session-countdown-timer" style="font-family: monospace; font-size: 0.775rem; font-weight: 800; color: var(--color-primary); transition: color 0.3s ease;">03:00:00</span>
-              <span style="font-size: 0.55rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted); letter-spacing: 0.05em;">Kalan Süre</span>
-            </div>
-          </div>
           <button onclick="sendTestNotification(event)" class="btn-test-notification" id="btn-test-notification" title="Test WP & Mail Gönder" style="background: none; border: 1px solid rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.04); color: #10b981; border-radius: var(--radius-lg); height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0 0.85rem; cursor: pointer; transition: all var(--transition-fast); font-size: 0.775rem; font-weight: 700; font-family: inherit; outline: none;">
             <i data-lucide="send" style="width: 14px; height: 14px; stroke: #10b981;"></i>
             <span>Test Gönder</span>
