@@ -1579,6 +1579,14 @@
             <label for="edit-admin-password" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Giriş Şifresi <span style="color:red;" id="admin-password-required-star">*</span></label>
             <input type="password" id="edit-admin-password" placeholder="Şifre girin..." style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
             <small id="admin-password-help" style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">Yeni kullanıcı için zorunludur. Düzenleme yaparken boş bırakılırsa mevcut şifre korunur.</small>
+            <div id="admin-password-rules" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.4; display: none; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border-light);">
+              <div style="font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-dark);">Şifre gereksinimleri:</div>
+              <div id="rule-length" style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-status-rejected-text); transition: color 0.2s ease;"><span class="rule-icon">❌</span> En az 8 karakter</div>
+              <div id="rule-upper" style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-status-rejected-text); transition: color 0.2s ease;"><span class="rule-icon">❌</span> En az bir büyük harf (A-Z)</div>
+              <div id="rule-lower" style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-status-rejected-text); transition: color 0.2s ease;"><span class="rule-icon">❌</span> En az bir küçük harf (a-z)</div>
+              <div id="rule-digit" style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-status-rejected-text); transition: color 0.2s ease;"><span class="rule-icon">❌</span> En az bir rakam (0-9)</div>
+              <div id="rule-special" style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-status-rejected-text); transition: color 0.2s ease;"><span class="rule-icon">❌</span> En az bir özel karakter (örn. @, !, #, $, %, ^, &amp;, *)</div>
+            </div>
           </div>
           <div class="form-group">
             <label for="edit-admin-phone" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Telefon Numarası (2FA WhatsApp için)</label>

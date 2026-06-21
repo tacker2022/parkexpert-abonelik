@@ -1,6 +1,16 @@
 // Helper for safe base64 decoding (supports Unicode)
 import { logAudit } from "./audit_helper.js";
 import { sendTelegramAlert } from "./telegram_helper.js";
+
+function validatePassword(password) {
+  if (!password || password.length < 8) return false;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasDigit = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  return hasUppercase && hasLowercase && hasDigit && hasSpecial;
+}
+
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -232,6 +242,11 @@ export async function onRequest(context) {
         };
         // Only update password if provided
         if (password) {
+          if (!validatePassword(password)) {
+            return new Response(JSON.stringify({ 
+              error: "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir." 
+            }), { status: 400, headers });
+          }
           updatePayload.password = password;
         }
 
@@ -314,6 +329,11 @@ export async function onRequest(context) {
         // CREATE new admin
         if (!password) {
           return new Response(JSON.stringify({ error: "Yeni yöneticiler için şifre zorunludur." }), { status: 400, headers });
+        }
+        if (!validatePassword(password)) {
+          return new Response(JSON.stringify({ 
+            error: "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir." 
+          }), { status: 400, headers });
         }
 
         // Check if username already exists

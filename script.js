@@ -2947,6 +2947,9 @@ async function initAdminController() {
     });
   }
 
+  // Initialize admin password policy
+  initAdminPasswordPolicy();
+
   // Start sidebar ping simulation
   startSidebarPingSimulation();
 }
@@ -2959,6 +2962,67 @@ function startSidebarPingSimulation() {
     const randomPing = Math.floor(6 + Math.random() * 12);
     pingEl.textContent = `${randomPing} ms`;
   }, 4000);
+}
+
+function initAdminPasswordPolicy() {
+  const passInput = document.getElementById('edit-admin-password');
+  const rulesContainer = document.getElementById('admin-password-rules');
+  if (!passInput || !rulesContainer) return;
+
+  const ruleLength = document.getElementById('rule-length');
+  const ruleUpper = document.getElementById('rule-upper');
+  const ruleLower = document.getElementById('rule-lower');
+  const ruleDigit = document.getElementById('rule-digit');
+  const ruleSpecial = document.getElementById('rule-special');
+
+  function updateRule(element, isValid) {
+    if (!element) return;
+    const icon = element.querySelector('.rule-icon');
+    if (isValid) {
+      element.style.color = 'var(--color-status-approved-text)';
+      if (icon) icon.textContent = '✅';
+    } else {
+      element.style.color = 'var(--color-status-rejected-text)';
+      if (icon) icon.textContent = '❌';
+    }
+  }
+
+  function validateInput() {
+    const val = passInput.value;
+    
+    // If empty and not required (i.e. editing existing user), hide rules.
+    if (!val && !passInput.required) {
+      rulesContainer.style.display = 'none';
+      return;
+    }
+
+    rulesContainer.style.display = 'block';
+
+    const hasLength = val.length >= 8;
+    const hasUpper = /[A-Z]/.test(val);
+    const hasLower = /[a-z]/.test(val);
+    const hasDigit = /[0-9]/.test(val);
+    const hasSpecial = /[^A-Za-z0-9]/.test(val);
+
+    updateRule(ruleLength, hasLength);
+    updateRule(ruleUpper, hasUpper);
+    updateRule(ruleLower, hasLower);
+    updateRule(ruleDigit, hasDigit);
+    updateRule(ruleSpecial, hasSpecial);
+  }
+
+  passInput.addEventListener('focus', () => {
+    rulesContainer.style.display = 'block';
+    validateInput();
+  });
+
+  passInput.addEventListener('input', validateInput);
+
+  passInput.addEventListener('blur', () => {
+    if (!passInput.value && !passInput.required) {
+      rulesContainer.style.display = 'none';
+    }
+  });
 }
 
 let liveTrackingInterval = null;
@@ -6110,6 +6174,19 @@ async function saveAdminConfig(event) {
   if (!id && !password) {
     alert("Yeni yöneticiler için şifre zorunludur.");
     return;
+  }
+
+  if (password) {
+    const hasLength = password.length >= 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasLength || !hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+      alert("Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir.");
+      return;
+    }
   }
 
   const photoInput = document.getElementById('edit-admin-photo');
