@@ -99,11 +99,18 @@ export async function onRequest(context) {
 
   const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_ANON_KEY;
-  const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
+  const jwtSecret = context.env.JWT_SECRET;
   const bucket = context.env.BUCKET;
 
   if (!supabaseUrl || !supabaseAnonKey || !bucket) {
     return new Response(JSON.stringify({ error: "Missing configuration or bindings" }), {
+      status: 500,
+      headers: { ...headers, "Content-Type": "application/json" }
+    });
+  }
+
+  if (!jwtSecret) {
+    return new Response(JSON.stringify({ error: "Server security environment variable (JWT_SECRET) is not configured." }), {
       status: 500,
       headers: { ...headers, "Content-Type": "application/json" }
     });

@@ -161,11 +161,15 @@ export async function onRequest(context) {
 
   const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_ANON_KEY;
-  const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
-  const rootPassword = context.env.SUPERADMIN_PASSWORD || "admin123";
+  const jwtSecret = context.env.JWT_SECRET;
+  const rootPassword = context.env.SUPERADMIN_PASSWORD;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
+  }
+
+  if (!jwtSecret || !rootPassword || !context.env.PASSWORD_SALT) {
+    return new Response(JSON.stringify({ error: "Server security environment variables (JWT_SECRET / SUPERADMIN_PASSWORD / PASSWORD_SALT) are not configured." }), { status: 500, headers });
   }
 
   try {
@@ -208,8 +212,7 @@ export async function onRequest(context) {
       if (res.ok) {
         const admins = await res.json();
         if (admins.length > 0) {
-          const admin = admins[0];
-          const salt = context.env.PASSWORD_SALT || "parkexpert-salt-key-98765";
+          const salt = context.env.PASSWORD_SALT;
           const inputHash = await hashPassword(password, salt);
           
           let passwordMatches = false;

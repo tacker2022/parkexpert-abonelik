@@ -63,7 +63,10 @@ export async function onRequest(context) {
       isAuthorized = true;
     } else {
       // Validate as admin JWT token
-      const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
+      const jwtSecret = context.env.JWT_SECRET;
+      if (!jwtSecret) {
+        return new Response(JSON.stringify({ error: "Server security environment variable (JWT_SECRET) is not configured." }), { status: 500, headers });
+      }
       
       const verifyTokenInline = async (tok, sec, clientIp, supabaseUrl, supabaseAnonKey) => {
         try {

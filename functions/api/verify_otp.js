@@ -150,11 +150,15 @@ export async function onRequest(context) {
 
   const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_ANON_KEY;
-  const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
-  const rootPassword = context.env.SUPERADMIN_PASSWORD || "admin123";
+  const jwtSecret = context.env.JWT_SECRET;
+  const rootPassword = context.env.SUPERADMIN_PASSWORD;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
+  }
+
+  if (!jwtSecret || !rootPassword) {
+    return new Response(JSON.stringify({ error: "Server security environment variables (JWT_SECRET / SUPERADMIN_PASSWORD) are not configured." }), { status: 500, headers });
   }
 
   try {

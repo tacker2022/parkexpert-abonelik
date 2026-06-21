@@ -132,10 +132,14 @@ export async function onRequest(context) {
 
   const supabaseUrl = context.env.SUPABASE_URL?.replace(/\/+$/, "")?.replace(/\/rest\/v1$/, "");
   const supabaseAnonKey = context.env.SUPABASE_SERVICE_ROLE_KEY || context.env.SUPABASE_ANON_KEY;
-  const jwtSecret = context.env.JWT_SECRET || "parkexpert-super-secret-key-12345";
+  const jwtSecret = context.env.JWT_SECRET;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
+  }
+
+  if (!jwtSecret || !context.env.PASSWORD_SALT) {
+    return new Response(JSON.stringify({ error: "Server security environment variables (JWT_SECRET / PASSWORD_SALT) are not configured." }), { status: 500, headers });
   }
 
   // Authenticate Request (Super Admin Only)
@@ -255,7 +259,7 @@ export async function onRequest(context) {
               error: "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir." 
             }), { status: 400, headers });
           }
-          updatePayload.password = await hashPassword(password, context.env.PASSWORD_SALT || "parkexpert-salt-key-98765");
+          updatePayload.password = await hashPassword(password, context.env.PASSWORD_SALT);
         }
 
         const updateRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?id=eq.${id}`, {
@@ -364,7 +368,7 @@ export async function onRequest(context) {
           id: newAdminId,
           name,
           username: username.toLowerCase(),
-          password: await hashPassword(password, context.env.PASSWORD_SALT || "parkexpert-salt-key-98765"),
+          password: await hashPassword(password, context.env.PASSWORD_SALT),
           otoparks,
           phone: phone || null,
           email: email || null
