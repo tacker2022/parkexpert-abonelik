@@ -4418,26 +4418,37 @@ textarea.is-invalid {
 
 /* Active User select element */
 #active-user-role {
-  background: transparent;
-  border: none;
-  font-size: 0.9rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  min-height: unset !important;
+  height: auto !important;
+  padding: 0.15rem 1.15rem 0.15rem 0 !important;
+  width: auto !important;
+  font-size: 0.925rem;
   font-weight: 800;
   color: var(--color-primary-dark);
   cursor: pointer;
-  outline: none;
   font-family: inherit;
   transition: all 0.25s ease;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230f3ba2' stroke-width='3.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 10px;
-  padding-right: 1.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230f3ba2' stroke-width='3.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right center !important;
+  background-size: 10px !important;
+}
+#active-user-role:focus,
+#active-user-role:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 #active-user-role:disabled {
-  background-image: none;
-  padding-right: 0;
+  background-image: none !important;
+  padding-right: 0 !important;
 }
 #active-user-role:hover {
   color: var(--color-primary);
@@ -4445,13 +4456,14 @@ textarea.is-invalid {
 
 /* Active user subtext */
 #active-user-subtext {
-  font-size: 0.65rem;
+  font-size: 0.625rem;
   color: var(--color-text-muted);
   margin: 0;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: color 0.2s ease;
+  white-space: nowrap !important;
 }
 
 /* Super Admin Active user subtext gold highlight */
