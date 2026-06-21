@@ -11,6 +11,68 @@ let currentAdminUser = 'superadmin';
 let ocrCache = {};
 let currentRotation = {};
 
+// Safe JWT decode on client side
+function decodeJWT(base64) {
+  try {
+    const binString = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = new Uint8Array(binString.length);
+    for (let i = 0; i < binString.length; i++) {
+      bytes[i] = binString.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  } catch (e) {
+    return "";
+  }
+}
+
+// Session expiration helper
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return true;
+    const decoded = decodeJWT(parts[0]);
+    if (!decoded) return true;
+    const payload = JSON.parse(decoded);
+    if (payload.exp && payload.exp < Date.now()) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
+// Global fetch interceptor for session management
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  const response = await originalFetch(...args);
+  if (response.status === 401 || response.status === 403) {
+    const url = args[0];
+    const urlString = typeof url === 'string' ? url : (url instanceof Request ? url.url : '');
+    const isLoginEndpoint = urlString.includes('/api/login') || urlString.includes('/api/verify_otp') || urlString.includes('/api/send_otp_channel');
+    
+    if (!isLoginEndpoint && urlString.includes('/api/')) {
+      const adminLayout = document.querySelector('.admin-layout');
+      const overlay = document.getElementById('modal-login-overlay');
+      
+      if (adminLayout) adminLayout.style.display = 'none';
+      if (overlay) overlay.style.display = 'flex';
+      
+      if (!window.isSessionAlerting) {
+        window.isSessionAlerting = true;
+        alert("Oturumunuz sonlandırıldı veya geçersiz. Lütfen tekrar giriş yapın.");
+        // Clear session and reload
+        localStorage.removeItem('parkexpert_token');
+        localStorage.removeItem('parkexpert_user');
+        localStorage.removeItem('parkexpert_current_admin');
+        location.reload();
+      }
+    }
+  }
+  return response;
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
   if (typeof lucide !== 'undefined') {
@@ -2742,7 +2804,11 @@ async function initAdminController() {
 
   const adminLayout = document.querySelector('.admin-layout');
 
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
+    localStorage.removeItem('parkexpert_token');
+    localStorage.removeItem('parkexpert_user');
+    localStorage.removeItem('parkexpert_current_admin');
+    
     if (overlay) overlay.style.display = 'flex';
     if (adminLayout) adminLayout.style.display = 'none';
     return;
@@ -2811,6 +2877,16 @@ async function loadApplications() {
     });
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        const adminLayout = document.querySelector('.admin-layout');
+        const overlay = document.getElementById('modal-login-overlay');
+        if (adminLayout) adminLayout.style.display = 'none';
+        if (overlay) overlay.style.display = 'flex';
+        
+        alert("Oturumunuz sonlandırıldı veya geçersiz. Lütfen tekrar giriş yapın.");
+        handleAdminLogout();
+        return;
+      }
       const errData = await response.json();
       throw new Error(errData.error || "Could not load applications");
     }
@@ -5069,6 +5145,16 @@ async function populateActiveUserSelect() {
           'Authorization': `Bearer ${token}`
         }
       });
+      if (res.status === 401 || res.status === 403) {
+        const adminLayout = document.querySelector('.admin-layout');
+        const overlay = document.getElementById('modal-login-overlay');
+        if (adminLayout) adminLayout.style.display = 'none';
+        if (overlay) overlay.style.display = 'flex';
+        
+        alert("Oturumunuz sonlandırıldı veya geçersiz. Lütfen tekrar giriş yapın.");
+        handleAdminLogout();
+        return;
+      }
       if (res.ok) {
         const admins = await res.json();
         localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(admins));
