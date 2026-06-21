@@ -138,33 +138,57 @@
                 <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
                 <span>Sistem Ayarları</span>
               </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Premium Server Status Widget -->
+                   <!-- Premium Server Status Widget -->
         <div class="sidebar-widget-status" style="margin-top: 0.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(15, 59, 162, 0.02), rgba(255, 255, 255, 0.05)); border: 1px solid rgba(15, 59, 162, 0.08); border-radius: var(--radius-md); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01); margin-bottom: 0.5rem;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
             <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">SİSTEM DURUMU</span>
             <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.15rem 0.45rem; border-radius: 9999px;">
               <span style="width: 4px; height: 4px; background: #10b981; border-radius: 50%; display: inline-block; animation: pulse-glowing-green 1.5s infinite ease-in-out;"></span>
               <span>AKTİF</span>
             </span>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- API Latency -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
-              <span style="color: var(--color-text-muted);">API Gecikmesi</span>
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="activity" style="width: 12px; height: 12px; color: var(--color-text-muted);"></i> API Gecikmesi
+              </span>
               <span id="sidebar-ping-val" style="font-family: monospace; font-weight: 700; color: var(--color-primary-dark);">12 ms</span>
             </div>
+            <!-- Database -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
-              <span style="color: var(--color-text-muted);">Veritabanı</span>
-              <span style="font-weight: 600; color: #10b981; display: flex; align-items: center; gap: 0.2rem; font-size: 0.725rem;">
-                <i data-lucide="database" style="width: 10px; height: 10px; color: #10b981;"></i> Bağlı
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="database" style="width: 12px; height: 12px; color: var(--color-text-muted);"></i> Veritabanı
               </span>
+              <span style="font-weight: 600; color: #10b981;">Bağlı (Supabase)</span>
             </div>
+            <!-- File Storage -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
-              <span style="color: var(--color-text-muted);">CF Edge Server</span>
-              <span style="font-weight: 600; color: var(--color-primary-dark);">IST-01</span>
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="cloud" style="width: 12px; height: 12px; color: var(--color-text-muted);"></i> Dosya Deposu
+              </span>
+              <span style="font-weight: 600; color: var(--color-primary-dark);">Bulut (CF R2)</span>
+            </div>
+            <!-- Backup -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="save" style="width: 12px; height: 12px; color: var(--color-text-muted);"></i> Otomatik Yedek
+              </span>
+              <span style="font-weight: 600; color: var(--color-primary-dark);">Aktif (06:00)</span>
+            </div>
+            <!-- SMS / Notification Gateway -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="message-square" style="width: 12px; height: 12px; color: var(--color-text-muted);"></i> SMS Gateway
+              </span>
+              <span style="font-weight: 600; color: #10b981;">Aktif (NetGSM)</span>
+            </div>
+            <!-- System Security -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+              <span style="color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem; font-size: 0.725rem;">
+                <i data-lucide="shield-check" style="width: 12px; height: 12px; color: #10b981;"></i> SSL Güvenliği
+              </span>
+              <span style="font-weight: 600; color: #10b981; font-size: 0.675rem;">TLS 1.3 / AES</span>
             </div>
           </div>
         </div>
