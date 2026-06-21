@@ -1772,6 +1772,13 @@ function validateStep(step) {
       if (wrapper) wrapper.classList.add('is-invalid');
       isValid = false;
     }
+
+    // Turnstile Validation check
+    const turnstileResponse = document.getElementsByName('cf-turnstile-response')[0]?.value;
+    if (!turnstileResponse) {
+      alert("Lütfen güvenlik doğrulamasını (Turnstile) tamamlayın.");
+      isValid = false;
+    }
   }
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -2082,6 +2089,10 @@ async function handleFormSubmit() {
     formData.append("home_address", homeAddress);
     formData.append("notes", notes);
     formData.append("date_applied", new Date().toISOString());
+
+    // Append Turnstile response token
+    const turnstileResponse = document.getElementsByName('cf-turnstile-response')[0]?.value || '';
+    formData.append("cf-turnstile-response", turnstileResponse);
 
     if (uploadedFiles.ruhsat) formData.append("ruhsat", uploadedFiles.ruhsat);
     if (uploadedFiles.kimlik) formData.append("kimlik", uploadedFiles.kimlik);

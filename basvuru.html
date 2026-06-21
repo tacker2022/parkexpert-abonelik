@@ -27,6 +27,9 @@
   
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Cloudflare Turnstile Spam Protection -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <!-- Top Ticker Bar (Active Locations) -->
@@ -551,6 +554,10 @@
                   </div>
                 </div>
                 <span class="error-message" id="error-chk-marketing" style="margin-top: -0.5rem; margin-bottom: 1rem; display: none;"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Devam etmek için ticari elektronik ileti onayını işaretlemeniz gerekmektedir.</span>
+              </div>
+              <!-- Cloudflare Turnstile Spam Protection Widget -->
+              <div style="margin-top: 1.5rem; display: flex; justify-content: center; width: 100%;">
+                <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA" data-theme="light"></div>
               </div>
             </div>
 

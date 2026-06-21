@@ -71,6 +71,30 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({ error: "Missing required text fields" }), { status: 400, headers });
     }
 
+    // Verify Cloudflare Turnstile token
+    const turnstileResponse = formData.get("cf-turnstile-response");
+    if (!turnstileResponse) {
+      return new Response(JSON.stringify({ error: "Güvenlik doğrulama kodu bulunamadı." }), { status: 400, headers });
+    }
+
+    const turnstileSecret = context.env.TURNSTILE_SECRET || "1x00000000000000000000000000000000";
+    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        secret: turnstileSecret,
+        response: turnstileResponse,
+        remoteip: context.request.headers.get("CF-Connecting-IP") || ""
+      })
+    });
+
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      return new Response(JSON.stringify({ error: "Güvenlik doğrulaması (Turnstile) başarısız oldu! Lütfen sayfayı yenileyip tekrar deneyin." }), { status: 400, headers });
+    }
+
     // Helper function to upload file to R2
     const uploadToR2 = async (file, fieldName) => {
       if (!file || typeof file === "string" || file.size === 0) return null;
