@@ -73,6 +73,72 @@ window.fetch = async function(...args) {
   return response;
 };
 
+// Session countdown timer implementation
+function startSessionCountdown() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return;
+    const decoded = decodeJWT(parts[0]);
+    if (!decoded) return;
+    const payload = JSON.parse(decoded);
+    if (!payload.exp) return;
+
+    const timerSpan = document.getElementById('session-countdown-timer');
+    const container = document.getElementById('session-countdown-container');
+    if (!timerSpan || !container) return;
+
+    // Clear any existing countdown
+    if (window.sessionCountdownInterval) {
+      clearInterval(window.sessionCountdownInterval);
+    }
+
+    function update() {
+      const now = Date.now();
+      const diff = payload.exp - now;
+      if (diff <= 0) {
+        timerSpan.textContent = '00:00:00';
+        clearInterval(window.sessionCountdownInterval);
+        if (!window.isSessionAlerting) {
+          window.isSessionAlerting = true;
+          alert("Oturumunuz sonlandırıldı veya geçersiz. Lütfen tekrar giriş yapın.");
+          handleAdminLogout();
+        }
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      const format = (num) => String(num).padStart(2, '0');
+      timerSpan.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+
+      if (diff < 15 * 60 * 1000) {
+        // Less than 15 minutes: flashing red
+        timerSpan.style.color = '#ef4444';
+        timerSpan.style.animation = 'shakeBadge 0.5s infinite';
+      } else if (diff < 60 * 60 * 1000) {
+        // Less than 1 hour: orange
+        timerSpan.style.color = '#f59e0b';
+        timerSpan.style.animation = '';
+      } else {
+        // Safe: primary color
+        timerSpan.style.color = 'var(--color-primary)';
+        timerSpan.style.animation = '';
+      }
+    }
+
+    update();
+    window.sessionCountdownInterval = setInterval(update, 1000);
+
+  } catch (e) {
+    console.error("Countdown init failed:", e);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
   if (typeof lucide !== 'undefined') {
@@ -2790,6 +2856,9 @@ window.sendOTPChannel = sendOTPChannel;
 window.cancel2FA = cancel2FA;
 
 function handleAdminLogout() {
+  if (window.sessionCountdownInterval) {
+    clearInterval(window.sessionCountdownInterval);
+  }
   localStorage.removeItem('parkexpert_token');
   localStorage.removeItem('parkexpert_user');
   localStorage.removeItem('parkexpert_current_admin');
@@ -2816,6 +2885,9 @@ async function initAdminController() {
 
   if (overlay) overlay.style.display = 'none';
   if (adminLayout) adminLayout.style.display = 'flex';
+
+  // Start active session countdown timer
+  startSessionCountdown();
 
   // Always enable Privacy Mode by default on fresh session / login
   isPrivacyMode = true;
