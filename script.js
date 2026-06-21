@@ -5235,7 +5235,7 @@ async function populateActiveUserSelect() {
         admins.forEach(admin => {
           const opt = document.createElement('option');
           opt.value = admin.id;
-          opt.textContent = `${admin.name} (@${admin.username})`;
+          opt.textContent = admin.name;
           select.appendChild(opt);
         });
       }
@@ -5243,7 +5243,7 @@ async function populateActiveUserSelect() {
       console.error("Failed to fetch admins:", err);
     }
   } else {
-    select.innerHTML = `<option value="${loggedInUser.id}">${loggedInUser.name} (@${loggedInUser.username})</option>`;
+    select.innerHTML = `<option value="${loggedInUser.id}">${loggedInUser.name}</option>`;
     select.disabled = true;
     select.style.cursor = 'default';
   }
@@ -5295,7 +5295,7 @@ function handleUserRoleChange() {
     if (avatar) {
       avatar.className = 'user-avatar user-avatar-superadmin';
     }
-    if (subtext) subtext.textContent = 'Sistem Sahibi (Tüm Yetkiler)';
+    if (subtext) subtext.textContent = 'Sistem Sahibi';
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-superadmin';
     }
@@ -5307,8 +5307,11 @@ function handleUserRoleChange() {
     if (tabAuditLogs) tabAuditLogs.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
   } else {
-    const adminObj = admins.find(a => a.id === val);
-    if (adminObj) {
+    const userJson = localStorage.getItem('parkexpert_user');
+    const loggedInUser = userJson ? JSON.parse(userJson) : {};
+    const adminObj = admins.find(a => a.id === val) || loggedInUser;
+    
+    if (adminObj && adminObj.name) {
       const initials = adminObj.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       if (avatarImg) {
         avatarImg.src = `/api/document?path=avatars/${adminObj.id}.jpg&_t=${Date.now()}`;
@@ -5321,7 +5324,9 @@ function handleUserRoleChange() {
       if (avatar) {
         avatar.className = 'user-avatar user-avatar-representative';
       }
-      if (subtext) subtext.textContent = 'Otopark Temsilcisi';
+      if (subtext) {
+        subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
+      }
     }
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-representative';

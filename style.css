@@ -4319,13 +4319,13 @@ textarea.is-invalid {
 .admin-user {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-lg);
+  gap: 0.85rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-xl);
   border: 1.5px solid transparent;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -4336,24 +4336,24 @@ textarea.is-invalid {
 
 /* Super Admin State */
 .admin-user.admin-user-superadmin {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(253, 246, 227, 0.75));
-  border-color: rgba(245, 158, 11, 0.3);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08), 0 1px 3px rgba(245, 158, 11, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(253, 246, 227, 0.8));
+  border-color: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.06), 0 1px 3px rgba(245, 158, 11, 0.04);
 }
 .admin-user.admin-user-superadmin:hover {
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15), 0 2px 6px rgba(245, 158, 11, 0.08);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12), 0 2px 6px rgba(245, 158, 11, 0.06);
   border-color: rgba(245, 158, 11, 0.45);
 }
 
 /* Representative State */
 .admin-user.admin-user-representative {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(15, 59, 162, 0.03));
-  border-color: rgba(15, 59, 162, 0.12);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(15, 59, 162, 0.02));
+  border-color: rgba(15, 59, 162, 0.1);
+  box-shadow: 0 6px 14px rgba(15, 59, 162, 0.03), 0 1px 3px rgba(0, 0, 0, 0.01);
 }
 .admin-user.admin-user-representative:hover {
-  box-shadow: 0 6px 14px rgba(15, 59, 162, 0.08);
-  border-color: rgba(15, 59, 162, 0.25);
+  box-shadow: 0 8px 20px rgba(15, 59, 162, 0.07);
+  border-color: rgba(15, 59, 162, 0.22);
 }
 
 /* User Avatar base */
@@ -4420,14 +4420,24 @@ textarea.is-invalid {
 #active-user-role {
   background: transparent;
   border: none;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--color-primary-dark);
   cursor: pointer;
   outline: none;
-  padding-right: 0.5rem;
   font-family: inherit;
-  transition: color 0.2s ease;
+  transition: all 0.25s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230f3ba2' stroke-width='3.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 10px;
+  padding-right: 1.25rem;
+}
+#active-user-role:disabled {
+  background-image: none;
+  padding-right: 0;
 }
 #active-user-role:hover {
   color: var(--color-primary);
@@ -4435,18 +4445,18 @@ textarea.is-invalid {
 
 /* Active user subtext */
 #active-user-subtext {
-  font-size: 0.675rem;
+  font-size: 0.65rem;
   color: var(--color-text-muted);
   margin: 0;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   transition: color 0.2s ease;
 }
 
 /* Super Admin Active user subtext gold highlight */
 .admin-user-superadmin #active-user-subtext {
-  color: #b45309;
+  color: #d97706;
 }
 
 /* ==========================================================================
