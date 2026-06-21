@@ -157,6 +157,7 @@ export async function onRequest(context) {
         });
       }
     }
+  }
 
     // Retrieve file from Cloudflare R2
     const object = await bucket.get(path);
