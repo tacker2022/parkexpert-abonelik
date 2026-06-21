@@ -36,7 +36,7 @@ export async function onRequest(context) {
   const token = authHeader.substring(7);
   const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
 
-  const verifyTokenInline = async (token, secret, clientIp) => {
+  const verifyTokenInline = async (token, secret, clientIp, supabaseUrl, supabaseAnonKey) => {
     try {
       const parts = token.split(".");
       if (parts.length !== 2) return null;
@@ -78,6 +78,27 @@ export async function onRequest(context) {
             return null; // IP mismatch or missing IP claim!
           }
         }
+        // Check blacklist
+        if (payload.jti && supabaseUrl && supabaseAnonKey) {
+          try {
+            const blRes = await fetch(`${supabaseUrl}/rest/v1/blacklisted_tokens?jti=eq.${payload.jti}&select=jti`, {
+              headers: {
+                "apikey": supabaseAnonKey,
+                "Authorization": `Bearer ${supabaseAnonKey}`
+              }
+            });
+            if (blRes.ok) {
+              const rows = await blRes.json();
+              if (rows.length > 0) {
+                return null; // Blacklisted!
+              }
+            }
+          } catch (e) {
+            console.error("Blacklist check error:", e);
+          }
+        } else {
+          return null; // Force log out for old tokens without JTI
+        }
         return payload;
       }
     } catch (e) {
@@ -86,7 +107,7 @@ export async function onRequest(context) {
     return null;
   };
 
-  const user = await verifyTokenInline(token, jwtSecret, clientIp);
+  const user = await verifyTokenInline(token, jwtSecret, clientIp, supabaseUrl, supabaseAnonKey);
   if (!user || user.role !== "superadmin") {
     return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
   }

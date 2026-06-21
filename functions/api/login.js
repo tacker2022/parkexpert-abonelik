@@ -24,7 +24,8 @@ async function signToken(data, secret, clientIp) {
     ["sign"]
   );
 
-  const payloadStr = JSON.stringify({ ...data, ip: clientIp, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
+  const jti = "jti-" + Date.now() + "-" + Math.random().toString(36).substring(2, 11);
+  const payloadStr = JSON.stringify({ ...data, jti, ip: clientIp, exp: Date.now() + 3 * 60 * 60 * 1000 }); // 3 Hours expiry
   const signatureBuffer = await crypto.subtle.sign(
     "HMAC",
     key,

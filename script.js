@@ -2855,9 +2855,22 @@ window.verifyAdminOTP = verifyAdminOTP;
 window.sendOTPChannel = sendOTPChannel;
 window.cancel2FA = cancel2FA;
 
-function handleAdminLogout() {
+async function handleAdminLogout() {
   if (window.sessionCountdownInterval) {
     clearInterval(window.sessionCountdownInterval);
+  }
+  const token = localStorage.getItem('parkexpert_token');
+  if (token) {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (e) {
+      console.error("Logout request failed:", e);
+    }
   }
   localStorage.removeItem('parkexpert_token');
   localStorage.removeItem('parkexpert_user');
@@ -2866,6 +2879,8 @@ function handleAdminLogout() {
   // Reload page to show login screen
   location.reload();
 }
+
+window.handleAdminLogout = handleAdminLogout;
 
 async function initAdminController() {
   const token = localStorage.getItem('parkexpert_token');
