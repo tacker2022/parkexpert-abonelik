@@ -82,25 +82,7 @@ export async function onRequest(context) {
     });
   }
 
-  // Authenticate Request
-  const authHeader = context.request.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), {
-      status: 401,
-      headers: { ...headers, "Content-Type": "application/json" }
-    });
-  }
-
-  const token = authHeader.substring(7);
-  const user = await verifyToken(token, jwtSecret);
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Geçersiz oturum!" }), {
-      status: 401,
-      headers: { ...headers, "Content-Type": "application/json" }
-    });
-  }
-
-  // Get file path from URL query params, e.g. /api/document?path=applications/PE-123456/ruhsat.pdf
+  // Get file path from URL query params, e.g. /api/document?path=applications/PE-123456/ruhsat.pdf or /api/document?path=avatars/admin-12345.jpg
   const { searchParams } = new URL(context.request.url);
   const path = searchParams.get("path");
 
@@ -111,17 +93,45 @@ export async function onRequest(context) {
     });
   }
 
-  try {
-    // Access Control: Extract appId from path e.g. "applications/PE-123456/ruhsat.pdf" or "avatars/adminId.jpg"
-    const pathParts = path.split("/");
-    const isAvatar = pathParts[0] === "avatars";
-    if (!isAvatar && (pathParts.length < 3 || pathParts[0] !== "applications")) {
+  const pathParts = path.split("/");
+  const isAvatar = pathParts[0] === "avatars";
+
+  // Authenticate Request
+  let user = null;
+  if (!isAvatar) {
+    const authHeader = context.request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), {
+        status: 401,
+        headers: { ...headers, "Content-Type": "application/json" }
+      });
+    }
+
+    const token = authHeader.substring(7);
+    user = await verifyToken(token, jwtSecret);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Geçersiz oturum!" }), {
+        status: 401,
+        headers: { ...headers, "Content-Type": "application/json" }
+      });
+    }
+
+    if (pathParts.length < 3 || pathParts[0] !== "applications") {
       return new Response(JSON.stringify({ error: "Invalid document path" }), {
         status: 400,
         headers: { ...headers, "Content-Type": "application/json" }
       });
     }
+  } else {
+    if (pathParts.length !== 2) {
+      return new Response(JSON.stringify({ error: "Invalid avatar path" }), {
+        status: 400,
+        headers: { ...headers, "Content-Type": "application/json" }
+      });
+    }
+  }
 
+  try {
     if (!isAvatar) {
       const appId = pathParts[1];
 
@@ -142,22 +152,22 @@ export async function onRequest(context) {
         }
 
         const apps = await getRes.json();
-      if (apps.length === 0) {
-        return new Response(JSON.stringify({ error: "Başvuru bulunamadı!" }), {
-          status: 404,
-          headers: { ...headers, "Content-Type": "application/json" }
-        });
-      }
+        if (apps.length === 0) {
+          return new Response(JSON.stringify({ error: "Başvuru bulunamadı!" }), {
+            status: 404,
+            headers: { ...headers, "Content-Type": "application/json" }
+          });
+        }
 
-      const appLocation = apps[0].parking_location;
-      if (!user.otoparks.includes(appLocation)) {
-        return new Response(JSON.stringify({ error: "Bu evraka erişim yetkiniz bulunmamaktadır!" }), {
-          status: 403,
-          headers: { ...headers, "Content-Type": "application/json" }
-        });
+        const appLocation = apps[0].parking_location;
+        if (!user.otoparks.includes(appLocation)) {
+          return new Response(JSON.stringify({ error: "Bu evraka erişim yetkiniz bulunmamaktadır!" }), {
+            status: 403,
+            headers: { ...headers, "Content-Type": "application/json" }
+          });
+        }
       }
     }
-  }
 
     // Retrieve file from Cloudflare R2
     const object = await bucket.get(path);
