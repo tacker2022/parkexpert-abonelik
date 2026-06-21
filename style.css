@@ -1362,7 +1362,10 @@ textarea.is-invalid {
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .sidebar-menu {
