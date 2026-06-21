@@ -112,34 +112,36 @@ export async function onRequest(context) {
   }
 
   try {
-    // Access Control: Extract appId from path e.g. "applications/PE-123456/ruhsat.pdf"
+    // Access Control: Extract appId from path e.g. "applications/PE-123456/ruhsat.pdf" or "avatars/adminId.jpg"
     const pathParts = path.split("/");
-    if (pathParts.length < 3 || pathParts[0] !== "applications") {
+    const isAvatar = pathParts[0] === "avatars";
+    if (!isAvatar && (pathParts.length < 3 || pathParts[0] !== "applications")) {
       return new Response(JSON.stringify({ error: "Invalid document path" }), {
         status: 400,
         headers: { ...headers, "Content-Type": "application/json" }
       });
     }
 
-    const appId = pathParts[1];
+    if (!isAvatar) {
+      const appId = pathParts[1];
 
-    // If regular admin, check if authorized for this otopark
-    if (user.role !== "superadmin") {
-      const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${appId}&select=parking_location`, {
-        headers: {
-          "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`
-        }
-      });
-
-      if (!getRes.ok) {
-        return new Response(JSON.stringify({ error: "Başvuru bulunamadı!" }), {
-          status: 404,
-          headers: { ...headers, "Content-Type": "application/json" }
+      // If regular admin, check if authorized for this otopark
+      if (user.role !== "superadmin") {
+        const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${appId}&select=parking_location`, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
         });
-      }
 
-      const apps = await getRes.json();
+        if (!getRes.ok) {
+          return new Response(JSON.stringify({ error: "Başvuru bulunamadı!" }), {
+            status: 404,
+            headers: { ...headers, "Content-Type": "application/json" }
+          });
+        }
+
+        const apps = await getRes.json();
       if (apps.length === 0) {
         return new Response(JSON.stringify({ error: "Başvuru bulunamadı!" }), {
           status: 404,

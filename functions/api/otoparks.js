@@ -80,22 +80,6 @@ export async function onRequest(context) {
     // GET: List all otoparks (Public)
     // ----------------------------------------------------
     if (method === "GET") {
-      const { searchParams } = new URL(context.request.url);
-      if (searchParams.get("inspect") === "true") {
-        const adminRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?select=*&limit=1`, {
-          headers: {
-            "apikey": supabaseAnonKey,
-            "Authorization": `Bearer ${supabaseAnonKey}`
-          }
-        });
-        if (adminRes.ok) {
-          const rows = await adminRes.json();
-          const columns = rows[0] ? Object.keys(rows[0]) : [];
-          return new Response(JSON.stringify({ columns, sample: rows[0] }), { status: 200, headers });
-        }
-        return new Response(JSON.stringify({ error: "Failed to fetch admin schema" }), { status: 500, headers });
-      }
-
       const res = await fetch(`${supabaseUrl}/rest/v1/otoparks?is_deleted=eq.false&select=*&order=name.asc`, {
         headers: {
           "apikey": supabaseAnonKey,

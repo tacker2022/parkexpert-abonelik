@@ -9,6 +9,25 @@ function base64Decode(base64) {
   return new TextDecoder().decode(bytes);
 }
 
+// Helper to upload base64 avatar to R2
+async function uploadAvatarToR2(adminId, photoBase64, bucket) {
+  if (!photoBase64 || !bucket) return;
+  try {
+    const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, "");
+    const binaryString = atob(base64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    await bucket.put(`avatars/${adminId}.jpg`, bytes, {
+      httpMetadata: { contentType: "image/jpeg" }
+    });
+  } catch (e) {
+    console.error(`Failed to upload avatar for admin ${adminId}:`, e);
+  }
+}
+
 // Helper to verify JWT token using HMAC-SHA256
 async function verifyToken(token, secret) {
   try {
@@ -113,7 +132,7 @@ export async function onRequest(context) {
     // ----------------------------------------------------
     if (method === "POST") {
       const payload = await context.request.json();
-      const { id, name, username, password, otoparks, phone, email } = payload;
+      const { id, name, username, password, otoparks, phone, email, photo_base64 } = payload;
 
       if (!name || !username || !otoparks || otoparks.length === 0) {
         return new Response(JSON.stringify({ error: "Ad Soyad, kullanıcı adı ve otopark bilgisi zorunludur." }), { status: 400, headers });
@@ -229,6 +248,10 @@ export async function onRequest(context) {
           })
         );
 
+        if (photo_base64) {
+          await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);
+        }
+
         return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
       } else {
         // CREATE new admin
@@ -294,6 +317,10 @@ export async function onRequest(context) {
             ipAddress
           })
         );
+
+        if (photo_base64) {
+          await uploadAvatarToR2(newAdminId, photo_base64, context.env.BUCKET);
+        }
 
         return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
       }

@@ -5280,9 +5280,19 @@ function handleUserRoleChange() {
   
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   
+  const avatarImg = document.getElementById('current-user-avatar-img');
+  const avatarInitials = document.getElementById('current-user-avatar-initials');
+
   if (val === 'superadmin') {
+    if (avatarImg) {
+      avatarImg.style.display = 'none';
+      avatarImg.src = '';
+    }
+    if (avatarInitials) {
+      avatarInitials.textContent = 'SA';
+      avatarInitials.style.display = 'inline-flex';
+    }
     if (avatar) {
-      avatar.textContent = 'SA';
       avatar.className = 'user-avatar user-avatar-superadmin';
     }
     if (subtext) subtext.textContent = 'Sistem Sahibi (Tüm Yetkiler)';
@@ -5300,8 +5310,15 @@ function handleUserRoleChange() {
     const adminObj = admins.find(a => a.id === val);
     if (adminObj) {
       const initials = adminObj.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      if (avatarImg) {
+        avatarImg.src = `/api/document?path=avatars/${adminObj.id}.jpg&_t=${Date.now()}`;
+        avatarImg.style.display = 'block';
+      }
+      if (avatarInitials) {
+        avatarInitials.textContent = initials;
+        avatarInitials.style.display = 'inline-flex';
+      }
       if (avatar) {
-        avatar.textContent = initials;
         avatar.className = 'user-avatar user-avatar-representative';
       }
       if (subtext) subtext.textContent = 'Otopark Temsilcisi';
@@ -5438,10 +5455,17 @@ function renderAdminsTable() {
       `<span class="otopark-card__category otopark-card__category--sanayi" style="margin: 0.15rem 0.25rem 0.15rem 0; display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.5rem; text-transform: none;">${oto}</span>`
     ).join('');
 
+    const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     card.innerHTML = `
-      <div class="otopark-card__header">
-        <div class="otopark-card__name">${admin.name}</div>
-        <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700;">@${admin.username}</span>
+      <div class="otopark-card__header" style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
+        <div class="user-avatar" style="width: 42px; height: 42px; position: relative; overflow: hidden; background: var(--color-gradient-accent); border: 2px solid rgba(15, 59, 162, 0.1); flex-shrink: 0;">
+          <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
+          <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem;">${initials}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.15rem; flex: 1;">
+          <div class="otopark-card__name" style="margin: 0; font-size: 0.95rem; font-weight: 700;">${admin.name}</div>
+          <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none;">@${admin.username}</span>
+        </div>
       </div>
       <div class="otopark-card__body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
         <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.25rem;">
@@ -5874,6 +5898,8 @@ function populateAdminOtoparksCheckboxes(selectedOtoparks = []) {
 
 function openCreateAdminModal() {
   document.getElementById('form-admin-edit').reset();
+  const photoInput = document.getElementById('edit-admin-photo');
+  if (photoInput) photoInput.value = '';
   document.getElementById('edit-admin-id').value = '';
   document.getElementById('edit-admin-username').readOnly = false;
   document.getElementById('edit-admin-username').style.backgroundColor = '#ffffff';
@@ -5901,6 +5927,9 @@ function editAdmin(adminId) {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const adminObj = admins.find(a => a.id === adminId);
   if (!adminObj) return;
+
+  const photoInput = document.getElementById('edit-admin-photo');
+  if (photoInput) photoInput.value = '';
 
   document.getElementById('edit-admin-id').value = adminObj.id;
   document.getElementById('edit-admin-name').value = adminObj.name;
@@ -5964,13 +5993,29 @@ async function saveAdminConfig(event) {
     return;
   }
 
+  const photoInput = document.getElementById('edit-admin-photo');
+  let photoBase64 = null;
+  if (photoInput && photoInput.files && photoInput.files[0]) {
+    const file = photoInput.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Profil fotoğrafı boyutu en fazla 2MB olabilir.");
+      return;
+    }
+    photoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
   const payload = {
     id: id || undefined,
     name,
     username,
     otoparks: selectedOtoparks,
     phone: phone || null,
-    email: email || null
+    email: email || null,
+    photo_base64: photoBase64
   };
 
   if (password) {
