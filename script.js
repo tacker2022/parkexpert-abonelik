@@ -139,6 +139,33 @@ function startSessionCountdown() {
   }
 }
 
+let inactivityTimeout;
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimeout);
+  
+  // 15 minutes = 15 * 60 * 1000 ms = 900000 ms
+  inactivityTimeout = setTimeout(async () => {
+    console.log("[Inactivity] User has been inactive for 15 minutes. Logging out...");
+    alert("Uzun süre işlem yapmadığınız için oturumunuz güvenlik nedeniyle sonlandırılmıştır.");
+    await handleAdminLogout();
+  }, 15 * 60 * 1000);
+}
+
+function initInactivityTimer() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  clearTimeout(inactivityTimeout);
+
+  const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+  events.forEach(eventName => {
+    document.addEventListener(eventName, resetInactivityTimer, { passive: true });
+  });
+
+  resetInactivityTimer();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize Lucide Icons
   if (typeof lucide !== 'undefined') {
@@ -2914,6 +2941,9 @@ async function initAdminController() {
 
   // Start active session countdown timer
   startSessionCountdown();
+
+  // Initialize inactivity auto-logout timer
+  initInactivityTimer();
 
   // Always enable Privacy Mode by default on fresh session / login
   isPrivacyMode = true;
