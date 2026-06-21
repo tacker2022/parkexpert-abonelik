@@ -34,8 +34,100 @@ async function signToken(data, secret, clientIp) {
 
   const signatureArray = Array.from(new Uint8Array(signatureBuffer));
   const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
-
   return base64Encode(payloadStr) + "." + signatureHex;
+}
+
+async function getLockoutState(username, supabaseUrl, supabaseAnonKey) {
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/login_attempts?username=eq.${encodeURIComponent(username.toLowerCase())}&select=*`, {
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`
+      }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0) {
+        const row = rows[0];
+        if (row.locked_until) {
+          const lockedUntilTime = new Date(row.locked_until).getTime();
+          if (lockedUntilTime > Date.now()) {
+            return { locked: true, remainingMs: lockedUntilTime - Date.now(), attempts: row.attempts };
+          }
+        }
+        return { locked: false, attempts: row.attempts };
+      }
+    }
+  } catch (e) {
+    console.error("Lockout check error:", e);
+  }
+  return { locked: false, attempts: 0 };
+}
+
+async function recordFailedAttempt(username, supabaseUrl, supabaseAnonKey) {
+  try {
+    const stateRes = await fetch(`${supabaseUrl}/rest/v1/login_attempts?username=eq.${encodeURIComponent(username.toLowerCase())}&select=*`, {
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`
+      }
+    });
+    
+    let currentAttempts = 0;
+    let exists = false;
+    
+    if (stateRes.ok) {
+      const rows = await stateRes.json();
+      if (rows.length > 0) {
+        currentAttempts = rows[0].attempts;
+        exists = true;
+      }
+    }
+    
+    const newAttempts = currentAttempts + 1;
+    const lockedUntil = newAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
+    
+    const payload = {
+      username: username.toLowerCase(),
+      attempts: newAttempts,
+      last_attempt_at: new Date().toISOString(),
+      locked_until: lockedUntil
+    };
+    
+    const upsertRes = await fetch(`${supabaseUrl}/rest/v1/login_attempts`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!upsertRes.ok) {
+      console.error("Failed to upsert login attempt:", await upsertRes.text());
+    }
+    
+    return { attempts: newAttempts, locked: newAttempts >= 5 };
+  } catch (e) {
+    console.error("Record failed attempt error:", e);
+  }
+  return { attempts: 1, locked: false };
+}
+
+async function resetFailedAttempts(username, supabaseUrl, supabaseAnonKey) {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/login_attempts?username=eq.${encodeURIComponent(username.toLowerCase())}`, {
+      method: "DELETE",
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`
+      }
+    });
+  } catch (e) {
+    console.error("Reset failed attempts error:", e);
+  }
 }
 
 export async function onRequest(context) {
@@ -73,6 +165,15 @@ export async function onRequest(context) {
 
     if (!username || !password) {
       return new Response(JSON.stringify({ error: "Username and password are required" }), { status: 400, headers });
+    }
+
+    // Check account lockout status first
+    const lockoutState = await getLockoutState(username, supabaseUrl, supabaseAnonKey);
+    if (lockoutState.locked) {
+      const minutes = Math.ceil(lockoutState.remainingMs / 60000);
+      return new Response(JSON.stringify({ 
+        error: `Bu hesap başarısız giriş denemeleri nedeniyle geçici olarak kilitlenmiştir. Lütfen ${minutes} dakika sonra tekrar deneyin.` 
+      }), { status: 403, headers });
     }
 
     let userObj = null;
@@ -114,7 +215,14 @@ export async function onRequest(context) {
     }
 
     if (!userObj) {
-      return new Response(JSON.stringify({ error: "Hatalı kullanıcı adı veya şifre!" }), { status: 401, headers });
+      const record = await recordFailedAttempt(username, supabaseUrl, supabaseAnonKey);
+      let errorMsg = "Hatalı kullanıcı adı veya şifre!";
+      if (record.locked) {
+        errorMsg = "Hesabınız çok fazla başarısız giriş denemesi nedeniyle geçici olarak 15 dakika kilitlenmiştir.";
+      } else {
+        errorMsg += ` (Kalan deneme hakkı: ${5 - record.attempts})`;
+      }
+      return new Response(JSON.stringify({ error: errorMsg }), { status: 401, headers });
     }
 
     // 1. Check if 2FA is enabled in settings
@@ -256,6 +364,9 @@ export async function onRequest(context) {
       );
     }
     
+    // Reset failed login attempts
+    await resetFailedAttempts(username, supabaseUrl, supabaseAnonKey);
+
     return new Response(JSON.stringify({ success: true, user: userObj, token }), { status: 200, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
