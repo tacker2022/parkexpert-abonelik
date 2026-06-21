@@ -92,7 +92,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), { status: 500, headers });
   }
 
-  // Authenticate Request
+  // Authenticate Request (Super Admin Only)
   const authHeader = context.request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
@@ -100,16 +100,11 @@ export async function onRequest(context) {
 
   const token = authHeader.substring(7);
   const user = await verifyToken(token, jwtSecret);
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
+  if (!user || user.role !== "superadmin") {
+    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
   }
 
   const method = context.request.method;
-
-  // GET and DELETE methods still require superadmin
-  if ((method === "GET" || method === "DELETE") && user.role !== "superadmin") {
-    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
-  }
 
   try {
     // ----------------------------------------------------
@@ -144,9 +139,8 @@ export async function onRequest(context) {
         if (!id || !photo_base64) {
           return new Response(JSON.stringify({ error: "Eksik bilgi! ID veya fotoğraf verisi bulunamadı." }), { status: 400, headers });
         }
-        // Authorize: Must be superadmin editing superadmin OR a representative editing their own avatar
-        const isAuthorized = (user.role === "superadmin" && id === "superadmin") || (user.id === id);
-        if (!isAuthorized) {
+        // Authorize: Must be superadmin editing superadmin avatar
+        if (id !== "superadmin") {
           return new Response(JSON.stringify({ error: "Bu işlem için yetkiniz bulunmamaktadır!" }), { status: 403, headers });
         }
         await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);

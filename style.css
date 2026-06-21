@@ -4373,10 +4373,9 @@ textarea.is-invalid {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  cursor: pointer;
 }
 
-.user-avatar::after {
+.user-avatar.user-avatar-superadmin::after {
   content: '📷';
   position: absolute;
   top: 0;
@@ -4393,7 +4392,7 @@ textarea.is-invalid {
   z-index: 5;
 }
 
-.user-avatar:hover::after {
+.user-avatar.user-avatar-superadmin:hover::after {
   opacity: 1;
 }
 

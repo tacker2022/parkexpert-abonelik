@@ -5294,6 +5294,12 @@ function handleUserRoleChange() {
     }
     if (avatar) {
       avatar.className = 'user-avatar user-avatar-superadmin';
+      avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek için tıklayın');
+      avatar.style.cursor = 'pointer';
+      avatar.onclick = () => {
+        const fileInput = document.getElementById('header-avatar-upload-input');
+        if (fileInput) fileInput.click();
+      };
     }
     if (subtext) subtext.textContent = 'Sistem Sahibi';
     if (adminUserBlock) {
@@ -5323,6 +5329,9 @@ function handleUserRoleChange() {
       }
       if (avatar) {
         avatar.className = 'user-avatar user-avatar-representative';
+        avatar.removeAttribute('title');
+        avatar.style.cursor = 'default';
+        avatar.onclick = null;
       }
       if (subtext) {
         subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
