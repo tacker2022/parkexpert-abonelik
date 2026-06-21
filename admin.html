@@ -40,31 +40,118 @@
         </a>
       </div>
       
-      <nav style="flex: 1;">
-        <ul class="sidebar-menu">
-          <li class="sidebar-item active">
-            <a href="admin.html" aria-current="page">
-              <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
-              <span>Başvuru Listesi</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a href="index.html">
-              <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-              <span>Ana Sayfa</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a href="basvuru.html">
-              <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i>
-              <span>Yeni Başvuru</span>
-            </a>
-          </li>
-        </ul>
+      <nav style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding-right: 0.25rem;">
+        <!-- Category 1: Navigation Links -->
+        <div class="sidebar-category">
+          <div class="sidebar-category-header">LİNKLER</div>
+          <ul class="sidebar-menu">
+            <li class="sidebar-item">
+              <a href="index.html">
+                <i data-lucide="home" style="width: 16px; height: 16px;"></i>
+                <span>Ana Sayfa</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a href="basvuru.html">
+                <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+                <span>Yeni Başvuru</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Category 2: Management -->
+        <div class="sidebar-category">
+          <div class="sidebar-category-header">BAŞVURU YÖNETİMİ</div>
+          <ul class="sidebar-menu">
+            <li class="sidebar-item active" id="sidebar-tab-applications">
+              <a href="javascript:void(0)" onclick="switchAdminTab('applications')">
+                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+                <span>Başvuru Listesi</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-expirations">
+              <a href="javascript:void(0)" onclick="switchAdminTab('expirations')">
+                <i data-lucide="hourglass" style="width: 16px; height: 16px;"></i>
+                <span>Abonelik Takibi</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-companies">
+              <a href="javascript:void(0)" onclick="switchAdminTab('companies')">
+                <i data-lucide="building-2" style="width: 16px; height: 16px;"></i>
+                <span>Firma Analizi</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-analytics">
+              <a href="javascript:void(0)" onclick="switchAdminTab('analytics')">
+                <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i>
+                <span>Analiz & İstatistik</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Category 3: System Admin Modules -->
+        <div class="sidebar-category" id="sidebar-category-system" style="display: none;">
+          <div class="sidebar-category-header">SİSTEM YÖNETİMİ</div>
+          <ul class="sidebar-menu">
+            <li class="sidebar-item" id="sidebar-tab-otoparks">
+              <a href="javascript:void(0)" onclick="switchAdminTab('otoparks')">
+                <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i>
+                <span>Otopark Yönetimi</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-admins">
+              <a href="javascript:void(0)" onclick="switchAdminTab('admins')">
+                <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+                <span>Yetkili Yönetimi</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-audit-logs">
+              <a href="javascript:void(0)" onclick="switchAdminTab('audit-logs')">
+                <i data-lucide="scroll" style="width: 16px; height: 16px;"></i>
+                <span>Denetim Günlükleri</span>
+              </a>
+            </li>
+            <li class="sidebar-item" id="sidebar-tab-settings">
+              <a href="javascript:void(0)" onclick="switchAdminTab('settings')">
+                <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
+                <span>Sistem Ayarları</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </nav>
 
+      <!-- Premium Server Status Widget -->
+      <div class="sidebar-widget-status" style="margin-top: auto; padding: 1rem; background: linear-gradient(135deg, rgba(15, 59, 162, 0.02), rgba(255, 255, 255, 0.05)); border: 1px solid rgba(15, 59, 162, 0.08); border-radius: var(--radius-md); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+          <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">SİSTEM DURUMU</span>
+          <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.65rem; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.15rem 0.45rem; border-radius: 9999px;">
+            <span style="width: 4px; height: 4px; background: #10b981; border-radius: 50%; display: inline-block; animation: pulse-glowing-green 1.5s infinite ease-in-out;"></span>
+            <span>AKTİF</span>
+          </span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+            <span style="color: var(--color-text-muted);">API Gecikmesi</span>
+            <span id="sidebar-ping-val" style="font-family: monospace; font-weight: 700; color: var(--color-primary-dark);">12 ms</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+            <span style="color: var(--color-text-muted);">Veritabanı</span>
+            <span style="font-weight: 600; color: #10b981; display: flex; align-items: center; gap: 0.2rem; font-size: 0.725rem;">
+              <i data-lucide="database" style="width: 10px; height: 10px; color: #10b981;"></i> Bağlı
+            </span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem;">
+            <span style="color: var(--color-text-muted);">CF Edge Server</span>
+            <span style="font-weight: 600; color: var(--color-primary-dark);">IST-01</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Sidebar Footer (Danger Zone Card) -->
-      <div class="sidebar-footer" style="margin-top: auto; border-top: 1px solid var(--color-border-light); padding-top: 1.25rem;">
+      <div class="sidebar-footer" style="border-top: 1px solid var(--color-border-light); padding-top: 1rem; margin-top: 0.5rem;">
         <div class="danger-zone-card" style="background: rgba(239, 68, 68, 0.03); border: 1px dashed rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); padding: 0.875rem; text-align: center;">
           <h5 style="font-size: 0.775rem; font-weight: 700; color: #dc2626; margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
             <i data-lucide="shield-alert" style="width: 14px; height: 14px; color: #dc2626;"></i> Sistem Yönetimi

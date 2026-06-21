@@ -2931,6 +2931,19 @@ async function initAdminController() {
       e.target.value = e.target.value.toUpperCase();
     });
   }
+
+  // Start sidebar ping simulation
+  startSidebarPingSimulation();
+}
+
+function startSidebarPingSimulation() {
+  const pingEl = document.getElementById('sidebar-ping-val');
+  if (!pingEl) return;
+  if (window.sidebarPingInterval) clearInterval(window.sidebarPingInterval);
+  window.sidebarPingInterval = setInterval(() => {
+    const randomPing = Math.floor(6 + Math.random() * 12);
+    pingEl.textContent = `${randomPing} ms`;
+  }, 4000);
 }
 
 let liveTrackingInterval = null;
@@ -4686,6 +4699,15 @@ function switchAdminTab(tabName) {
     return;
   }
   currentAdminTab = tabName;
+
+  // Update sidebar active classes
+  const sidebarItems = document.querySelectorAll('.sidebar-menu .sidebar-item');
+  sidebarItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.id === `sidebar-tab-${tabName}`) {
+      item.classList.add('active');
+    }
+  });
   const tabApp = document.getElementById('tab-applications');
   const tabExp = document.getElementById('tab-expirations');
   const tabComp = document.getElementById('tab-companies');
@@ -5312,7 +5334,13 @@ function handleUserRoleChange() {
     if (tabBulk) tabBulk.style.display = 'inline-flex';
     if (tabAuditLogs) tabAuditLogs.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
+
+    const sidebarSys = document.getElementById('sidebar-category-system');
+    if (sidebarSys) sidebarSys.style.display = 'block';
   } else {
+    const sidebarSys = document.getElementById('sidebar-category-system');
+    if (sidebarSys) sidebarSys.style.display = 'none';
+
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
     const adminObj = admins.find(a => a.id === val) || loggedInUser;

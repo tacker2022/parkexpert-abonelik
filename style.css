@@ -1351,12 +1351,39 @@ textarea.is-invalid {
   width: 260px;
   background-color: #ffffff;
   color: var(--color-primary-dark);
-  padding: 2rem 1.5rem;
+  padding: 2rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.5rem;
   flex-shrink: 0;
   border-right: 1px solid var(--color-border-light);
+}
+
+.sidebar-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sidebar-category-header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-left: 0.75rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
+}
+
+.sidebar-widget-status {
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.sidebar-widget-status:hover {
+  background: linear-gradient(135deg, rgba(15, 59, 162, 0.04), rgba(255, 255, 255, 0.08)) !important;
+  border-color: rgba(15, 59, 162, 0.15) !important;
+  box-shadow: 0 6px 14px rgba(15, 59, 162, 0.03);
 }
 
 .sidebar-logo {
