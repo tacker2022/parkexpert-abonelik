@@ -203,6 +203,23 @@ export async function onRequest(context) {
       } else {
         errorMsg += ` (Kalan deneme hakkı: ${5 - record.attempts})`;
       }
+
+      // Send telegram alert if failed attempts are 3 or more
+      if (record.attempts >= 3) {
+        const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+        const alertMsg = record.locked
+          ? `<b>🚨 ŞÜPHELİ DURUM: HESAP KİLİTLENDİ (OTP)</b>\n\n` +
+            `<b>Kullanıcı:</b> ${username}\n` +
+            `<b>IP Adresi:</b> ${clientIp}\n` +
+            `<b>Durum:</b> Üst üste 5 kez başarısız 2FA/OTP girişi yapıldığı için hesap 15 dakika kilitlendi (Brute-force uyarısı).`
+          : `<b>⚠️ ŞÜPHELİ DURUM: BAŞARISIZ 2FA/OTP GİRİŞİ</b>\n\n` +
+            `<b>Kullanıcı:</b> ${username}\n` +
+            `<b>IP Adresi:</b> ${clientIp}\n` +
+            `<b>Durum:</b> Üst üste ${record.attempts} kez başarısız 2FA/OTP doğrulama denemesi yapıldı.`;
+        
+        await sendTelegramAlert(alertMsg, context.env);
+      }
+
       return new Response(JSON.stringify({ error: errorMsg }), { status: 400, headers });
     }
 

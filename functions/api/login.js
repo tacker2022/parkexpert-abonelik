@@ -297,6 +297,23 @@ export async function onRequest(context) {
       } else {
         errorMsg += ` (Kalan deneme hakkı: ${5 - record.attempts})`;
       }
+
+      // Send telegram alert if failed attempts are 3 or more
+      if (record.attempts >= 3) {
+        const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+        const alertMsg = record.locked
+          ? `<b>🚨 ŞÜPHELİ DURUM: HESAP KİLİTLENDİ (LOGIN)</b>\n\n` +
+            `<b>Kullanıcı:</b> ${username}\n` +
+            `<b>IP Adresi:</b> ${clientIp}\n` +
+            `<b>Durum:</b> Üst üste 5 kez başarısız giriş denemesi yapıldığı için hesap 15 dakika kilitlendi (Brute-force uyarısı).`
+          : `<b>⚠️ ŞÜPHELİ DURUM: BAŞARISIZ GİRİŞ DENEMESİ</b>\n\n` +
+            `<b>Kullanıcı:</b> ${username}\n` +
+            `<b>IP Adresi:</b> ${clientIp}\n` +
+            `<b>Durum:</b> Üst üste ${record.attempts} kez başarısız giriş denemesi yapıldı.`;
+        
+        await sendTelegramAlert(alertMsg, context.env);
+      }
+
       return new Response(JSON.stringify({ error: errorMsg }), { status: 401, headers });
     }
 
