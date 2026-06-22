@@ -235,6 +235,7 @@ export async function onRequest(context) {
       if (res.ok) {
         const admins = await res.json();
         if (admins.length > 0) {
+          const admin = admins[0];
           const salt = context.env.PASSWORD_SALT;
           const inputHash = await hashPassword(password, salt);
           
