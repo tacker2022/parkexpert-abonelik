@@ -1,4 +1,4 @@
-// WhatsApp helper module for Green API - Active Config
+// WhatsApp helper module for Green API & Meta Cloud API
 
 export function formatWhatsAppNumber(phone) {
   if (!phone) return null;
@@ -19,51 +19,118 @@ export function formatWhatsAppNumber(phone) {
     cleaned = "90" + cleaned;
   }
   
-  return `${cleaned}@c.us`;
+  return cleaned;
 }
 
 export async function sendWhatsApp(phone, message, env) {
-  const instanceId = env.GREENAPI_INSTANCE_ID;
-  const apiToken = env.GREENAPI_API_TOKEN;
+  // 1. Check if Meta Cloud API credentials are set
+  const metaToken = env.WHATSAPP_API_TOKEN;
+  const metaPhoneId = env.WHATSAPP_PHONE_NUMBER_ID;
+  const metaTemplateName = env.WHATSAPP_TEMPLATE_NAME || "parkexpert_notification";
 
-  if (!instanceId || !apiToken) {
-    console.log(`[WhatsApp Simüle Gönderim] (Env Değişkenleri Eksik)
-Alıcı: ${phone}
-Mesaj: ${message}`);
-    return { success: true, simulated: true, reason: "Missing Green API configurations" };
-  }
-
-  const chatId = formatWhatsAppNumber(phone);
-  if (!chatId) {
-    return { success: false, error: "Invalid phone number" };
-  }
-
-  const apiHost = env.GREENAPI_API_URL || "https://api.green-api.com";
-  const url = `${apiHost.replace(/\/+$/, "")}/waInstance${instanceId}/sendMessage/${apiToken}`;
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        chatId: chatId,
-        message: message
-      })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(`[WhatsApp API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
-      return { success: false, status: res.status, error: errText };
+  if (metaToken && metaPhoneId) {
+    // USE META OFFICIAL CLOUD API
+    const formattedPhone = formatWhatsAppNumber(phone);
+    if (!formattedPhone) {
+      return { success: false, error: "Invalid phone number" };
     }
 
-    const data = await res.json();
-    console.log(`[WhatsApp API Başarılı] Alıcı: ${chatId}, MesajID: ${data.idMessage || "N/A"}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error(`[WhatsApp API Çökme Hatası]:`, err);
-    return { success: false, error: err.message };
+    const url = `https://graph.facebook.com/v18.0/${metaPhoneId}/messages`;
+    
+    // Build payload for Option A (Generic Template with 1 variable)
+    const payload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: formattedPhone,
+      type: "template",
+      template: {
+        name: metaTemplateName,
+        language: {
+          code: "tr"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: message
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${metaToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[WhatsApp Meta API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
+        return { success: false, status: res.status, error: errText };
+      }
+
+      const data = await res.json();
+      console.log(`[WhatsApp Meta API Başarılı] Alıcı: ${formattedPhone}, MessageID: ${data.messages?.[0]?.id || "N/A"}`);
+      return { success: true, data };
+    } catch (err) {
+      console.error(`[WhatsApp Meta API Çökme Hatası]:`, err);
+      return { success: false, error: err.message };
+    }
   }
+
+  // 2. Fallback to Green API if credentials are set
+  const greenInstanceId = env.GREENAPI_INSTANCE_ID;
+  const greenApiToken = env.GREENAPI_API_TOKEN;
+
+  if (greenInstanceId && greenApiToken) {
+    const formattedPhone = formatWhatsAppNumber(phone);
+    if (!formattedPhone) {
+      return { success: false, error: "Invalid phone number" };
+    }
+    const chatId = `${formattedPhone}@c.us`;
+
+    const apiHost = env.GREENAPI_API_URL || "https://api.green-api.com";
+    const url = `${apiHost.replace(/\/+$/, "")}/waInstance${greenInstanceId}/sendMessage/${greenApiToken}`;
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chatId: chatId,
+          message: message
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[WhatsApp Green API Hatası] Durum: ${res.status}, Yanıt: ${errText}`);
+        return { success: false, status: res.status, error: errText };
+      }
+
+      const data = await res.json();
+      console.log(`[WhatsApp Green API Başarılı] Alıcı: ${chatId}, MesajID: ${data.idMessage || "N/A"}`);
+      return { success: true, data };
+    } catch (err) {
+      console.error(`[WhatsApp Green API Çökme Hatası]:`, err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 3. Simulated send if no API is configured
+  console.log(`[WhatsApp Simüle Gönderim] (Hiçbir API Yapılandırılmamış)
+Alıcı: ${phone}
+Mesaj: ${message}`);
+  return { success: true, simulated: true, reason: "No WhatsApp API configuration found" };
 }
