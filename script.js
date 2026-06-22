@@ -148,7 +148,7 @@ function resetInactivityTimer() {
   inactivityTimeout = setTimeout(async () => {
     console.log("[Inactivity] User has been inactive for 15 minutes. Logging out...");
     alert("Uzun süre işlem yapmadığınız için oturumunuz güvenlik nedeniyle sonlandırılmıştır.");
-    await handleAdminLogout();
+    await handleAdminLogout('inactivity');
   }, 15 * 60 * 1000);
 }
 
@@ -2904,9 +2904,12 @@ window.verifyAdminOTP = verifyAdminOTP;
 window.sendOTPChannel = sendOTPChannel;
 window.cancel2FA = cancel2FA;
 
-async function handleAdminLogout() {
+async function handleAdminLogout(reason = 'user') {
   if (window.sessionCountdownInterval) {
     clearInterval(window.sessionCountdownInterval);
+  }
+  if (window.heartbeatInterval) {
+    clearInterval(window.heartbeatInterval);
   }
   const token = localStorage.getItem('parkexpert_token');
   if (token) {
@@ -2914,8 +2917,10 @@ async function handleAdminLogout() {
       await fetch('/api/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
       });
     } catch (e) {
       console.error("Logout request failed:", e);
@@ -2955,6 +2960,9 @@ async function initAdminController() {
 
   // Initialize inactivity auto-logout timer
   initInactivityTimer();
+
+  // Start heartbeat updates
+  startHeartbeatTimer();
 
   // Always enable Privacy Mode by default on fresh session / login
   isPrivacyMode = true;
@@ -4906,6 +4914,7 @@ function switchAdminTab(tabName) {
     if (tabAdm) tabAdm.classList.add('active');
     if (panelAdm) panelAdm.style.display = 'block';
     renderAdminsTable();
+    fetchActiveSessions();
   } else if (tabName === 'settings') {
     if (tabSet) tabSet.classList.add('active');
     if (panelSet) panelSet.style.display = 'block';
@@ -9303,6 +9312,194 @@ async function downloadBackupFile(filename) {
 window.loadBackupsList = loadBackupsList;
 window.triggerManualBackup = triggerManualBackup;
 window.downloadBackupFile = downloadBackupFile;
+
+// ==========================================================================
+// ACTIVE SESSIONS & HEARTBEAT SYSTEM
+// ==========================================================================
+
+function startHeartbeatTimer() {
+  if (window.heartbeatInterval) {
+    clearInterval(window.heartbeatInterval);
+  }
+  
+  // Heartbeat every 2 minutes (120,000 ms)
+  window.heartbeatInterval = setInterval(async () => {
+    const token = localStorage.getItem('parkexpert_token');
+    if (!token) return;
+    
+    try {
+      const res = await fetch('/api/heartbeat', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.status === 401) {
+        clearInterval(window.heartbeatInterval);
+        alert("Oturumunuz sunucu veya başka bir yönetici tarafından sonlandırıldı. Tekrar giriş yapın.");
+        handleAdminLogout('terminated');
+      }
+    } catch (err) {
+      console.error("Heartbeat failed:", err);
+    }
+  }, 120 * 1000);
+}
+
+async function fetchActiveSessions() {
+  const token = localStorage.getItem('parkexpert_token');
+  const tableBody = document.getElementById('active-sessions-table-body');
+  const countSpan = document.getElementById('sessions-results-count');
+  
+  if (!token || !tableBody) return;
+  
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="6" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+        <span class="ocr-spinner" style="display: inline-block; margin-right: 0.5rem; vertical-align: middle;"></span> Aktif oturumlar yükleniyor...
+      </td>
+    </tr>
+  `;
+  
+  try {
+    const res = await fetch('/api/active_sessions', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    
+    const data = await res.json();
+    
+    if (countSpan) {
+      countSpan.textContent = `(${data.length} aktif oturum)`;
+    }
+    
+    if (data.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+            Aktif oturum bulunamadı.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    
+    // Get current session token payload to highlight current session
+    const parts = token.split('.');
+    let currentJti = '';
+    if (parts.length >= 2) {
+      try {
+        const payloadStr = atob(parts[0]);
+        const payload = JSON.parse(payloadStr);
+        currentJti = payload.jti || '';
+      } catch(e){}
+    }
+    
+    tableBody.innerHTML = data.map(session => {
+      const isCurrent = session.id === currentJti;
+      const createdDate = new Date(session.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(session.created_at).toLocaleDateString('tr-TR');
+      const lastActiveDate = new Date(session.last_active_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      
+      // Parse User Agent to show a clean browser/OS label
+      let clientInfo = "Bilinmeyen Cihaz";
+      const ua = session.user_agent || "";
+      if (ua.includes("Chrome") && !ua.includes("Edg")) clientInfo = "Google Chrome";
+      else if (ua.includes("Safari") && !ua.includes("Chrome")) clientInfo = "Safari";
+      else if (ua.includes("Firefox")) clientInfo = "Mozilla Firefox";
+      else if (ua.includes("Edg")) clientInfo = "Microsoft Edge";
+      
+      if (ua.includes("Windows")) clientInfo += " (Windows)";
+      else if (ua.includes("Macintosh")) clientInfo += " (Mac)";
+      else if (ua.includes("Android")) clientInfo += " (Android)";
+      else if (ua.includes("iPhone")) clientInfo += " (iPhone)";
+
+      return `
+        <tr style="border-bottom: 1px solid var(--color-border-light); ${isCurrent ? 'background: rgba(16, 185, 129, 0.03);' : ''}">
+          <td style="padding: 1rem; font-weight: 600; color: var(--color-text-dark);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="user-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700;">
+                ${session.name.substring(0, 1).toUpperCase()}
+              </span>
+              <span>${session.name} (${session.username})</span>
+              ${isCurrent ? '<span style="font-size: 0.65rem; font-weight: 700; background: #10b981; color: #ffffff; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem;">BU CİHAZ</span>' : ''}
+            </td>
+            <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
+              ${session.role === 'superadmin' ? 'Süper Admin' : 'Admin'}
+            </td>
+            <td style="padding: 1rem; font-family: monospace; color: var(--color-text-dark);">
+              ${session.ip_address || 'Bilinmiyor'}<br>
+              <span style="font-size: 0.7rem; color: var(--color-text-muted); font-family: sans-serif;">${clientInfo}</span>
+            </td>
+            <td style="padding: 1rem; color: var(--color-text-muted);">
+              ${createdDate}
+            </td>
+            <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
+              ${lastActiveDate}
+            </td>
+            <td style="padding: 1rem; text-align: center;">
+              ${isCurrent ? `
+                <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Oturum Açık</span>
+              ` : `
+                <button class="btn btn-secondary" onclick="terminateSession('${session.id}', '${session.created_at}', '${session.username}')" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; color: #ef4444; background: transparent; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#ffffff';" onmouseout="this.style.background='transparent'; this.style.color='#ef4444';">
+                  Sonlandır
+                </button>
+              `}
+            </td>
+          </tr>
+        `;
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  } catch (err) {
+    console.error("Failed to load active sessions:", err);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="padding: 2rem; text-align: center; color: #ef4444; font-weight: 700;">
+          Oturumlar yüklenirken hata oluştu: ${err.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+async function terminateSession(jti, expiresAt, username) {
+  if (!confirm(`'${username}' kullanıcısının bu oturumunu zorla sonlandırmak istediğinize emin misiniz?\nKullanıcı sistemden anında atılacaktır.`)) {
+    return;
+  }
+  
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+  
+  try {
+    const res = await fetch('/api/active_sessions', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ jti, expiresAt, username })
+    });
+    
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    
+    alert("Oturum başarıyla sonlandırıldı.");
+    fetchActiveSessions();
+  } catch (err) {
+    alert(`Oturum kapatılamadı: ${err.message}`);
+  }
+}
+
+window.fetchActiveSessions = fetchActiveSessions;
+window.terminateSession = terminateSession;
 
 
 

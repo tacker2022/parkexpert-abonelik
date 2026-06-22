@@ -1,6 +1,7 @@
 import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
 import { sendTelegramAlert } from "./telegram_helper.js";
+import { logAudit } from "./audit_helper.js";
 
 // Helper for safe base64 encoding (supports Unicode)
 function base64Encode(str) {
@@ -34,7 +35,8 @@ async function signToken(data, secret, clientIp) {
 
   const signatureArray = Array.from(new Uint8Array(signatureBuffer));
   const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  return base64Encode(payloadStr) + "." + signatureHex;
+  const token = base64Encode(payloadStr) + "." + signatureHex;
+  return { token, jti };
 }
 
 async function hashPassword(password, salt = "parkexpert-salt-key-98765") {
@@ -425,7 +427,38 @@ export async function onRequest(context) {
 
     // Sign session token directly (no 2FA or disabled/missing contact details)
     const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
-    const token = await signToken(userObj, jwtSecret, clientIp);
+    const { token, jti } = await signToken(userObj, jwtSecret, clientIp);
+
+    // Create session in active_sessions
+    const userAgent = context.request.headers.get("User-Agent") || "";
+    await fetch(`${supabaseUrl}/rest/v1/active_sessions`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: jti,
+        username: userObj.username,
+        name: userObj.name,
+        role: userObj.role,
+        ip_address: clientIp,
+        user_agent: userAgent
+      })
+    });
+
+    // Log audit
+    await logAudit({
+      supabaseUrl,
+      supabaseAnonKey,
+      username: userObj.username,
+      role: userObj.role,
+      actionType: "LOGIN",
+      targetId: jti,
+      details: "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
+      ipAddress: clientIp
+    });
     
     if (userObj.role === "superadmin") {
       await sendTelegramAlert(
