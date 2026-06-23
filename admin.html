@@ -136,12 +136,22 @@
                 <span>Denetim Günlükleri</span>
               </a>
             </li>
+            <li class="sidebar-item" id="sidebar-tab-backups">
+              <a href="javascript:void(0)" onclick="switchAdminTab('backups')">
+                <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+                <span>Yedekleme Yönetimi</span>
+              </a>
+            </li>
             <li class="sidebar-item" id="sidebar-tab-settings">
               <a href="javascript:void(0)" onclick="switchAdminTab('settings')">
                 <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
                 <span>Sistem Ayarları</span>
               </a>
-                   <!-- Premium Server Status Widget -->
+            </li>
+          </ul>
+        </div>
+
+        <!-- Premium Server Status Widget -->
         <div class="sidebar-widget-status" style="margin-top: 0.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(15, 59, 162, 0.02), rgba(255, 255, 255, 0.05)); border: 1px solid rgba(15, 59, 162, 0.08); border-radius: var(--radius-md); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01); margin-bottom: 0.5rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
             <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">SİSTEM DURUMU</span>
@@ -1107,11 +1117,18 @@
             </form>
           </div>
 
+        <!-- Panel 10: Database Backup Management Panel -->
+        <div id="panel-backups" style="display: none;">
+          <section class="admin-actions-bar">
+            <h3>Veritabanı Yedekleme Yönetimi 🛡️</h3>
+            <p>Sistem verilerinin güvenliği için yedekleme işlemlerini buradan takip edebilir ve yönetebilirsiniz.</p>
+          </section>
+
           <!-- Database Backup Card -->
           <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 2rem; max-width: 600px; margin-top: 1.5rem; box-shadow: var(--shadow-sm);">
             <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary-dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem;">
               <i data-lucide="database" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
-              <span>Veritabanı Yedekleme Yönetimi 🛡️</span>
+              <span>Yedekleme Dosyaları 📂</span>
             </h4>
             <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.5; position: relative; padding-right: 24px;">
               Dış zamanlanmış görev (Cron-job.org) üzerinden her gün tam saat 06:00'da (TSİ) otomatik yedekleme tetiklenmekte, GitHub Actions aracılığıyla yedek alınarak Cloudflare R2 ve Google Drive hesaplarınıza yüklenmektedir. Buradan manuel yedekleme başlatabilir ve mevcut yedekleri indirebilirsiniz.

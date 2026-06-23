@@ -4832,7 +4832,7 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
-  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs') && currentAdminUser !== 'superadmin') {
+  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs' || tabName === 'backups') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -4894,6 +4894,8 @@ function switchAdminTab(tabName) {
   if (panelSmsReports) panelSmsReports.style.display = 'none';
   if (panelBulk) panelBulk.style.display = 'none';
   if (panelAuditLogs) panelAuditLogs.style.display = 'none';
+  const panelBackups = document.getElementById('panel-backups');
+  if (panelBackups) panelBackups.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
@@ -4935,6 +4937,10 @@ function switchAdminTab(tabName) {
     if (tabAnalytic) tabAnalytic.classList.add('active');
     if (panelAnalytic) panelAnalytic.style.display = 'block';
     updateAnalyticsCharts(filteredApplications);
+  } else if (tabName === 'backups') {
+    const panelBackups = document.getElementById('panel-backups');
+    if (panelBackups) panelBackups.style.display = 'block';
+    loadBackupsList();
   }
 
   if (typeof lucide !== 'undefined') {
@@ -7963,8 +7969,7 @@ async function loadSystemSettings() {
       }
     });
 
-    // Load backups list in settings panel
-    loadBackupsList();
+    // Backups list is now loaded on backups tab click
 
   } catch (err) {
     console.error("Failed to load settings:", err);
