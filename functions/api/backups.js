@@ -102,7 +102,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Server security environment variable (JWT_SECRET) is not configured." }), { status: 500, headers });
   }
 
-  // 1. Authorize Admin
+  // 1. Authorize Admin or Cron
   const authHeader = context.request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Yetkisiz oturum! Lütfen giriş yapın." }), { status: 401, headers });
@@ -110,14 +110,28 @@ export async function onRequest(context) {
 
   const token = authHeader.substring(7);
   const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
-  const adminUser = await verifyTokenInline(token, jwtSecret, clientIp, supabaseUrl, supabaseAnonKey);
-  
-  if (!adminUser || adminUser.role !== "superadmin") {
-    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
-  }
-
   const url = new URL(context.request.url);
   const action = url.searchParams.get("action") || "list";
+  const cronSecret = context.env.CRON_SECRET || "parkexpert-cron-secret-key-998877";
+
+  let isAuthorized = false;
+  let adminUser = null;
+
+  if (token === cronSecret) {
+    if (action !== "trigger") {
+      return new Response(JSON.stringify({ error: "Bu eylem için Cron Şifresi kullanılamaz." }), { status: 403, headers });
+    }
+    isAuthorized = true;
+  } else {
+    adminUser = await verifyTokenInline(token, jwtSecret, clientIp, supabaseUrl, supabaseAnonKey);
+    if (adminUser && adminUser.role === "superadmin") {
+      isAuthorized = true;
+    }
+  }
+
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz veya geçerli bir Cron Şifreniz bulunmalıdır." }), { status: 403, headers });
+  }
 
   try {
     // ----------------------------------------------------
@@ -238,20 +252,22 @@ export async function onRequest(context) {
       await logAudit({
         supabaseUrl,
         supabaseAnonKey,
-        username: adminUser.username,
-        role: adminUser.role,
+        username: adminUser ? adminUser.username : "Zamanlanmış Görev (Cron)",
+        role: adminUser ? adminUser.role : "system",
         actionType: "Veritabanı Yedekleme Tetiklendi",
         targetId: workflow,
-        details: "Yönetici paneli üzerinden manuel veritabanı yedekleme işlemi (GitHub Actions) tetiklendi.",
-        ipAddress: clientIp
+        details: adminUser
+          ? "Yönetici paneli üzerinden manuel veritabanı yedekleme işlemi (GitHub Actions) tetiklendi."
+          : "Zamanlanmış görev (Cron) üzerinden otomatik veritabanı yedekleme işlemi (GitHub Actions) tetiklendi.",
+        ipAddress: clientIp || "0.0.0.0"
       });
 
       context.waitUntil(
         sendTelegramAlert(
           `<b>💾 Veritabanı Yedekleme Tetiklendi</b>\n\n` +
-          `<b>Yapan:</b> ${adminUser.username} (Rol: ${adminUser.role})\n` +
-          `<b>IP Adresi:</b> ${clientIp}\n` +
-          `<b>Durum:</b> GitHub Actions yedekleme iş akışı manuel başlatıldı.`,
+          `<b>Yapan:</b> ${adminUser ? adminUser.username : "Zamanlanmış Görev (Cron)"} (Rol: ${adminUser ? adminUser.role : "system"})\n` +
+          `<b>IP Adresi:</b> ${clientIp || "0.0.0.0"}\n` +
+          `<b>Durum:</b> GitHub Actions yedekleme iş akışı başlatıldı.`,
           context.env
         )
       );

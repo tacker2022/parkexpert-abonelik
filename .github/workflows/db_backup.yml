@@ -1,9 +1,6 @@
 name: Database Backup 🛡️
 
 on:
-  schedule:
-    # Runs every day at 03:00 UTC (06:00 Turkey Time)
-    - cron: '0 3 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions panel
 
 jobs:
