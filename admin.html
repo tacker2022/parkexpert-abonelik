@@ -1113,9 +1113,14 @@
               <i data-lucide="database" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
               <span>Veritabanı Yedekleme Yönetimi 🛡️</span>
             </h4>
-            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.5;">
-              GitHub Actions üzerinden her gün 06:00'da (TSİ) otomatik yedek alınmakta ve Cloudflare R2 ile Google Drive hesaplarınıza yüklenmektedir. Buradan manuel yedekleme başlatabilir ve mevcut yedekleri indirebilirsiniz.
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.5; position: relative; padding-right: 24px;">
+              Dış zamanlanmış görev (Cron-job.org) üzerinden her gün tam saat 06:00'da (TSİ) otomatik yedekleme tetiklenmekte, GitHub Actions aracılığıyla yedek alınarak Cloudflare R2 ve Google Drive hesaplarınıza yüklenmektedir. Buradan manuel yedekleme başlatabilir ve mevcut yedekleri indirebilirsiniz.
+              <span id="backup-info-trigger" onclick="const detail = document.getElementById('backup-info-details'); detail.style.display = detail.style.display === 'none' ? 'block' : 'none';" style="position: absolute; right: 0; top: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(15, 59, 162, 0.08); color: var(--color-primary); font-size: 0.75rem; font-weight: bold; transition: all 0.2s;" title="Çalışma detayları ve geçmiş" onmouseover="this.style.background='rgba(15, 59, 162, 0.15)'" onmouseout="this.style.background='rgba(15, 59, 162, 0.08)'">i</span>
             </p>
+            <div id="backup-info-details" style="display: none; background: rgba(15, 59, 162, 0.03); border: 1px dashed rgba(15, 59, 162, 0.15); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 1.25rem; font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.4;">
+              <strong>ℹ️ Eski Çalışma Prensibi & Güncelleme Notu:</strong><br>
+              Eskiden yedekleme işlemleri doğrudan GitHub Actions'ın kendi iç zamanlayıcısı (scheduler) ile tetikleniyordu. Ancak GitHub'ın ortak sunucu kuyruk yoğunluğuna bağlı olarak 06:00'da başlaması gereken yedekler bazen 06:30 veya 06:50 gibi gecikmeli çalışabiliyordu. Yedeklerin tam saat 06:00:00'da kararlı şekilde alınabilmesi için harici zamanlayıcı (Cron-job.org) üzerinden API tetiklemeli yeni sisteme geçilmiştir.
+            </div>
 
             <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
               <button type="button" onclick="triggerManualBackup()" id="btn-trigger-backup" class="btn btn-primary" style="min-height: 38px; padding: 0 1.25rem; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
