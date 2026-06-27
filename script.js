@@ -6816,7 +6816,7 @@ function handleUserRoleChange() {
         if (fileInput) fileInput.click();
       };
     }
-    if (subtext) subtext.innerHTML = `<span class="badge-role badge-role-superadmin">Süper Admin</span><span class="badge-username">@superadmin</span>`;
+    if (subtext) subtext.innerHTML = `<span class="badge-role badge-role-superadmin">SÜPER ADMİN</span><span class="badge-username">@superadmin</span>`;
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-superadmin';
     }
@@ -6893,7 +6893,7 @@ function handleUserRoleChange() {
           else if (roleText.includes('Genel')) badgeClass = 'badge-role-yonetim-general';
           else badgeClass = 'badge-role-yonetim-custom';
         }
-        subtext.innerHTML = `<span class="badge-role ${badgeClass}">${roleText}</span><span class="badge-username">@${adminObj.username}</span>`;
+        subtext.innerHTML = `<span class="badge-role ${badgeClass}">${roleText.toLocaleUpperCase('tr-TR')}</span><span class="badge-username">@${adminObj.username}</span>`;
       }
     }
     if (adminUserBlock) {
@@ -6940,7 +6940,7 @@ function handleUserRoleChange() {
           if (badgeText === 'Yönetim Yetkilisi') {
             badgeText = 'Yönetim';
           }
-          badgeText = badgeText.toUpperCase().trim();
+          badgeText = badgeText.toLocaleUpperCase('tr-TR').trim();
           if (!badgeText.includes('ORTAKLIĞI')) {
             badgeText = `${badgeText} ORTAKLIĞI`;
           }
