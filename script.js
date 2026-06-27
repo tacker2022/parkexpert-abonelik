@@ -3323,7 +3323,12 @@ function renderTable(apps) {
       <td><span class="col-otopark">${app.parking_location}</span></td>
       <td>${formatDateTR(app.created_at || app.date_applied)}</td>
       <td>${app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : '<span style="color:var(--color-text-muted);font-style:italic;font-size:0.85rem;">Belirtilmemiş</span>'}</td>
-      <td style="display: flex; flex-direction: column; gap: 0.25rem;"><span class="status-badge ${statusClass}">${app.status}</span>${approvalHtml}</td>
+      <td>
+        <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
+          <span class="status-badge ${statusClass}">${app.status}</span>
+          ${approvalHtml}
+        </div>
+      </td>
       <td style="text-align: center;">
         <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Başvuru Detayını Gör">
           <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
