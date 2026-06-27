@@ -661,6 +661,25 @@ export async function onRequest(context) {
       // Generate a unique application ID starting with PE-
       const appId = "PE-" + Math.floor(100000 + Math.random() * 900000);
 
+      // Check if otopark requires management approval
+      let managementApprovalStatus = "İzin Verildi";
+      try {
+        const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parking_location)}&select=requires_management_approval`, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+        if (otoparkRes.ok) {
+          const parks = await otoparkRes.json();
+          if (parks.length > 0 && parks[0].requires_management_approval === true) {
+            managementApprovalStatus = "Beklemede";
+          }
+        }
+      } catch (e) {
+        console.error("Error checking requires_management_approval for test customer:", e);
+      }
+
       const payload = {
         id: appId,
         full_name: full_name,
@@ -670,7 +689,7 @@ export async function onRequest(context) {
         parking_location: parking_location,
         subscription_type: subscription_type || "bireysel",
         status: "Beklemede",
-        management_approval: "Beklemede",
+        management_approval: managementApprovalStatus,
         tc_no: tc_identity || "11111111111",
         car_model: brand_model || "Test Aracı",
         notes: "Süper Admin tarafından oluşturulmuş test müşterisi.",
