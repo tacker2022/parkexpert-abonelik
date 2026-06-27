@@ -3347,19 +3347,21 @@ textarea.is-invalid {
 }
 
 .otopark-card {
-  background: var(--color-bg-card-light);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(15, 59, 162, 0.08);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01);
+  backdrop-filter: blur(16px);
 }
 
 .otopark-card:hover {
-  border-color: rgba(15, 59, 162, 0.25);
-  box-shadow: 0 4px 20px -4px rgba(15, 59, 162, 0.1);
-  transform: translateY(-2px);
+  border-color: rgba(15, 59, 162, 0.2);
+  box-shadow: 0 16px 36px rgba(15, 59, 162, 0.06), 0 4px 12px rgba(15, 59, 162, 0.03);
+  transform: translateY(-4px);
 }
 
 /* Card Header — Otopark Name + Category */
@@ -3368,62 +3370,66 @@ textarea.is-invalid {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, rgba(10, 20, 36, 0.03) 0%, rgba(15, 59, 162, 0.04) 100%);
-  border-bottom: 1px solid var(--color-border-light);
+  padding: 1.15rem 1.25rem 0.95rem 1.25rem;
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .otopark-card__name {
   font-family: var(--font-heading);
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   color: var(--color-primary-dark);
   line-height: 1.3;
   flex: 1;
   min-width: 0;
+  letter-spacing: -0.012em;
 }
 
 .otopark-card__category {
   display: inline-flex;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 50px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  padding: 0.225rem 0.6rem;
+  border-radius: 9999px;
   white-space: nowrap;
   flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .otopark-card__category--sanayi {
-  background: rgba(15, 59, 162, 0.08);
-  color: var(--color-primary-dark);
-  border: 1px solid rgba(15, 59, 162, 0.15);
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .otopark-card__category--avm {
   background: rgba(245, 158, 11, 0.08);
-  color: #b45309;
+  color: #d97706;
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .otopark-card__category--acik {
-  background: rgba(16, 185, 129, 0.08);
-  color: #047857;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(6, 182, 212, 0.08);
+  color: #0891b2;
+  border: 1px solid rgba(6, 182, 212, 0.2);
 }
 
 /* Card Body — Info Grid */
 .otopark-card__body {
-  padding: 0.75rem 1rem;
+  padding: 1.15rem 1.25rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 1rem;
+  gap: 0.85rem 1.25rem;
   flex: 1;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .otopark-card__field {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
 }
 
 .otopark-card__field--full {
@@ -3431,87 +3437,173 @@ textarea.is-invalid {
 }
 
 .otopark-card__label {
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  font-weight: 800;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .otopark-card__value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-dark);
-  line-height: 1.35;
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  line-height: 1.4;
   word-break: break-word;
 }
 
 .otopark-card__value--iban {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 0.72rem;
+  font-size: 0.725rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--color-primary-dark);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
+  gap: 0.4rem;
+  background: rgba(15, 59, 162, 0.03);
+  border: 1px solid rgba(15, 59, 162, 0.06);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+  box-sizing: border-box;
 }
 
 .otopark-card__value--price {
-  font-weight: 700;
-  font-size: 0.82rem;
+  font-weight: 800;
+  font-size: 0.8rem;
 }
 
 .otopark-card__price-emp {
-  color: #047857;
+  color: #059669;
 }
 
 .otopark-card__price-ext {
   color: var(--color-accent-orange);
 }
 
-/* Card Footer — Edit Button */
+/* Pre-Approval Premium Capsule Banner */
+.otopark-card__pre-approve {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-md);
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.otopark-card__pre-approve--active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), rgba(245, 158, 11, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #d97706;
+}
+
+.otopark-card__pre-approve--passive {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(99, 102, 241, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #4f46e5;
+}
+
+.otopark-card__pre-approve .pre-approve-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.otopark-card__pre-approve .pre-approve-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Card Footer — Action Buttons */
 .otopark-card__footer {
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--color-border-light);
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .otopark-card__support {
-  font-size: 0.75rem;
+  font-size: 0.725rem;
+  font-weight: 700;
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
 .otopark-card__edit-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-primary-dark);
-  background: rgba(15, 59, 162, 0.05);
-  border: 1px solid rgba(15, 59, 162, 0.12);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.725rem;
+  font-weight: 800;
+  color: var(--color-text-dark);
+  background: #ffffff;
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.otopark-card__edit-btn:hover {
-  background: rgba(15, 59, 162, 0.12);
-  border-color: rgba(15, 59, 162, 0.25);
-  box-shadow: 0 2px 8px -2px rgba(15, 59, 162, 0.15);
+.otopark-card__edit-btn.btn-templates-action {
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #4f46e5;
+}
+.otopark-card__edit-btn.btn-templates-action:hover {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.08);
+}
+
+.otopark-card__edit-btn.btn-edit-action {
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #2563eb;
+}
+.otopark-card__edit-btn.btn-edit-action:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.08);
+}
+
+.otopark-card__edit-btn.btn-delete-action {
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+.otopark-card__edit-btn.btn-delete-action:hover {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.08);
 }
 
 .otopark-card .btn-copy-iban {
-  padding: 0.15rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  padding: 0.2rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.otopark-card .btn-copy-iban:hover {
+  background: rgba(15, 59, 162, 0.08);
+  color: var(--color-primary-dark);
 }
 
 .otopark-card .btn-copy-iban i {
@@ -3519,7 +3611,66 @@ textarea.is-invalid {
   height: 11px;
 }
 
-/* Responsive adjustments */
+/* Otopark Status Interactive Badges & Card Inactive Visual State */
+.otopark-card__status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  user-select: none;
+  letter-spacing: 0.04em;
+}
+
+.otopark-card__status-btn--active {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.otopark-card__status-btn--active:hover {
+  background: rgba(16, 185, 129, 0.16);
+  transform: translateY(-1px);
+}
+
+.otopark-card__status-btn--active .status-dot-inner {
+  animation: pulse-status 2s infinite;
+}
+
+.otopark-card__status-btn--inactive {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.otopark-card__status-btn--inactive:hover {
+  background: rgba(239, 68, 68, 0.16);
+  transform: translateY(-1px);
+}
+
+.otopark-card--inactive {
+  border-color: rgba(239, 68, 68, 0.15) !important;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(254, 242, 242, 0.25) 100%) !important;
+  box-shadow: none !important;
+}
+
+.otopark-card--inactive .otopark-card__body,
+.otopark-card--inactive .otopark-card__footer {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.otopark-card--inactive:hover .otopark-card__body,
+.otopark-card--inactive:hover .otopark-card__footer {
+  opacity: 0.85;
+}
+
+/* Responsive Grid styling */
 @media (max-width: 768px) {
   .otoparks-grid {
     grid-template-columns: 1fr;
@@ -3531,60 +3682,6 @@ textarea.is-invalid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-
-/* Otopark Status Interactive Badges & Card Inactive Visual State */
-.otopark-card__status-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-  user-select: none;
-}
-
-.otopark-card__status-btn--active {
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.25);
-}
-
-.otopark-card__status-btn--active:hover {
-  background: rgba(16, 185, 129, 0.2);
-  transform: translateY(-1px);
-}
-
-.otopark-card__status-btn--inactive {
-  background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.25);
-}
-
-.otopark-card__status-btn--inactive:hover {
-  background: rgba(239, 68, 68, 0.2);
-  transform: translateY(-1px);
-}
-
-.otopark-card--inactive {
-  border-color: rgba(239, 68, 68, 0.2) !important;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(254, 242, 242, 0.4) 100%) !important;
-}
-
-.otopark-card--inactive .otopark-card__body,
-.otopark-card--inactive .otopark-card__footer {
-  opacity: 0.65;
-  transition: opacity 0.2s ease;
-}
-
-.otopark-card--inactive:hover .otopark-card__body,
-.otopark-card--inactive:hover .otopark-card__footer {
-  opacity: 0.9;
-}
-
 
 /* ==========================================================================
    PREMIUM CUSTOM SELECT COMPONENT

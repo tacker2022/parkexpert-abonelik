@@ -4930,6 +4930,25 @@ function renderOtoparksTable() {
     const statusTitle = isActive ? 'Abonelik Alımını Kapat' : 'Abonelik Alımını Aç';
     const statusDotColor = isActive ? '#10b981' : '#ef4444';
 
+    // Site/AVM Pre-Approval Banner layout
+    const isPreApproveActive = park.requiresManagementApproval === true;
+    let preApproveHtml = '';
+    if (isPreApproveActive) {
+      preApproveHtml = `
+        <div class="otopark-card__pre-approve otopark-card__pre-approve--active">
+          <span class="pre-approve-title"><i data-lucide="shield" style="width: 12px; height: 12px;"></i> Site/AVM Ön Onayı</span>
+          <span class="pre-approve-badge">AKTİF (ONAY GEREKLİ)</span>
+        </div>
+      `;
+    } else {
+      preApproveHtml = `
+        <div class="otopark-card__pre-approve otopark-card__pre-approve--passive">
+          <span class="pre-approve-title"><i data-lucide="zap" style="width: 12px; height: 12px;"></i> Site/AVM Ön Onayı</span>
+          <span class="pre-approve-badge">PASİF (DİREKT GEÇİŞ)</span>
+        </div>
+      `;
+    }
+
     const card = document.createElement('div');
     card.className = `otopark-card${cardStatusClass}`;
     card.innerHTML = `
@@ -4938,7 +4957,7 @@ function renderOtoparksTable() {
         <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
           <span class="otopark-card__category ${catClass}">${catLabel}</span>
           <button type="button" class="otopark-card__status-btn ${statusBtnClass}" onclick="toggleOtoparkStatus('${park.id}')" title="${statusTitle}">
-            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: ${statusDotColor};"></span>
+            <span class="status-dot-inner" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: ${statusDotColor};"></span>
             <span>${statusText}</span>
           </button>
         </div>
@@ -4976,9 +4995,9 @@ function renderOtoparksTable() {
             </button>
           </span>
         </div>
-        <div class="otopark-card__field otopark-card__field--full" style="background: rgba(37, 99, 235, 0.03); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); border: 1px dashed rgba(37, 99, 235, 0.15); display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem;">
-          <span class="otopark-card__label" style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.3rem;"><i data-lucide="shield-check" style="width: 13px; height: 13px; color: var(--color-primary);"></i> Site/AVM Ön Onayı</span>
-          <span class="otopark-card__value" style="font-weight: 700; color: ${park.requiresManagementApproval === true ? '#2563eb' : '#64748b'}; font-size: 0.75rem;">${park.requiresManagementApproval === true ? 'AKTİF (GEREKLİ)' : 'PASİF (DİREKT GEÇİŞ)'}</span>
+        
+        <div class="otopark-card__field otopark-card__field--full" style="margin-top: 0.25rem;">
+          ${preApproveHtml}
         </div>
       </div>
       <div class="otopark-card__footer">
@@ -4987,13 +5006,13 @@ function renderOtoparksTable() {
           ${park.supportPhone || '—'}
         </span>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <button class="otopark-card__edit-btn" onclick="openTemplatesModal('${park.id}')" style="color: var(--color-primary);">
+          <button class="otopark-card__edit-btn btn-templates-action" onclick="openTemplatesModal('${park.id}')" style="color: var(--color-primary);">
             <i data-lucide="mail" style="width: 12px; height: 12px; color: var(--color-primary);"></i> Şablonlar
           </button>
-          <button class="otopark-card__edit-btn" onclick="editOtopark('${park.id}')">
+          <button class="otopark-card__edit-btn btn-edit-action" onclick="editOtopark('${park.id}')">
             <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
           </button>
-          <button class="otopark-card__edit-btn" onclick="deleteOtopark('${park.id}')" style="color: #ef4444;">
+          <button class="otopark-card__edit-btn btn-delete-action" onclick="deleteOtopark('${park.id}')" style="color: #ef4444;">
             <i data-lucide="trash-2" style="width: 12px; height: 12px; color: #ef4444;"></i> Sil
           </button>
         </div>
