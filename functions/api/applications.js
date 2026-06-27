@@ -615,14 +615,26 @@ export async function onRequest(context) {
       }
 
       // Delete from Supabase
-      const deleteRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}`, {
-        method: "DELETE",
-        headers: {
-          "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`,
-          "Prefer": "return=representation"
-        }
-      });
+      let deleteRes;
+      if (id.includes(",")) {
+        deleteRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=in.(${id})`, {
+          method: "DELETE",
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Prefer": "return=representation"
+          }
+        });
+      } else {
+        deleteRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}`, {
+          method: "DELETE",
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Prefer": "return=representation"
+          }
+        });
+      }
 
       if (!deleteRes.ok) {
         const errText = await deleteRes.text();
@@ -631,16 +643,18 @@ export async function onRequest(context) {
 
       // Delete documents from Cloudflare R2
       if (bucket) {
-        try {
-          const listed = await bucket.list({ prefix: `applications/${id}/` });
-          if (listed && listed.objects) {
-            for (const obj of listed.objects) {
-              await bucket.delete(obj.key);
+        const idList = id.split(",");
+        for (const singleId of idList) {
+          try {
+            const listed = await bucket.list({ prefix: `applications/${singleId.trim()}/` });
+            if (listed && listed.objects) {
+              for (const obj of listed.objects) {
+                await bucket.delete(obj.key);
+              }
             }
+          } catch (r2Err) {
+            console.error("R2 Delete Error:", r2Err);
           }
-        } catch (r2Err) {
-          console.error("R2 Delete Error:", r2Err);
-          // Don't fail the whole request, database is already deleted
         }
       }
 

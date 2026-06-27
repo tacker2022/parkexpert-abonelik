@@ -3242,10 +3242,37 @@ function renderTable(apps) {
     countEl.textContent = `(${apps.length} sonuç)`;
   }
 
+  // Handle header checkbox for superadmin
+  const thead = document.querySelector('#admin-table thead tr');
+  if (thead) {
+    const hasCheckboxHeader = thead.querySelector('.col-bulk-select-header');
+    if (currentAdminUser === 'superadmin') {
+      if (!hasCheckboxHeader) {
+        const th = document.createElement('th');
+        th.className = 'col-bulk-select-header';
+        th.style.width = '40px';
+        th.style.textAlign = 'center';
+        th.innerHTML = `<input type="checkbox" id="bulk-select-all" onclick="toggleSelectAllApplications(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--color-primary);">`;
+        thead.insertBefore(th, thead.firstChild);
+      } else {
+        const selectAllCheckbox = document.getElementById('bulk-select-all');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+      }
+    } else {
+      if (hasCheckboxHeader) {
+        hasCheckboxHeader.remove();
+      }
+    }
+  }
+
+  const bulkBtn = document.getElementById('btn-bulk-delete');
+  if (bulkBtn) bulkBtn.style.display = 'none';
+
   if (apps.length === 0) {
+    const colspanVal = currentAdminUser === 'superadmin' ? 9 : 8;
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; padding: 4.5rem 2rem; background: #ffffff;">
+        <td colspan="${colspanVal}" style="text-align: center; padding: 4.5rem 2rem; background: #ffffff;">
           <div class="empty-state-container" style="max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div class="empty-state-icon" style="width: 70px; height: 70px; background: rgba(15, 59, 162, 0.05); border: 1px solid rgba(15, 59, 162, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); margin-bottom: 1.25rem; box-shadow: var(--shadow-sm); animation: pulse 2s infinite ease-in-out;">
               <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
@@ -3318,7 +3345,14 @@ function renderTable(apps) {
       `;
     }
 
+    const selectCheckboxHtml = currentAdminUser === 'superadmin' ? `
+      <td style="text-align: center; vertical-align: middle;">
+        <input type="checkbox" class="bulk-select-item" data-id="${app.id}" onclick="updateBulkDeleteButtonVisibility()" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--color-primary);">
+      </td>
+    ` : '';
+
     tr.innerHTML = `
+      ${selectCheckboxHtml}
       <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
       <td>
         <div class="col-customer">
@@ -6441,6 +6475,85 @@ async function deleteCurrentApplication() {
     }
   }
 }
+
+function toggleSelectAllApplications(masterCheckbox) {
+  const checkboxes = document.querySelectorAll('.bulk-select-item');
+  checkboxes.forEach(cb => {
+    cb.checked = masterCheckbox.checked;
+  });
+  updateBulkDeleteButtonVisibility();
+}
+
+function updateBulkDeleteButtonVisibility() {
+  const checkboxes = document.querySelectorAll('.bulk-select-item');
+  const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+  const btn = document.getElementById('btn-bulk-delete');
+  
+  if (btn) {
+    if (anyChecked && currentAdminUser === 'superadmin') {
+      btn.style.display = 'inline-flex';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+}
+
+async function deleteSelectedApplications() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+  if (currentAdminUser !== 'superadmin') {
+    alert("Sadece Süper Yönetici bu işlemi gerçekleştirebilir.");
+    return;
+  }
+
+  const checkboxes = document.querySelectorAll('.bulk-select-item:checked');
+  if (checkboxes.length === 0) {
+    alert("Lütfen silmek istediğiniz başvuruları seçin.");
+    return;
+  }
+
+  const ids = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
+  
+  if (confirm(`Seçilen ${ids.length} adet abonelik başvurusunu tamamen silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) {
+    try {
+      const res = await fetch(`/api/applications?id=${encodeURIComponent(ids.join(','))}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Başvurular silinirken hata oluştu.");
+      }
+
+      // Uncheck master checkbox if present
+      const masterCheckbox = document.getElementById('bulk-select-all');
+      if (masterCheckbox) masterCheckbox.checked = false;
+
+      await loadApplications();
+      applyFilters();
+
+      // Hide the bulk delete button
+      const btn = document.getElementById('btn-bulk-delete');
+      if (btn) btn.style.display = 'none';
+
+      alert(`Seçilen ${ids.length} adet başvuru başarıyla silindi.`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+}
+
+window.toggleSelectAllApplications = toggleSelectAllApplications;
+window.updateBulkDeleteButtonVisibility = updateBulkDeleteButtonVisibility;
+window.deleteSelectedApplications = deleteSelectedApplications;
+
 
 async function populateActiveUserSelect() {
   const select = document.getElementById('active-user-role');
