@@ -3513,7 +3513,7 @@ function applyFilters() {
   }
   
   // Recalculate and update metrics
-  updateMetrics(allApplications);
+  updateMetrics(filteredApplications);
 }
 
 function updateMetrics(apps) {
@@ -7431,19 +7431,8 @@ function renderExpirationsDashboard() {
     return { ...app, remainingDays };
   });
 
-  // Calculate overall metrics
-  const countTotal = appsWithDays.length;
-  const countExpired = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays <= 0).length;
-  const countWarning3d = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays > 0 && a.remainingDays <= 3).length;
-  const countWarning7d = appsWithDays.filter(a => a.remainingDays !== null && a.remainingDays > 3 && a.remainingDays <= 7).length;
-
-  if (totalEl) totalEl.textContent = countTotal;
-  if (expiredEl) expiredEl.textContent = countExpired;
-  if (warning3dEl) warning3dEl.textContent = countWarning3d;
-  if (warning7dEl) warning7dEl.textContent = countWarning7d;
-
-  // 3. Apply Filters
-  let filtered = appsWithDays.filter(app => {
+  // 3. Apply base filters (Location & Search Query)
+  let preFiltered = appsWithDays.filter(app => {
     // Location Filter
     if (filterLocation && app.parking_location !== filterLocation) return false;
 
@@ -7453,8 +7442,22 @@ function renderExpirationsDashboard() {
       const matchesPlate = app.plate?.toLowerCase().includes(searchQuery) || app.plate_number?.toLowerCase().includes(searchQuery);
       if (!matchesName && !matchesPlate) return false;
     }
+    return true;
+  });
 
-    // Expiry Status Filter
+  // Calculate metrics based on filtered set (excluding status filter to prevent metric self-filtering)
+  const countTotal = preFiltered.length;
+  const countExpired = preFiltered.filter(a => a.remainingDays !== null && a.remainingDays <= 0).length;
+  const countWarning3d = preFiltered.filter(a => a.remainingDays !== null && a.remainingDays > 0 && a.remainingDays <= 3).length;
+  const countWarning7d = preFiltered.filter(a => a.remainingDays !== null && a.remainingDays > 3 && a.remainingDays <= 7).length;
+
+  if (totalEl) totalEl.textContent = countTotal;
+  if (expiredEl) expiredEl.textContent = countExpired;
+  if (warning3dEl) warning3dEl.textContent = countWarning3d;
+  if (warning7dEl) warning7dEl.textContent = countWarning7d;
+
+  // 4. Apply remaining Expiry Status Filter
+  let filtered = preFiltered.filter(app => {
     if (filterStatus) {
       if (filterStatus === 'expired') {
         return app.remainingDays !== null && app.remainingDays <= 0;
@@ -7466,7 +7469,6 @@ function renderExpirationsDashboard() {
         return app.remainingDays === null || app.remainingDays > 7;
       }
     }
-
     return true;
   });
 
