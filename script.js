@@ -3277,26 +3277,34 @@ function renderTable(apps) {
     if (requiresManagement) {
       if (approval === 'Beklemede') {
         approvalHtml = `
-          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b45309; background: rgba(245, 158, 11, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.15); width: fit-content; text-transform: uppercase;">
+          <div class="management-status mgmt-pending">
             <i data-lucide="alert-triangle" style="width: 10px; height: 10px; color: #d97706;"></i>
             <span>Yönetim Onayında</span>
           </div>
         `;
       } else if (approval === 'İzin Verildi') {
         approvalHtml = `
-          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #15803d; background: rgba(16, 185, 129, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.15); width: fit-content; text-transform: uppercase;">
+          <div class="management-status mgmt-approved">
             <i data-lucide="check-circle" style="width: 10px; height: 10px; color: #16a34a;"></i>
             <span>Yönetim İzin Verdi</span>
           </div>
         `;
       } else {
         approvalHtml = `
-          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b91c1c; background: rgba(239, 68, 68, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.15); width: fit-content; text-transform: uppercase;">
+          <div class="management-status mgmt-rejected">
             <i data-lucide="x-circle" style="width: 10px; height: 10px; color: #dc2626;"></i>
             <span>Yönetim Reddetti</span>
           </div>
         `;
       }
+    } else {
+      // Direct approval (no management required)
+      approvalHtml = `
+        <div class="management-status mgmt-bypass">
+          <i data-lucide="zap" style="width: 10px; height: 10px; color: #4f46e5;"></i>
+          <span>Doğrudan Onay</span>
+        </div>
+      `;
     }
 
     tr.innerHTML = `
