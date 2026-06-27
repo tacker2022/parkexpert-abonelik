@@ -5817,6 +5817,79 @@ textarea.is-invalid {
   }
 }
 
+/* Premium Tooltip System for Authorized Otoparks */
+.otopark-tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.otopark-tooltip-content {
+  visibility: hidden;
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  z-index: 999;
+  width: max-content;
+  max-width: 280px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.otopark-tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+}
+
+.otopark-tooltip-container:hover .otopark-tooltip-content {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Sidebar Specific Tooltip Position (pops to right side) */
+.sidebar-tooltip-content {
+  left: 105% !important;
+  bottom: 50% !important;
+  top: auto !important;
+  transform: translateY(50%) !important;
+}
+
+.sidebar-tooltip-content::after {
+  top: 50% !important;
+  right: 100% !important;
+  left: auto !important;
+  bottom: auto !important;
+  margin-top: -5px !important;
+  margin-left: 0 !important;
+  border-color: transparent #0f172a transparent transparent !important;
+}
+
+.otopark-tooltip-container:hover .sidebar-tooltip-content {
+  transform: translateY(50%) translateX(6px) !important;
+}
+
 
 
 

@@ -6948,14 +6948,33 @@ function handleUserRoleChange() {
         subtext.innerHTML = `<span class="badge-role ${badgeClass}">${roleText.toLocaleUpperCase('tr-TR')}</span><span class="badge-username">@${adminObj.username}</span>`;
         const activeOtoparksEl = document.getElementById('active-user-otoparks');
         if (activeOtoparksEl) {
-          if (adminObj.otoparks && adminObj.otoparks.length > 0) {
+          if (!adminObj.otoparks || adminObj.otoparks.length === 0) {
+            activeOtoparksEl.innerHTML = `<span style="font-size: 0.65rem; color: #ef4444; font-weight: 700;">Yetkili Otopark Yok</span>`;
+          } else if (adminObj.otoparks.length <= 2) {
             activeOtoparksEl.innerHTML = adminObj.otoparks.map(name => `
               <span class="badge-otopark" title="${name}" style="font-size: 0.65rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); display: inline-block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(37, 99, 235, 0.15);">
                 📍 ${name}
               </span>
             `).join('');
           } else {
-            activeOtoparksEl.innerHTML = `<span style="font-size: 0.65rem; color: #ef4444; font-weight: 700;">Yetkili Otopark Yok</span>`;
+            const listHtml = adminObj.otoparks.map(name => `
+              <div style="display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
+                <span style="color: #ffd000; font-size: 0.8rem;">•</span>
+                <span>${name}</span>
+              </div>
+            `).join('');
+            activeOtoparksEl.innerHTML = `
+              <div class="otopark-tooltip-container">
+                <span class="badge-otopark" style="font-size: 0.65rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid rgba(37, 99, 235, 0.15); white-space: nowrap;">
+                  📍 ${adminObj.otoparks.length} Yetkili Konum
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.8;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </span>
+                <div class="otopark-tooltip-content sidebar-tooltip-content">
+                  <div style="font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.2rem; margin-bottom: 0.1rem; color: #ffd000;">TÜM YETKİLİ KONUMLAR</div>
+                  ${listHtml}
+                </div>
+              </div>
+            `;
           }
         }
       }
@@ -7096,7 +7115,9 @@ function handleUserRoleChange() {
         }
         const bannerOtoparksEl = document.getElementById('operator-banner-otoparks');
         if (bannerOtoparksEl) {
-          if (adminObj.otoparks && adminObj.otoparks.length > 0) {
+          if (!adminObj.otoparks || adminObj.otoparks.length === 0) {
+            bannerOtoparksEl.innerHTML = `<span style="font-size: 0.725rem; font-weight: 700; color: #ef4444;">Yetki verilmiş otopark bulunmamaktadır!</span>`;
+          } else if (adminObj.otoparks.length <= 2) {
             bannerOtoparksEl.innerHTML = `
               <span style="font-size: 0.725rem; font-weight: 700; color: rgba(255, 255, 255, 0.7); margin-right: 0.25rem;">Yetkili Otoparklar:</span>
               ${adminObj.otoparks.map(name => `
@@ -7108,7 +7129,38 @@ function handleUserRoleChange() {
             `;
             if (typeof lucide !== 'undefined') lucide.createIcons();
           } else {
-            bannerOtoparksEl.innerHTML = `<span style="font-size: 0.725rem; font-weight: 700; color: #ef4444;">Yetki verilmiş otopark bulunmamaktadır!</span>`;
+            const visibleOtoparks = adminObj.otoparks.slice(0, 2);
+            const hiddenOtoparks = adminObj.otoparks.slice(2);
+            
+            const visibleBadgesHtml = visibleOtoparks.map(name => `
+              <span class="badge-banner-otopark" style="font-size: 0.7rem; font-weight: 700; background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid rgba(255, 255, 255, 0.15);">
+                <i data-lucide="map-pin" style="width: 10px; height: 10px; opacity: 0.8;"></i>
+                ${name}
+              </span>
+            `).join('');
+            
+            const hiddenListHtml = hiddenOtoparks.map(name => `
+              <div style="display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
+                <span style="color: #ffd000; font-size: 0.8rem;">•</span>
+                <span>${name}</span>
+              </div>
+            `).join('');
+            
+            bannerOtoparksEl.innerHTML = `
+              <span style="font-size: 0.725rem; font-weight: 700; color: rgba(255, 255, 255, 0.7); margin-right: 0.25rem;">Yetkili Otoparklar:</span>
+              ${visibleBadgesHtml}
+              <div class="otopark-tooltip-container">
+                <span class="badge-banner-otopark" style="font-size: 0.7rem; font-weight: 700; background: rgba(255, 255, 255, 0.25); color: #ffd000; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid rgba(255, 208, 0, 0.3); font-weight: 800; white-space: nowrap;">
+                  +${hiddenOtoparks.length} Diğer...
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.9;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </span>
+                <div class="otopark-tooltip-content">
+                  <div style="font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.2rem; margin-bottom: 0.1rem; color: #ffd000;">DİĞER YETKİLİ KONUMLAR</div>
+                  ${hiddenListHtml}
+                </div>
+              </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
           }
         }
         if (typeof initOperatorStatus === 'function') {
