@@ -2984,7 +2984,8 @@ async function initAdminController() {
   localStorage.setItem('privacy_mode', 'true');
   updatePrivacyIcon();
 
-  // Load otoparks from server
+  // Load otoparks and categories from server
+  await loadOtoparkCategories();
   await loadOtoparks();
 
   // Populate active admin user selector in header
@@ -4903,26 +4904,15 @@ function renderOtoparksTable() {
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
 
   // Update category segment control counts dynamically
-  const countAll = otoparks.length;
-  const countSanayi = otoparks.filter(p => p.category === 'OSB / Sanayi Sitesi Otoparkları' || p.category === 'Sanayi Sitesi Otoparkları').length;
-  const countAvm = otoparks.filter(p => p.category === 'AVM Otoparkları').length;
-  const countAcik = otoparks.filter(p => p.category === 'Açık Otoparklar / Bağımsız Otoparklar').length;
-
-  const countAllEl = document.getElementById('count-otopark-all');
-  const countSanayiEl = document.getElementById('count-otopark-sanayi');
-  const countAvmEl = document.getElementById('count-otopark-avm');
-  const countAcikEl = document.getElementById('count-otopark-acik');
-
-  if (countAllEl) countAllEl.textContent = countAll;
-  if (countSanayiEl) countSanayiEl.textContent = countSanayi;
-  if (countAvmEl) countAvmEl.textContent = countAvm;
-  if (countAcikEl) countAcikEl.textContent = countAcik;
+  if (typeof renderOtoparkCategoryFilters === 'function') {
+    renderOtoparkCategoryFilters();
+  }
 
   // Filter otoparks list based on active filter
   let filteredOtoparks = otoparks;
   if (activeOtoparkCategoryFilter !== 'all') {
     filteredOtoparks = otoparks.filter(park => {
-      if (activeOtoparkCategoryFilter === 'Sanayi Sitesi Otoparkları') {
+      if (activeOtoparkCategoryFilter === 'Sanayi Sitesi Otoparkları' || activeOtoparkCategoryFilter === 'OSB / Sanayi Sitesi Otoparkları') {
         return park.category === 'OSB / Sanayi Sitesi Otoparkları' || park.category === 'Sanayi Sitesi Otoparkları';
       }
       return park.category === activeOtoparkCategoryFilter;
@@ -4945,19 +4935,28 @@ function renderOtoparksTable() {
   }
 
   filteredOtoparks.forEach(park => {
-    // Category badge class
-    let catClass = 'otopark-card__category--sanayi';
+    // Category badge class / style
+    let catClass = 'otopark-card__category--custom';
+    let inlineStyle = '';
     if (park.category === 'AVM Otoparkları') {
       catClass = 'otopark-card__category--avm';
     } else if (park.category === 'Açık Otoparklar / Bağımsız Otoparklar') {
       catClass = 'otopark-card__category--acik';
+    } else if (park.category === 'OSB / Sanayi Sitesi Otoparkları' || park.category === 'Sanayi Sitesi Otoparkları') {
+      catClass = 'otopark-card__category--sanayi';
+    } else {
+      catClass = '';
+      inlineStyle = 'background: rgba(148, 163, 184, 0.08); color: #475569; border: 1px solid rgba(148, 163, 184, 0.2);';
     }
 
     // Shorten category label for badge
-    let catLabel = park.category;
-    if (catLabel === 'Sanayi Sitesi Otoparkları') catLabel = 'Sanayi';
+    let catLabel = park.category || '';
+    if (catLabel === 'Sanayi Sitesi Otoparkları' || catLabel === 'OSB / Sanayi Sitesi Otoparkları') catLabel = 'Sanayi';
     else if (catLabel === 'AVM Otoparkları') catLabel = 'AVM';
     else if (catLabel === 'Açık Otoparklar / Bağımsız Otoparklar') catLabel = 'Açık / Bağımsız';
+    else if (catLabel.length > 20) {
+      catLabel = catLabel.substring(0, 18) + '...';
+    }
 
     // Active status configuration
     const isActive = park.isActive !== false;
@@ -4992,7 +4991,7 @@ function renderOtoparksTable() {
       <div class="otopark-card__header">
         <div class="otopark-card__name">${park.name}</div>
         <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
-          <span class="otopark-card__category ${catClass}">${catLabel}</span>
+          <span class="otopark-card__category ${catClass}" style="${inlineStyle}">${catLabel}</span>
           <button type="button" class="otopark-card__status-btn ${statusBtnClass}" onclick="toggleOtoparkStatus('${park.id}')" title="${statusTitle}">
             <span class="status-dot-inner" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: ${statusDotColor};"></span>
             <span>${statusText}</span>
@@ -5077,6 +5076,251 @@ function updateOtoparkApprovalLabel(category) {
   }
 }
 
+// Otopark Categories Management Functions
+window.otoparkCategories = [
+  "OSB / Sanayi Sitesi Otoparkları",
+  "AVM Otoparkları",
+  "Açık Otoparklar / Bağımsız Otoparklar"
+];
+
+async function loadOtoparkCategories() {
+  try {
+    const res = await fetch('/api/otopark_categories');
+    if (!res.ok) throw new Error("Kategoriler yüklenemedi.");
+    const data = await res.json();
+    window.otoparkCategories = data;
+    
+    renderCategoryChips();
+    populateCategoryDropdown();
+    renderOtoparkCategoryFilters();
+  } catch (err) {
+    console.error("loadOtoparkCategories error:", err);
+    // fallback
+    window.otoparkCategories = [
+      "OSB / Sanayi Sitesi Otoparkları",
+      "AVM Otoparkları",
+      "Açık Otoparklar / Bağımsız Otoparklar"
+    ];
+    renderCategoryChips();
+    populateCategoryDropdown();
+    renderOtoparkCategoryFilters();
+  }
+}
+
+async function saveOtoparkCategories(categories) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) throw new Error("Oturum bulunamadı.");
+  
+  const res = await fetch('/api/otopark_categories', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(categories)
+  });
+  
+  if (!res.ok) {
+    const errData = await res.json();
+    throw new Error(errData.error || "Kategoriler kaydedilemedi.");
+  }
+  
+  window.otoparkCategories = categories;
+  renderCategoryChips();
+  populateCategoryDropdown();
+  renderOtoparkCategoryFilters();
+  
+  // Reload otoparks list to reflect category label/filter changes if any
+  if (typeof loadOtoparks === 'function') {
+    await loadOtoparks();
+    renderOtoparksTable();
+  }
+}
+
+async function addOtoparkCategory() {
+  const input = document.getElementById('new-category-input');
+  if (!input) return;
+  
+  const value = input.value.trim();
+  if (!value) {
+    alert("Lütfen geçerli bir kategori adı girin.");
+    return;
+  }
+  
+  if (window.otoparkCategories.includes(value)) {
+    alert("Bu kategori zaten mevcut.");
+    return;
+  }
+  
+  try {
+    const updatedCategories = [...window.otoparkCategories, value];
+    await saveOtoparkCategories(updatedCategories);
+    input.value = '';
+    alert("Kategori başarıyla eklendi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+async function deleteOtoparkCategory(category) {
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  
+  const isAssigned = otoparks.some(p => p.category === category);
+  if (isAssigned) {
+    alert(`"${category}" kategorisine atanmış otopark işletmeleri bulunmaktadır. Kategoriyi silmek için önce bu otoparkların kategorisini değiştirmelisiniz.`);
+    return;
+  }
+  
+  if (!confirm(`"${category}" kategorisini silmek istediğinize emin misiniz?`)) {
+    return;
+  }
+  
+  try {
+    const updatedCategories = window.otoparkCategories.filter(c => c !== category);
+    await saveOtoparkCategories(updatedCategories);
+    alert("Kategori başarıyla silindi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+function renderCategoryChips() {
+  const container = document.getElementById('category-chips-container');
+  if (!container) return;
+  
+  const categories = window.otoparkCategories || [];
+  container.innerHTML = '';
+  
+  if (categories.length === 0) {
+    container.innerHTML = `<span style="color: var(--color-text-muted); font-size: 0.85rem;">Henüz tanımlı kategori bulunmamaktadır.</span>`;
+    return;
+  }
+  
+  categories.forEach(cat => {
+    const chip = document.createElement('div');
+    chip.className = 'category-chip';
+    chip.style.cssText = `
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(37, 99, 235, 0.06);
+      border: 1px solid rgba(37, 99, 235, 0.15);
+      padding: 0.4rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-dark);
+    `;
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = cat;
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '&times;';
+    deleteBtn.style.cssText = `
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      color: #ef4444;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      line-height: 1;
+      transition: color 0.2s;
+    `;
+    deleteBtn.onmouseover = () => deleteBtn.style.color = '#b91c1c';
+    deleteBtn.onmouseout = () => deleteBtn.style.color = '#ef4444';
+    deleteBtn.onclick = () => deleteOtoparkCategory(cat);
+    
+    chip.appendChild(textSpan);
+    chip.appendChild(deleteBtn);
+    container.appendChild(chip);
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function populateCategoryDropdown() {
+  const selectEl = document.getElementById('edit-otopark-category');
+  if (!selectEl) return;
+  
+  const categories = window.otoparkCategories || [
+    "OSB / Sanayi Sitesi Otoparkları",
+    "AVM Otoparkları",
+    "Açık Otoparklar / Bağımsız Otoparklar"
+  ];
+  
+  const currentValue = selectEl.value;
+  selectEl.innerHTML = '';
+  
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    selectEl.appendChild(opt);
+  });
+  
+  if (currentValue && categories.includes(currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+function renderOtoparkCategoryFilters() {
+  const container = document.getElementById('otoparks-category-filter-container');
+  if (!container) return;
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  
+  const categories = window.otoparkCategories || [
+    "OSB / Sanayi Sitesi Otoparkları",
+    "AVM Otoparkları",
+    "Açık Otoparklar / Bağımsız Otoparklar"
+  ];
+
+  let html = `
+    <button class="segment-btn ${activeOtoparkCategoryFilter === 'all' ? 'active' : ''}" onclick="filterOtoparkCategory('all', this)">
+      <span>Tüm Konumlar</span> <span class="segment-btn-count">${otoparks.length}</span>
+    </button>
+  `;
+
+  categories.forEach(cat => {
+    let count = 0;
+    if (cat === 'OSB / Sanayi Sitesi Otoparkları' || cat === 'Sanayi Sitesi Otoparkları') {
+      count = otoparks.filter(p => p.category === 'OSB / Sanayi Sitesi Otoparkları' || p.category === 'Sanayi Sitesi Otoparkları').length;
+    } else {
+      count = otoparks.filter(p => p.category === cat).length;
+    }
+
+    let displayLabel = cat;
+    if (cat === 'OSB / Sanayi Sitesi Otoparkları' || cat === 'Sanayi Sitesi Otoparkları') {
+      displayLabel = 'Sanayi Sitesi / OSB';
+    } else if (cat === 'AVM Otoparkları') {
+      displayLabel = 'AVM Otoparkları';
+    } else if (cat === 'Açık Otoparklar / Bağımsız Otoparklar') {
+      displayLabel = 'Açık / Bağımsız';
+    }
+
+    html += `
+      <button class="segment-btn ${activeOtoparkCategoryFilter === cat ? 'active' : ''}" onclick="filterOtoparkCategory('${cat}', this)">
+        <span>${displayLabel}</span> <span class="segment-btn-count">${count}</span>
+      </button>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+window.addOtoparkCategory = addOtoparkCategory;
+window.deleteOtoparkCategory = deleteOtoparkCategory;
+window.loadOtoparkCategories = loadOtoparkCategories;
+
 function editOtopark(otoparkId) {
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
@@ -5096,6 +5340,7 @@ function editOtopark(otoparkId) {
 
   const catSelect = document.getElementById('edit-otopark-category');
   if (catSelect) {
+    populateCategoryDropdown();
     catSelect.value = park.category || 'OSB / Sanayi Sitesi Otoparkları';
   }
   
@@ -7222,6 +7467,8 @@ async function deleteAdmin(adminId) {
 function openCreateOtoparkModal() {
   document.getElementById('otopark-edit-form').reset();
   document.getElementById('edit-otopark-id').value = '';
+  
+  populateCategoryDropdown();
   
   const defaultCategory = document.getElementById('edit-otopark-category') 
     ? document.getElementById('edit-otopark-category').value 

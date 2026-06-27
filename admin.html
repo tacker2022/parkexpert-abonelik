@@ -785,6 +785,28 @@
 
         <!-- Panel 3: Otopark Operations Management -->
         <div id="panel-otoparks" style="display: none;">
+          <!-- Otopark Categories Management Section -->
+          <div class="categories-management-card" style="background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.45); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="folder" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+                <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--color-text-dark);">Otopark Kategorileri Yönetimi</h4>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" id="new-category-input" placeholder="Yeni kategori adı..." style="border: 1px solid var(--color-border-light); padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; width: 220px; background: #fff;">
+                <button class="btn btn-primary" onclick="addOtoparkCategory()" style="padding: 0.45rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                  <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                  <span>Kategori Ekle</span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Category Chips Container -->
+            <div id="category-chips-container" style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
           <!-- Otoparks Header Controls -->
           <section class="admin-actions-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <h3>Otopark İşletmeleri Yönetimi <span id="otoparks-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 otopark)</span></h3>
@@ -796,18 +818,7 @@
 
           <!-- Otopark Category Segment Filter Controls -->
           <div class="admin-segment-control" id="otoparks-category-filter-container">
-            <button class="segment-btn active" onclick="filterOtoparkCategory('all', this)">
-              <span>Tüm Konumlar</span> <span class="segment-btn-count" id="count-otopark-all">0</span>
-            </button>
-            <button class="segment-btn" onclick="filterOtoparkCategory('Sanayi Sitesi Otoparkları', this)">
-              <span>Sanayi Sitesi / OSB</span> <span class="segment-btn-count" id="count-otopark-sanayi">0</span>
-            </button>
-            <button class="segment-btn" onclick="filterOtoparkCategory('AVM Otoparkları', this)">
-              <span>AVM Otoparkları</span> <span class="segment-btn-count" id="count-otopark-avm">0</span>
-            </button>
-            <button class="segment-btn" onclick="filterOtoparkCategory('Açık Otoparklar / Bağımsız Otoparklar', this)">
-              <span>Açık / Bağımsız</span> <span class="segment-btn-count" id="count-otopark-acik">0</span>
-            </button>
+            <!-- Populated via JS -->
           </div>
 
           <!-- Otoparks Card Grid Container -->
@@ -1590,9 +1601,7 @@
             <div class="form-group" id="group-otopark-category">
               <label for="edit-otopark-category" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Kategori <span style="color:red;">*</span></label>
               <select id="edit-otopark-category" required style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background-color: #fff; cursor: pointer; font-weight: 600;">
-                <option value="OSB / Sanayi Sitesi Otoparkları">OSB / Sanayi Sitesi Otoparkları</option>
-                <option value="AVM Otoparkları">AVM Otoparkları</option>
-                <option value="Açık Otoparklar / Bağımsız Otoparklar">Açık Otoparklar / Bağımsız Otoparklar</option>
+                <!-- Populated via JS -->
               </select>
             </div>
 
