@@ -3695,8 +3695,6 @@ function openDrawer(appId) {
     </div>
   `;
 
-  `;
-
   // Update footer actions dynamically based on user role and management approval status
   const footerContainer = document.querySelector('.status-actions-container');
   if (footerContainer) {
