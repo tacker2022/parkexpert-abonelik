@@ -4805,6 +4805,10 @@ function renderOtoparksTable() {
             </button>
           </span>
         </div>
+        <div class="otopark-card__field otopark-card__field--full" style="background: rgba(37, 99, 235, 0.03); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); border: 1px dashed rgba(37, 99, 235, 0.15); display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem;">
+          <span class="otopark-card__label" style="font-weight: 700; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.3rem;"><i data-lucide="shield-check" style="width: 13px; height: 13px; color: var(--color-primary);"></i> Site/AVM Ön Onayı</span>
+          <span class="otopark-card__value" style="font-weight: 700; color: ${park.requiresManagementApproval === true ? '#2563eb' : '#64748b'}; font-size: 0.75rem;">${park.requiresManagementApproval === true ? 'AKTİF (GEREKLİ)' : 'PASİF (DİREKT GEÇİŞ)'}</span>
+        </div>
       </div>
       <div class="otopark-card__footer">
         <span class="otopark-card__support">
@@ -4866,6 +4870,7 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-price-ext').value = park.priceExternal || '';
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
+  document.getElementById('edit-otopark-req-approval').checked = park.requiresManagementApproval === true;
   document.getElementById('edit-otopark-notif-emails').value = park.notificationEmails || '';
   document.getElementById('edit-otopark-summary-emails').value = park.summaryEmails || '';
 
@@ -4891,6 +4896,7 @@ async function loadOtoparks() {
           if (p.support_phone !== undefined) p.supportPhone = p.support_phone;
           if (p.notification_emails !== undefined) p.notificationEmails = p.notification_emails;
           if (p.summary_emails !== undefined) p.summaryEmails = p.summary_emails;
+          if (p.requires_management_approval !== undefined) p.requiresManagementApproval = p.requires_management_approval;
         });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     }
@@ -4922,6 +4928,7 @@ async function saveOtoparkConfig(event) {
   const statusVal = document.getElementById('edit-otopark-status').value;
   const notificationEmailsVal = document.getElementById('edit-otopark-notif-emails').value.trim();
   const summaryEmailsVal = document.getElementById('edit-otopark-summary-emails').value.trim();
+  const requiresManagementApprovalVal = document.getElementById('edit-otopark-req-approval').checked;
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   let existingTemplates = undefined;
@@ -4948,7 +4955,8 @@ async function saveOtoparkConfig(event) {
     isActive: statusVal === 'active',
     templates: existingTemplates,
     notificationEmails: notificationEmailsVal,
-    summaryEmails: summaryEmailsVal
+    summaryEmails: summaryEmailsVal,
+    requiresManagementApproval: requiresManagementApprovalVal
   };
 
   try {

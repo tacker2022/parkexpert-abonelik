@@ -127,6 +127,25 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({ error: "Missing required files (ruhsat, kimlik or dekont)" }), { status: 400, headers });
     }
 
+    // Check if otopark requires management approval
+    let managementApprovalStatus = "İzin Verildi";
+    try {
+      const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parkingLocation)}&select=requires_management_approval`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+      if (otoparkRes.ok) {
+        const parks = await otoparkRes.json();
+        if (parks.length > 0 && parks[0].requires_management_approval === true) {
+          managementApprovalStatus = "Beklemede";
+        }
+      }
+    } catch (e) {
+      console.error("Error checking requires_management_approval:", e);
+    }
+
     // Insert record into Supabase
     const payload = {
       id: appId,
@@ -140,6 +159,7 @@ export async function onRequest(context) {
       tax_number: taxNumber,
       subscription_type: subscriptionType,
       status: "Beklemede",
+      management_approval: managementApprovalStatus,
       ruhsat_url: ruhsatUrl,
       kimlik_url: kimlikUrl,
       dekont_url: dekontUrl,

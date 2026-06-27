@@ -160,7 +160,8 @@ export async function onRequest(context) {
         isActive,
         templates,
         notificationEmails,
-        summaryEmails
+        summaryEmails,
+        requiresManagementApproval
       } = payload;
 
       if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
@@ -180,7 +181,8 @@ export async function onRequest(context) {
         support_phone: supportPhone,
         is_active: isActive !== false,
         notification_emails: notificationEmails || null,
-        summary_emails: summaryEmails || null
+        summary_emails: summaryEmails || null,
+        requires_management_approval: requiresManagementApproval === true
       };
 
       if (templates !== undefined) {
