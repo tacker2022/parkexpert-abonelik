@@ -3418,24 +3418,97 @@ function applyFilters() {
 }
 
 function updateMetrics(apps) {
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const activeAdminObj = admins.find(a => a.id === activeRoleVal) || loggedInUser;
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+
   const total = apps.length;
   const pendingApps = apps.filter(a => a.status === 'Yeni' || a.status === 'Beklemede');
-  const countNew = pendingApps.length;
-  const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
-  const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
 
-  const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
-  const countOperator = pendingApps.filter(a => a.management_approval === 'İzin Verildi' || !a.management_approval).length;
+  if (userRole === 'yonetim') {
+    // Management-specific counts
+    const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
+    const countApproved = apps.filter(a => a.management_approval === 'İzin Verildi').length;
+    const countRejected = apps.filter(a => a.management_approval === 'Reddedildi').length;
 
-  document.getElementById('stats-total').textContent = total;
-  document.getElementById('stats-new').textContent = countNew;
-  document.getElementById('stats-approved').textContent = countApproved;
-  document.getElementById('stats-rejected').textContent = countRejected;
+    document.getElementById('stats-total').textContent = total;
+    document.getElementById('stats-new').textContent = countYonetim;
+    document.getElementById('stats-approved').textContent = countApproved;
+    document.getElementById('stats-rejected').textContent = countRejected;
 
-  const elYonetim = document.getElementById('stats-new-yonetim');
-  const elOperator = document.getElementById('stats-new-operator');
-  if (elYonetim) elYonetim.textContent = countYonetim;
-  if (elOperator) elOperator.textContent = countOperator;
+    // Custom titles & subtitles for Yonetim
+    const titleTotal = document.querySelector('#metric-card-total h4');
+    const subTotal = document.querySelector('#metric-card-total .metric-card-subtitle');
+    if (titleTotal) titleTotal.textContent = 'Toplam Başvuru';
+    if (subTotal) subTotal.textContent = 'Siteniz adına yapılan tüm başvurular';
+
+    const titleNew = document.querySelector('#metric-card-new h4 span');
+    const breakdownNew = document.getElementById('stats-new-breakdown');
+    const subtitleNew = document.getElementById('stats-new-subtitle');
+    if (titleNew) titleNew.textContent = 'Onayınızı Bekleyenler';
+    if (breakdownNew) breakdownNew.style.display = 'none';
+    if (subtitleNew) {
+      subtitleNew.textContent = 'Yönetim onay kararı bekleyen başvurular';
+      subtitleNew.style.display = 'block';
+    }
+
+    const titleApproved = document.querySelector('#metric-card-approved h4');
+    const subApproved = document.querySelector('#metric-card-approved .metric-card-subtitle');
+    if (titleApproved) titleApproved.textContent = 'İzin Verilenler';
+    if (subApproved) subApproved.textContent = 'Yönetim onayından geçenler';
+
+    const titleRejected = document.querySelector('#metric-card-rejected h4');
+    const subRejected = document.querySelector('#metric-card-rejected .metric-card-subtitle');
+    if (titleRejected) titleRejected.textContent = 'Reddedilenler';
+    if (subRejected) subRejected.textContent = 'Yönetim tarafından reddedilenler';
+  } else {
+    // Standard Admin / Superadmin counts
+    const countNew = pendingApps.length;
+    const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
+    const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
+
+    const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
+    const countOperator = pendingApps.filter(a => a.management_approval === 'İzin Verildi' || !a.management_approval).length;
+
+    document.getElementById('stats-total').textContent = total;
+    document.getElementById('stats-new').textContent = countNew;
+    document.getElementById('stats-approved').textContent = countApproved;
+    document.getElementById('stats-rejected').textContent = countRejected;
+
+    // Restore standard titles & subtitles
+    const titleTotal = document.querySelector('#metric-card-total h4');
+    const subTotal = document.querySelector('#metric-card-total .metric-card-subtitle');
+    if (titleTotal) titleTotal.textContent = 'Toplam Başvuru';
+    if (subTotal) subTotal.textContent = 'Sistemdeki tüm kayıtlar';
+
+    const titleNew = document.querySelector('#metric-card-new h4 span');
+    const breakdownNew = document.getElementById('stats-new-breakdown');
+    const subtitleNew = document.getElementById('stats-new-subtitle');
+    if (titleNew) titleNew.textContent = 'Yeni / Bekleyen';
+    if (subtitleNew) subtitleNew.style.display = 'none';
+    if (breakdownNew) {
+      breakdownNew.style.display = 'flex';
+      const elYonetim = document.getElementById('stats-new-yonetim');
+      const elOperator = document.getElementById('stats-new-operator');
+      if (elYonetim) elYonetim.textContent = countYonetim;
+      if (elOperator) elOperator.textContent = countOperator;
+    }
+
+    const titleApproved = document.querySelector('#metric-card-approved h4');
+    const subApproved = document.querySelector('#metric-card-approved .metric-card-subtitle');
+    if (titleApproved) titleApproved.textContent = 'Onaylandı';
+    if (subApproved) subApproved.textContent = 'ParkExpert yazılımına aktarılanlar';
+
+    const titleRejected = document.querySelector('#metric-card-rejected h4');
+    const subRejected = document.querySelector('#metric-card-rejected .metric-card-subtitle');
+    if (titleRejected) titleRejected.textContent = 'Reddedildi';
+    if (subRejected) subRejected.textContent = 'Reddedilmiş işlemler';
+  }
 }
 
 /* ==========================================================================
@@ -5773,6 +5846,22 @@ function handleUserRoleChange() {
 
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'block';
+
+    // Hide Management Welcome Banner
+    const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+    if (welcomeBanner) welcomeBanner.style.display = 'none';
+
+    // Show standard header title
+    const headerTitle = document.querySelector('.admin-header-title');
+    if (headerTitle) headerTitle.style.display = 'block';
+
+    // Show test notification button
+    const testNotificationBtn = document.getElementById('btn-test-notification');
+    if (testNotificationBtn) testNotificationBtn.style.display = 'inline-flex';
+
+    // Show location filter group
+    const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
+    if (locationFilterGroup) locationFilterGroup.style.display = 'flex';
   } else {
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'none';
@@ -5823,6 +5912,29 @@ function handleUserRoleChange() {
       if (tabAuditLogs) tabAuditLogs.style.display = 'none';
       if (dangerZone) dangerZone.style.display = 'none';
 
+      // Show Management Welcome Banner
+      const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+      if (welcomeBanner) {
+        welcomeBanner.style.display = 'block';
+        const otoparkName = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : 'Site/AVM';
+        const welcomeTitle = document.getElementById('yonetim-welcome-title');
+        const welcomeSubtitle = document.getElementById('yonetim-welcome-subtitle');
+        if (welcomeTitle) welcomeTitle.textContent = `Hoş Geldiniz, ${otoparkName} Yönetimi`;
+        if (welcomeSubtitle) welcomeSubtitle.textContent = `${otoparkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
+      }
+
+      // Hide standard header title
+      const headerTitle = document.querySelector('.admin-header-title');
+      if (headerTitle) headerTitle.style.display = 'none';
+
+      // Hide test notification button
+      const testNotificationBtn = document.getElementById('btn-test-notification');
+      if (testNotificationBtn) testNotificationBtn.style.display = 'none';
+
+      // Hide location filter group
+      const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
+      if (locationFilterGroup) locationFilterGroup.style.display = 'none';
+
       if (currentAdminTab !== 'applications') {
         switchAdminTab('applications');
       }
@@ -5838,6 +5950,22 @@ function handleUserRoleChange() {
       if (tabBulk) tabBulk.style.display = 'none';
       if (tabAuditLogs) tabAuditLogs.style.display = 'none';
       if (dangerZone) dangerZone.style.display = 'none';
+
+      // Hide Management Welcome Banner
+      const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+      if (welcomeBanner) welcomeBanner.style.display = 'none';
+
+      // Show standard header title
+      const headerTitle = document.querySelector('.admin-header-title');
+      if (headerTitle) headerTitle.style.display = 'block';
+
+      // Show test notification button
+      const testNotificationBtn = document.getElementById('btn-test-notification');
+      if (testNotificationBtn) testNotificationBtn.style.display = 'inline-flex';
+
+      // Show location filter group
+      const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
+      if (locationFilterGroup) locationFilterGroup.style.display = 'flex';
   
       if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs' || currentAdminTab === 'backups') {
         switchAdminTab('applications');
