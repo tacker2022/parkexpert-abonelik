@@ -212,6 +212,11 @@ function initInactivityTimer() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Apply saved theme accent on load
+  if (typeof applyThemeAccent === 'function') {
+    applyThemeAccent(localStorage.getItem('parkexpert_theme_accent') || 'gold');
+  }
+
   // Initialize Lucide Icons
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -7196,13 +7201,127 @@ window.initOperatorStatus = initOperatorStatus;
 window.updateOperatorDashboardStats = updateOperatorDashboardStats;
 window.triggerOperatorQuickReview = triggerOperatorQuickReview;
 
-// Global click listener to close operator dropdown
+// Global click listener to close operator and theme dropdowns
 window.addEventListener('click', (e) => {
   const dropdown = document.getElementById('operator-status-dropdown');
   if (dropdown && dropdown.classList.contains('show') && !e.target.closest('.operator-status-selector')) {
     dropdown.classList.remove('show');
   }
+
+  const themeDropdown = document.getElementById('theme-dropdown-menu');
+  if (themeDropdown && themeDropdown.classList.contains('show') && !e.target.closest('.theme-accent-selector')) {
+    themeDropdown.classList.remove('show');
+  }
 });
+
+function toggleThemeDropdown(event) {
+  event.stopPropagation();
+  const themeDropdown = document.getElementById('theme-dropdown-menu');
+  if (themeDropdown) {
+    themeDropdown.classList.toggle('show');
+  }
+}
+
+function setThemeAccent(theme) {
+  localStorage.setItem('parkexpert_theme_accent', theme);
+  applyThemeAccent(theme);
+  
+  // Close the dropdown menu
+  const themeDropdown = document.getElementById('theme-dropdown-menu');
+  if (themeDropdown) {
+    themeDropdown.classList.remove('show');
+  }
+  
+  // Redraw charts with new theme colors
+  const filteredApps = typeof filteredApplications !== 'undefined' ? filteredApplications : (typeof allApplications !== 'undefined' ? allApplications : []);
+  if (typeof updateAnalyticsCharts === 'function') {
+    updateAnalyticsCharts(filteredApps);
+  }
+}
+
+function applyThemeAccent(theme) {
+  const root = document.documentElement;
+  
+  // Clean up any old classes
+  root.classList.remove('theme-gold', 'theme-emerald', 'theme-cyan', 'theme-purple');
+  root.classList.add(`theme-${theme}`);
+  
+  let goldColor = '#ffd000';
+  let orangeColor = '#ffd000';
+  let gradientAccent = 'linear-gradient(135deg, #ffd000 0%, #ff9f00 100%)';
+  
+  if (theme === 'emerald') {
+    goldColor = '#10b981';
+    orangeColor = '#059669';
+    gradientAccent = 'linear-gradient(135deg, #10b981 0%, #047857 100%)';
+  } else if (theme === 'cyan') {
+    goldColor = '#06b6d4';
+    orangeColor = '#0891b2';
+    gradientAccent = 'linear-gradient(135deg, #06b6d4 0%, #0369a1 100%)';
+  } else if (theme === 'purple') {
+    goldColor = '#a855f7';
+    orangeColor = '#8b5cf6';
+    gradientAccent = 'linear-gradient(135deg, #a855f7 0%, #6d28d9 100%)';
+  }
+  
+  root.style.setProperty('--color-accent-gold', goldColor);
+  root.style.setProperty('--color-accent-orange', orangeColor);
+  root.style.setProperty('--color-gradient-accent', gradientAccent);
+
+  // Update theme selector button styles
+  const btn = document.getElementById('theme-selector-btn');
+  if (btn) {
+    btn.style.color = goldColor;
+    btn.style.borderColor = `${goldColor}33`;
+    btn.style.background = `${goldColor}08`;
+  }
+}
+
+// Bind to window
+window.toggleThemeDropdown = toggleThemeDropdown;
+window.setThemeAccent = setThemeAccent;
+window.applyThemeAccent = applyThemeAccent;
+
+function getChartColors() {
+  const theme = localStorage.getItem('parkexpert_theme_accent') || 'gold';
+  let primaryAccent = '#ffd000';
+  let secondaryAccent = '#3b82f6';
+  
+  if (theme === 'emerald') {
+    primaryAccent = '#10b981';
+    secondaryAccent = '#3b82f6';
+  } else if (theme === 'cyan') {
+    primaryAccent = '#06b6d4';
+    secondaryAccent = '#a855f7';
+  } else if (theme === 'purple') {
+    primaryAccent = '#a855f7';
+    secondaryAccent = '#06b6d4';
+  }
+  
+  const palette = [
+    primaryAccent,
+    secondaryAccent,
+    '#f59e0b', // Amber
+    '#10b981', // Emerald
+    '#8b5cf6', // Purple
+    '#3b82f6', // Blue
+    '#06b6d4', // Cyan
+    '#ec4899', // Pink
+    '#f97316', // Orange
+    '#14b8a6', // Teal
+    '#ef4444', // Red
+    '#84cc16'  // Lime
+  ].filter((c, index, self) => self.indexOf(c) === index); // deduplicate
+  
+  return {
+    primaryAccent,
+    secondaryAccent,
+    palette,
+    theme
+  };
+}
+
+window.getChartColors = getChartColors;
 
 function renderYonetimLocationSelector(otoparksList) {
   const container = document.getElementById('yonetim-location-selector-container');
@@ -8810,6 +8929,13 @@ function updateAnalyticsCharts(apps) {
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
 
+  // Get active theme colors
+  const chartColors = window.getChartColors ? window.getChartColors() : {
+    primaryAccent: '#ffd000',
+    secondaryAccent: '#3b82f6',
+    palette: ['#ffd000', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#ef4444']
+  };
+
   // 1. Calculate summary metrics (only Approved ones contribute to Revenue)
   let totalRevenue = 0;
   let bireyselRevenue = 0;
@@ -8921,20 +9047,7 @@ function updateAnalyticsCharts(apps) {
     }
   });
 
-  const colorsPalette = [
-    '#3b82f6', // Bright Blue
-    '#f59e0b', // Amber/Gold
-    '#10b981', // Emerald Green
-    '#ec4899', // Pink
-    '#8b5cf6', // Violet
-    '#ef4444', // Red
-    '#06b6d4', // Cyan
-    '#f97316', // Orange
-    '#14b8a6', // Teal
-    '#a855f7', // Purple
-    '#6366f1', // Indigo
-    '#84cc16'  // Lime
-  ];
+  const colorsPalette = chartColors.palette;
 
   const datasetsRevenue = sortedOtoparks.map((name, index) => {
     const color = colorsPalette[index % colorsPalette.length];
@@ -9036,7 +9149,7 @@ function updateAnalyticsCharts(apps) {
         labels: ['Bireysel Abonelik', 'Kurumsal Abonelik'],
         datasets: [{
           data: [countBireysel, countKurumsal],
-          backgroundColor: ['#ffd000', '#3b82f6'],
+          backgroundColor: [chartColors.primaryAccent, chartColors.secondaryAccent],
           borderColor: ['#ffffff', '#ffffff'],
           borderWidth: 2
         }]
@@ -9106,9 +9219,15 @@ function updateAnalyticsCharts(apps) {
     gradientTotal.addColorStop(0, 'rgba(148, 163, 184, 0.25)');
     gradientTotal.addColorStop(1, 'rgba(148, 163, 184, 0.01)');
     
+    // Convert hex to rgb for transparency in line gradient
+    const primaryHex = chartColors.primaryAccent;
+    const r = parseInt(primaryHex.slice(1, 3), 16) || 255;
+    const g = parseInt(primaryHex.slice(3, 5), 16) || 208;
+    const b = parseInt(primaryHex.slice(5, 7), 16) || 0;
+    
     const gradientApproved = ctxTrend.createLinearGradient(0, 0, 0, 300);
-    gradientApproved.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-    gradientApproved.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+    gradientApproved.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.25)`);
+    gradientApproved.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.01)`);
 
     if (chartTrendApplications) chartTrendApplications.destroy();
     chartTrendApplications = new Chart(ctxTrend, {
@@ -9128,7 +9247,7 @@ function updateAnalyticsCharts(apps) {
           {
             label: 'Onaylanan Başvuru',
             data: dataApprovedLine,
-            borderColor: '#10b981',
+            borderColor: primaryHex,
             backgroundColor: gradientApproved,
             borderWidth: 2.5,
             tension: 0.3,
@@ -9258,7 +9377,7 @@ function updateAnalyticsCharts(apps) {
         labels: ['Onaylandı', 'Beklemede', 'Reddedildi'],
         datasets: [{
           data: [countApproved, countPending, countRejected],
-          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+          backgroundColor: [chartColors.primaryAccent, '#f59e0b', '#ef4444'],
           borderColor: '#ffffff',
           borderWidth: 2
         }]
