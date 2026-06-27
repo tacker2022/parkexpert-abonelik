@@ -250,7 +250,7 @@ export async function onRequest(context) {
             id: admin.id,
             name: admin.name,
             username: admin.username,
-            role: "admin",
+            role: admin.role || "admin",
             otoparks: admin.otoparks || [],
             phone: admin.phone,
             email: admin.email

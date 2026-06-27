@@ -5777,7 +5777,7 @@ async function populateActiveUserSelect() {
 
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const savedUser = localStorage.getItem('parkexpert_current_admin') || loggedInUser.id;
-  if (savedUser === 'superadmin' || admins.some(a => a.id === savedUser)) {
+  if (savedUser === 'superadmin' || admins.some(a => String(a.id) === String(savedUser))) {
     currentAdminUser = savedUser;
   } else {
     currentAdminUser = loggedInUser.id;
