@@ -115,57 +115,61 @@ export async function onRequest(context) {
     }
   }
 
-  // DELETE: Force terminate a session (Logout specific session)
+  // DELETE: Force terminate session(s) (Logout specific session or bulk sessions)
   if (context.request.method === "DELETE") {
     try {
-      const { jti, expiresAt, username } = await context.request.json();
-      if (!jti) {
-        return new Response(JSON.stringify({ error: "jti is required" }), { status: 400, headers });
-      }
+      const body = await context.request.json();
+      const isBulk = Array.isArray(body.sessions);
+      const sessionsToTerminate = isBulk ? body.sessions : [body];
 
-      // 1. Delete from active_sessions
-      const delRes = await fetch(`${supabaseUrl}/rest/v1/active_sessions?id=eq.${jti}`, {
-        method: "DELETE",
-        headers: {
-          "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`
+      for (const s of sessionsToTerminate) {
+        const { jti, expiresAt, username } = s;
+        if (!jti) continue;
+
+        // 1. Delete from active_sessions
+        const delRes = await fetch(`${supabaseUrl}/rest/v1/active_sessions?id=eq.${jti}`, {
+          method: "DELETE",
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+
+        if (!delRes.ok) {
+          console.error(`Failed to delete active session ${jti}:`, await delRes.text());
         }
-      });
 
-      if (!delRes.ok) {
-        console.error("Failed to delete active session:", await delRes.text());
+        // 2. Add to blacklisted_tokens to revoke the JWT immediately
+        const expTime = expiresAt || new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+        const blRes = await fetch(`${supabaseUrl}/rest/v1/blacklisted_tokens`, {
+          method: "POST",
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            jti: jti,
+            expires_at: expTime
+          })
+        });
+
+        if (!blRes.ok) {
+          console.error(`Failed to blacklist terminated token ${jti}:`, await blRes.text());
+        }
+
+        // 3. Log to audit logs
+        await logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "TERMINATE_SESSION",
+          targetId: jti,
+          details: `Süper yönetici, '${username}' kullanıcısının aktif oturumunu zorla sonlandırdı.`,
+          ipAddress: clientIp
+        });
       }
-
-      // 2. Add to blacklisted_tokens to revoke the JWT immediately
-      const expTime = expiresAt || new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
-      const blRes = await fetch(`${supabaseUrl}/rest/v1/blacklisted_tokens`, {
-        method: "POST",
-        headers: {
-          "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          jti: jti,
-          expires_at: expTime
-        })
-      });
-
-      if (!blRes.ok) {
-        console.error("Failed to blacklist terminated token:", await blRes.text());
-      }
-
-      // 3. Log to audit logs
-      await logAudit({
-        supabaseUrl,
-        supabaseAnonKey,
-        username: user.username,
-        role: user.role,
-        actionType: "TERMINATE_SESSION",
-        targetId: jti,
-        details: `Süper yönetici, '${username}' kullanıcısının aktif oturumunu zorla sonlandırdı.`,
-        ipAddress: clientIp
-      });
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     } catch (err) {

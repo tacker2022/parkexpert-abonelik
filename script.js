@@ -11217,10 +11217,16 @@ async function fetchActiveSessions() {
   const countSpan = document.getElementById('sessions-results-count');
   
   if (!token || !tableBody) return;
+
+  // Hide bulk button on load/reload
+  const btnBulk = document.getElementById('btn-terminate-selected');
+  if (btnBulk) btnBulk.style.display = 'none';
+  const masterCheck = document.getElementById('sessions-select-all');
+  if (masterCheck) masterCheck.checked = false;
   
   tableBody.innerHTML = `
     <tr>
-      <td colspan="6" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+      <td colspan="7" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
         <span class="ocr-spinner" style="display: inline-block; margin-right: 0.5rem; vertical-align: middle;"></span> Aktif oturumlar yükleniyor...
       </td>
     </tr>
@@ -11252,7 +11258,7 @@ async function fetchActiveSessions() {
     if (data.length === 0) {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="6" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+          <td colspan="7" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
             Aktif oturum bulunamadı.
           </td>
         </tr>
@@ -11291,6 +11297,13 @@ async function fetchActiveSessions() {
 
       return `
         <tr style="border-bottom: 1px solid var(--color-border-light); ${isCurrent ? 'background: rgba(16, 185, 129, 0.03);' : ''}">
+          <td style="padding: 1rem; text-align: center;">
+            ${isCurrent ? `
+              <input type="checkbox" disabled style="opacity: 0.3; cursor: not-allowed; width: 16px; height: 16px;">
+            ` : `
+              <input type="checkbox" class="session-checkbox" data-jti="${session.id}" data-expires="${session.created_at}" data-username="${session.username}" onchange="updateSessionBulkButtonVisibility()" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--color-primary);">
+            `}
+          </td>
           <td style="padding: 1rem; font-weight: 600; color: var(--color-text-dark);">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <span class="user-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700;">
@@ -11298,31 +11311,32 @@ async function fetchActiveSessions() {
               </span>
               <span>${session.name} (${session.username})</span>
               ${isCurrent ? '<span style="font-size: 0.65rem; font-weight: 700; background: #10b981; color: #ffffff; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem;">BU CİHAZ</span>' : ''}
-            </td>
-            <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
-              ${session.role === 'superadmin' ? 'Süper Admin' : 'Admin'}
-            </td>
-            <td style="padding: 1rem; font-family: monospace; color: var(--color-text-dark);">
-              ${session.ip_address || 'Bilinmiyor'}<br>
-              <span style="font-size: 0.7rem; color: var(--color-text-muted); font-family: sans-serif;">${clientInfo}</span>
-            </td>
-            <td style="padding: 1rem; color: var(--color-text-muted);">
-              ${createdDate}
-            </td>
-            <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
-              ${lastActiveDate}
-            </td>
-            <td style="padding: 1rem; text-align: center;">
-              ${isCurrent ? `
-                <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Oturum Açık</span>
-              ` : `
-                <button class="btn btn-secondary" onclick="terminateSession('${session.id}', '${session.created_at}', '${session.username}')" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; color: #ef4444; background: transparent; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#ffffff';" onmouseout="this.style.background='transparent'; this.style.color='#ef4444';">
-                  Sonlandır
-                </button>
-              `}
-            </td>
-          </tr>
-        `;
+            </div>
+          </td>
+          <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
+            ${session.role === 'superadmin' ? 'Süper Admin' : 'Admin'}
+          </td>
+          <td style="padding: 1rem; font-family: monospace; color: var(--color-text-dark);">
+            ${session.ip_address || 'Bilinmiyor'}<br>
+            <span style="font-size: 0.7rem; color: var(--color-text-muted); font-family: sans-serif;">${clientInfo}</span>
+          </td>
+          <td style="padding: 1rem; color: var(--color-text-muted);">
+            ${createdDate}
+          </td>
+          <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
+            ${lastActiveDate}
+          </td>
+          <td style="padding: 1rem; text-align: center;">
+            ${isCurrent ? `
+              <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Oturum Açık</span>
+            ` : `
+              <button class="btn btn-secondary" onclick="terminateSession('${session.id}', '${session.created_at}', '${session.username}')" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #ef4444; color: #ef4444; background: transparent; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#ffffff';" onmouseout="this.style.background='transparent'; this.style.color='#ef4444';">
+                Sonlandır
+              </button>
+            `}
+          </td>
+        </tr>
+      `;
     }).join('');
     
     if (typeof lucide !== 'undefined') {
@@ -11332,11 +11346,122 @@ async function fetchActiveSessions() {
     console.error("Failed to load active sessions:", err);
     tableBody.innerHTML = `
       <tr>
-        <td colspan="6" style="padding: 2rem; text-align: center; color: #ef4444; font-weight: 700;">
+        <td colspan="7" style="padding: 2rem; text-align: center; color: #ef4444; font-weight: 700;">
           Oturumlar yüklenirken hata oluştu: ${err.message}
         </td>
       </tr>
     `;
+  }
+}
+
+function toggleAllSessionCheckboxes(master) {
+  const checkboxes = document.querySelectorAll('.session-checkbox');
+  checkboxes.forEach(cb => {
+    if (!cb.disabled) {
+      cb.checked = master.checked;
+    }
+  });
+  updateSessionBulkButtonVisibility();
+}
+
+function updateSessionBulkButtonVisibility() {
+  const checkboxes = document.querySelectorAll('.session-checkbox:checked');
+  const btn = document.getElementById('btn-terminate-selected');
+  if (!btn) return;
+  
+  if (checkboxes.length > 0) {
+    btn.style.display = 'inline-flex';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function terminateSelectedSessions() {
+  const checkedBoxes = document.querySelectorAll('.session-checkbox:checked');
+  if (checkedBoxes.length === 0) return;
+
+  if (!confirm(`Seçtiğiniz ${checkedBoxes.length} aktif oturumu zorla sonlandırmak istediğinize emin misiniz?\nKullanıcılar sistemden anında atılacaktır.`)) {
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  const sessions = Array.from(checkedBoxes).map(cb => ({
+    jti: cb.dataset.jti,
+    expiresAt: cb.dataset.expires,
+    username: cb.dataset.username
+  }));
+
+  try {
+    const res = await fetch('/api/active_sessions', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sessions })
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+
+    alert("Seçilen oturumlar başarıyla sonlandırıldı.");
+    
+    // Reset master checkbox
+    const master = document.getElementById('sessions-select-all');
+    if (master) master.checked = false;
+    
+    fetchActiveSessions();
+  } catch (err) {
+    alert(`Oturumlar kapatılamadı: ${err.message}`);
+  }
+}
+
+async function terminateAllOtherSessions() {
+  const checkedBoxes = document.querySelectorAll('.session-checkbox');
+  if (checkedBoxes.length === 0) {
+    alert("Sonlandırılacak başka aktif oturum bulunmamaktadır.");
+    return;
+  }
+
+  if (!confirm("Kendi cihazınız dışındaki TÜM aktif yönetici oturumlarını zorla sonlandırmak istediğinize emin misiniz?\nTüm diğer kullanıcılar sistemden anında atılacaktır.")) {
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  const sessions = Array.from(checkedBoxes).map(cb => ({
+    jti: cb.dataset.jti,
+    expiresAt: cb.dataset.expires,
+    username: cb.dataset.username
+  }));
+
+  try {
+    const res = await fetch('/api/active_sessions', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sessions })
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+
+    alert("Tüm diğer oturumlar başarıyla sonlandırıldı.");
+    
+    // Reset master checkbox
+    const master = document.getElementById('sessions-select-all');
+    if (master) master.checked = false;
+    
+    fetchActiveSessions();
+  } catch (err) {
+    alert(`Oturumlar kapatılamadı: ${err.message}`);
   }
 }
 
@@ -11371,6 +11496,10 @@ async function terminateSession(jti, expiresAt, username) {
 
 window.fetchActiveSessions = fetchActiveSessions;
 window.terminateSession = terminateSession;
+window.toggleAllSessionCheckboxes = toggleAllSessionCheckboxes;
+window.updateSessionBulkButtonVisibility = updateSessionBulkButtonVisibility;
+window.terminateSelectedSessions = terminateSelectedSessions;
+window.terminateAllOtherSessions = terminateAllOtherSessions;
 
 function filterAdminRole(role, btn) {
   window.activeAdminRoleFilter = role;

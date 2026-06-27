@@ -877,16 +877,33 @@
               <h3 style="margin: 0; font-size: 1.1rem; color: var(--color-primary-dark); font-weight: 800;">Aktif Oturum Takibi <span id="sessions-results-count" style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;">(Yükleniyor...)</span></h3>
               <p style="font-size: 0.775rem; color: var(--color-text-muted); margin: 0.25rem 0 0 0;">Şu an sistemde aktif olan yöneticilerin oturumlarını canlı olarak takip edebilir ve sonlandırabilirsiniz.</p>
             </div>
-            <button class="btn btn-secondary" onclick="fetchActiveSessions()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(15, 59, 162, 0.05); color: var(--color-primary); border: 1px solid rgba(15, 59, 162, 0.15); font-weight: 700; transition: all 0.2s;">
-              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-              <span>Yenile</span>
-            </button>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <!-- Bulk terminate selected button -->
+              <button id="btn-terminate-selected" class="btn" onclick="terminateSelectedSessions()" style="display: none; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(239, 68, 68, 0.08); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 700; transition: all 0.2s;">
+                <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
+                <span>Seçilenleri Sonlandır</span>
+              </button>
+              
+              <!-- Terminate all other sessions button -->
+              <button id="btn-terminate-all-others" class="btn" onclick="terminateAllOtherSessions()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(220, 38, 38, 0.05); color: #dc2626; border: 1px dashed rgba(220, 38, 38, 0.25); font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(220, 38, 38, 0.1)';" onmouseout="this.style.background='rgba(220, 38, 38, 0.05)';">
+                <i data-lucide="power" style="width: 14px; height: 14px;"></i>
+                <span>Tüm Diğer Oturumları Sonlandır</span>
+              </button>
+
+              <button class="btn btn-secondary" onclick="fetchActiveSessions()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; background: rgba(15, 59, 162, 0.05); color: var(--color-primary); border: 1px solid rgba(15, 59, 162, 0.15); font-weight: 700; transition: all 0.2s;">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                <span>Yenile</span>
+              </button>
+            </div>
           </section>
 
           <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 0; margin-top: 1.5rem; box-shadow: var(--shadow-sm); overflow-x: auto; border-bottom: 2px solid var(--color-border-light);">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; min-width: 600px;">
               <thead>
                 <tr style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light); color: var(--color-primary-dark); font-weight: 700;">
+                  <th style="padding: 1rem; width: 45px; text-align: center;">
+                    <input type="checkbox" id="sessions-select-all" onclick="toggleAllSessionCheckboxes(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--color-primary);">
+                  </th>
                   <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Kullanıcı</th>
                   <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Rol</th>
                   <th style="padding: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">IP Adresi</th>
