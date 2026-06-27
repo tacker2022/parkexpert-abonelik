@@ -5904,7 +5904,7 @@ function handleUserRoleChange() {
         if (fileInput) fileInput.click();
       };
     }
-    if (subtext) subtext.textContent = 'Sistem Sahibi';
+    if (subtext) subtext.innerHTML = `<span class="badge-role badge-role-superadmin">Süper Admin</span><span class="badge-username">@superadmin</span>`;
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-superadmin';
     }
@@ -5958,25 +5958,33 @@ function handleUserRoleChange() {
         avatarInitials.style.display = 'inline-flex';
       }
       if (avatar) {
-        avatar.className = 'user-avatar user-avatar-representative';
+        if (userRole === 'yonetim_avm' || userRole === 'yonetim_site' || userRole === 'yonetim') {
+          avatar.className = `user-avatar user-avatar-yonetim user-avatar-${userRole}`;
+        } else {
+          avatar.className = 'user-avatar user-avatar-representative';
+        }
         avatar.removeAttribute('title');
         avatar.style.cursor = 'default';
         avatar.onclick = null;
       }
       if (subtext) {
         if (userRole === 'yonetim_avm') {
-          subtext.textContent = `AVM Yönetimi • @${adminObj.username}`;
+          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-avm">AVM Yönetimi</span><span class="badge-username">@${adminObj.username}</span>`;
         } else if (userRole === 'yonetim_site') {
-          subtext.textContent = `Site Yönetimi • @${adminObj.username}`;
+          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-site">Site Yönetimi</span><span class="badge-username">@${adminObj.username}</span>`;
         } else if (userRole === 'yonetim') {
-          subtext.textContent = `Yönetim • @${adminObj.username}`;
+          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-general">Genel Yönetim</span><span class="badge-username">@${adminObj.username}</span>`;
         } else {
-          subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
+          subtext.innerHTML = `<span class="badge-role badge-role-operator">Temsilci</span><span class="badge-username">@${adminObj.username || 'admin'}</span>`;
         }
       }
     }
     if (adminUserBlock) {
-      adminUserBlock.className = 'admin-user admin-user-representative';
+      if (userRole === 'yonetim_avm' || userRole === 'yonetim_site' || userRole === 'yonetim') {
+        adminUserBlock.className = `admin-user admin-user-yonetim admin-user-${userRole}`;
+      } else {
+        adminUserBlock.className = 'admin-user admin-user-representative';
+      }
     }
 
     if (isYonetimRole(userRole)) {
