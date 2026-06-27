@@ -3771,6 +3771,17 @@ function openDrawer(appId) {
             <i data-lucide="check-circle" style="width: 14px; height: 14px; color:#16a34a;"></i>
             <span>Site / AVM yönetimi bu başvuruya izin verdi.</span>
           </div>
+        `;
+        if (userRole === 'superadmin') {
+          footerHtml += `
+            <div style="margin-bottom: 0.75rem;">
+              <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
+                ⚠️ Yönetim İznini Geri Çek (Beklemeye Al)
+              </button>
+            </div>
+          `;
+        }
+        footerHtml += `
           <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
             <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla</button>
             <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet</button>
@@ -3779,11 +3790,20 @@ function openDrawer(appId) {
         `;
       } else {
         footerHtml += `
-          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; ${userRole === 'superadmin' ? 'margin-bottom: 0.75rem;' : ''}">
             <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
             <span>Bu başvuru yönetim tarafından reddedilmiştir.</span>
           </div>
         `;
+        if (userRole === 'superadmin') {
+          footerHtml += `
+            <div style="margin-bottom: 0.75rem;">
+              <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
+                ⚠️ Yönetim Red Kararını Geri Çek (Beklemeye Al)
+              </button>
+            </div>
+          `;
+        }
       }
     }
     footerContainer.innerHTML = footerHtml;
@@ -4182,9 +4202,18 @@ async function updateCurrentManagementApproval(approvalStatus) {
     // Find and update status in database array
     const appIndex = allApplications.findIndex(a => a.id === currentAppId);
     if (appIndex !== -1) {
-      allApplications[appIndex].management_approval = approvalStatus;
-      if (approvalStatus === 'Reddedildi') {
-        allApplications[appIndex].status = 'Reddedildi';
+      if (updatedApp) {
+        allApplications[appIndex].management_approval = updatedApp.management_approval || approvalStatus;
+        allApplications[appIndex].status = updatedApp.status || allApplications[appIndex].status;
+        allApplications[appIndex].subscription_expires_at = updatedApp.subscription_expires_at;
+      } else {
+        allApplications[appIndex].management_approval = approvalStatus;
+        if (approvalStatus === 'Reddedildi') {
+          allApplications[appIndex].status = 'Reddedildi';
+        } else if (approvalStatus === 'Beklemede') {
+          allApplications[appIndex].status = 'Beklemede';
+          allApplications[appIndex].subscription_expires_at = null;
+        }
       }
       
       // Refresh table rendering with current filter set

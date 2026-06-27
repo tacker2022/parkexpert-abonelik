@@ -225,7 +225,15 @@ export async function onRequest(context) {
         if (plate_number !== undefined) updateBody.plate_number = plate_number;
         if (company_name !== undefined) updateBody.company_name = company_name;
         if (subscription_expires_at !== undefined) updateBody.subscription_expires_at = subscription_expires_at;
-        if (management_approval !== undefined) updateBody.management_approval = management_approval;
+        if (management_approval !== undefined) {
+          updateBody.management_approval = management_approval;
+          if (management_approval === "Beklemede") {
+            updateBody.status = "Beklemede";
+            updateBody.subscription_expires_at = null;
+          } else if (management_approval === "Reddedildi") {
+            updateBody.status = "Reddedildi";
+          }
+        }
       }
 
       // Update in Supabase
