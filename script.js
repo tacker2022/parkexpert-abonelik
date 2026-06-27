@@ -4967,19 +4967,29 @@ function renderOtoparksTable() {
     const statusDotColor = isActive ? '#10b981' : '#ef4444';
 
     // Site/AVM Pre-Approval Banner layout
+    let approvalTitle = 'Site/AVM Ön Onayı';
+    const category = park.category;
+    if (category === 'OSB / Sanayi Sitesi Otoparkları' || category === 'Sanayi Sitesi Otoparkları') {
+      approvalTitle = 'Sanayi Sitesi / OSB Ön Onayı';
+    } else if (category === 'AVM Otoparkları') {
+      approvalTitle = 'AVM Ön Onayı';
+    } else if (category === 'Açık Otoparklar / Bağımsız Otoparklar') {
+      approvalTitle = 'Otopark Ön Onayı';
+    }
+
     const isPreApproveActive = park.requiresManagementApproval === true;
     let preApproveHtml = '';
     if (isPreApproveActive) {
       preApproveHtml = `
         <div class="otopark-card__pre-approve otopark-card__pre-approve--active">
-          <span class="pre-approve-title"><i data-lucide="shield" style="width: 12px; height: 12px;"></i> Site/AVM Ön Onayı</span>
+          <span class="pre-approve-title"><i data-lucide="shield" style="width: 12px; height: 12px;"></i> ${approvalTitle}</span>
           <span class="pre-approve-badge">AKTİF (ONAY GEREKLİ)</span>
         </div>
       `;
     } else {
       preApproveHtml = `
         <div class="otopark-card__pre-approve otopark-card__pre-approve--passive">
-          <span class="pre-approve-title"><i data-lucide="zap" style="width: 12px; height: 12px;"></i> Site/AVM Ön Onayı</span>
+          <span class="pre-approve-title"><i data-lucide="zap" style="width: 12px; height: 12px;"></i> ${approvalTitle}</span>
           <span class="pre-approve-badge">PASİF (DİREKT GEÇİŞ)</span>
         </div>
       `;
