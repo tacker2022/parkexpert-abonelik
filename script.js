@@ -4981,14 +4981,14 @@ function renderOtoparksTable() {
     let preApproveHtml = '';
     if (isPreApproveActive) {
       preApproveHtml = `
-        <div class="otopark-card__pre-approve otopark-card__pre-approve--active">
+        <div class="otopark-card__pre-approve otopark-card__pre-approve--active" onclick="toggleOtoparkPreApprove('${park.id}')" title="Pasifleştirmek için tıklayın" style="cursor: pointer;">
           <span class="pre-approve-title"><i data-lucide="shield" style="width: 12px; height: 12px;"></i> ${approvalTitle}</span>
           <span class="pre-approve-badge">AKTİF (ONAY GEREKLİ)</span>
         </div>
       `;
     } else {
       preApproveHtml = `
-        <div class="otopark-card__pre-approve otopark-card__pre-approve--passive">
+        <div class="otopark-card__pre-approve otopark-card__pre-approve--passive" onclick="toggleOtoparkPreApprove('${park.id}')" title="Aktifleştirmek için tıklayın" style="cursor: pointer;">
           <span class="pre-approve-title"><i data-lucide="zap" style="width: 12px; height: 12px;"></i> ${approvalTitle}</span>
           <span class="pre-approve-badge">PASİF (DİREKT GEÇİŞ)</span>
         </div>
@@ -5797,7 +5797,11 @@ async function toggleOtoparkStatus(otoparkId) {
     priceEmployee: park.priceEmployee,
     priceExternal: park.priceExternal,
     supportPhone: park.supportPhone,
-    isActive: !currentStatus
+    isActive: !currentStatus,
+    templates: park.templates,
+    notificationEmails: park.notificationEmails || park.notification_emails,
+    summaryEmails: park.summaryEmails || park.summary_emails,
+    requiresManagementApproval: park.requiresManagementApproval === true || park.requires_management_approval === true
   };
 
   try {
@@ -5822,6 +5826,66 @@ async function toggleOtoparkStatus(otoparkId) {
     alert(err.message);
   }
 }
+
+async function toggleOtoparkPreApprove(otoparkId) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  let otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const park = otoparks.find(p => p.id === otoparkId);
+
+  if (!park) return;
+
+  const currentPreApprove = park.requiresManagementApproval === true || park.requires_management_approval === true;
+  
+  const payload = {
+    id: park.id,
+    name: park.name,
+    category: park.category,
+    companyTitle: park.companyTitle,
+    taxOffice: park.taxOffice,
+    taxNumber: park.taxNumber,
+    bankName: park.bankName,
+    iban: park.iban,
+    priceEmployee: park.priceEmployee,
+    priceExternal: park.priceExternal,
+    supportPhone: park.supportPhone,
+    isActive: park.isActive !== false,
+    templates: park.templates,
+    notificationEmails: park.notificationEmails || park.notification_emails,
+    summaryEmails: park.summaryEmails || park.summary_emails,
+    requiresManagementApproval: !currentPreApprove
+  };
+
+  try {
+    const res = await fetch('/api/otoparks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Ön onay durumu güncellenirken hata oluştu.");
+    }
+
+    await loadOtoparks();
+    renderOtoparksTable();
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+window.toggleOtoparkStatus = toggleOtoparkStatus;
+window.toggleOtoparkPreApprove = toggleOtoparkPreApprove;
 
 /* ==========================================================================
    PREMIUM COMPANY CLUSTERING & ANALYSIS CONTROLLERS
