@@ -7027,6 +7027,10 @@ async function pollApplications() {
     const apps = await response.json();
     
     let hasNewApp = false;
+    let hasChanges = false;
+    const updatedApps = [];
+
+    // 1. Detect new applications
     apps.forEach(app => {
       if (!trackedAppIds.has(app.id)) {
         trackedAppIds.add(app.id);
@@ -7036,12 +7040,33 @@ async function pollApplications() {
         }
       }
     });
-    
+
+    // 2. Detect changes in existing applications
+    if (allApplications.length > 0 && !isInitialLoad) {
+      apps.forEach(app => {
+        const existing = allApplications.find(a => String(a.id) === String(app.id));
+        if (existing) {
+          if (existing.status !== app.status || existing.management_approval !== app.management_approval) {
+            hasChanges = true;
+            updatedApps.push({
+              plate: app.plate_number || app.plate,
+              name: app.full_name,
+              location: app.parking_location,
+              oldStatus: existing.status,
+              newStatus: app.status,
+              oldApproval: existing.management_approval,
+              newApproval: app.management_approval
+            });
+          }
+        }
+      });
+    }
+
     if (isInitialLoad) {
       isInitialLoad = false;
     }
     
-    if (hasNewApp) {
+    if (hasNewApp || hasChanges) {
       allApplications = apps;
       allApplications.forEach(app => {
         app.plate = app.plate_number;
@@ -7070,10 +7095,126 @@ async function pollApplications() {
       filteredApplications = [...allApplications];
       populateCompanyFilter();
       applyFilters();
+
+      // Show toast notifications for updated applications
+      updatedApps.forEach(update => {
+        showLiveUpdateToast(update);
+      });
     }
   } catch (err) {
     console.error("Background polling failed:", err);
   }
+}
+
+function showLiveUpdateToast(update) {
+  let container = document.getElementById('live-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'live-toast-container';
+    container.style.position = 'fixed';
+    container.style.bottom = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '10px';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.style.background = '#ffffff';
+  
+  let borderColor = '#3b82f6';
+  let title = 'BAŞVURU GÜNCELLENDİ! ℹ️';
+  let desc = `🚗 ${update.plate} plakalı başvurunun durumu güncellendi.`;
+  let iconName = 'info';
+
+  if (update.newApproval === 'İzin Verildi' && update.oldApproval !== 'İzin Verildi') {
+    borderColor = '#10b981';
+    title = 'YÖNETİM İZNİ VERİLDİ! 🟢';
+    desc = `🚗 <b>${update.plate}</b> plaka için yönetim onay verdi.`;
+    iconName = 'check-circle';
+  } else if (update.newApproval === 'Reddedildi' && update.oldApproval !== 'Reddedildi') {
+    borderColor = '#ef4444';
+    title = 'YÖNETİM RED KARARI! 🔴';
+    desc = `🚗 <b>${update.plate}</b> plaka yönetim tarafından reddedildi.`;
+    iconName = 'x-circle';
+  } else if (update.newStatus === 'Onaylandı' && update.oldStatus !== 'Onaylandı') {
+    borderColor = '#10b981';
+    title = 'BAŞVURU ONAYLANDI! 🎉';
+    desc = `🚗 <b>${update.plate}</b> plakalı başvuru sisteme aktarıldı.`;
+    iconName = 'check';
+  } else if (update.newStatus === 'Reddedildi' && update.oldStatus !== 'Reddedildi') {
+    borderColor = '#ef4444';
+    title = 'BAŞVURU REDDEDİLDİ! 🔴';
+    desc = `🚗 <b>${update.plate}</b> plakalı başvuru reddedildi.`;
+    iconName = 'x';
+  }
+
+  toast.style.borderLeft = `5px solid ${borderColor}`;
+  toast.style.borderRadius = '8px';
+  toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+  toast.style.border = `1px solid ${borderColor}26`;
+  toast.style.padding = '1.25rem';
+  toast.style.width = '320px';
+  toast.style.display = 'flex';
+  toast.style.gap = '12px';
+  toast.style.alignItems = 'flex-start';
+  toast.style.transform = 'translateX(120%)';
+  toast.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+  
+  const iconDiv = document.createElement('div');
+  iconDiv.style.background = `${borderColor}1a`;
+  iconDiv.style.borderRadius = '50%';
+  iconDiv.style.padding = '8px';
+  iconDiv.style.display = 'flex';
+  iconDiv.style.alignItems = 'center';
+  iconDiv.style.justifyContent = 'center';
+  iconDiv.innerHTML = `<i data-lucide="${iconName}" style="width: 18px; height: 18px; color: ${borderColor};"></i>`;
+  toast.appendChild(iconDiv);
+  
+  const contentDiv = document.createElement('div');
+  contentDiv.style.flex = '1';
+  contentDiv.style.textAlign = 'left';
+  contentDiv.innerHTML = `
+    <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 800; color: var(--color-primary-dark);">${title}</h4>
+    <p style="margin: 0; font-size: 0.775rem; color: var(--color-text-dark);">${desc}</p>
+    <p style="margin: 2px 0 0 0; font-size: 0.725rem; color: var(--color-text-muted);">${update.name}</p>
+    <p style="margin: 2px 0 0 0; font-size: 0.7rem; color: var(--color-text-muted); font-style: italic;">📍 ${update.location}</p>
+  `;
+  toast.appendChild(contentDiv);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.style.background = 'none';
+  closeBtn.style.border = 'none';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.color = '#94a3b8';
+  closeBtn.style.fontSize = '1.25rem';
+  closeBtn.style.padding = '0';
+  closeBtn.style.lineHeight = '1';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => {
+    toast.style.transform = 'translateX(120%)';
+    setTimeout(() => toast.remove(), 400);
+  };
+  toast.appendChild(closeBtn);
+
+  container.appendChild(toast);
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons({ node: toast });
+
+  setTimeout(() => {
+    toast.style.transform = 'translateX(0)';
+  }, 50);
+
+  playNotificationChime();
+
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.transform = 'translateX(120%)';
+      setTimeout(() => toast.remove(), 400);
+    }
+  }, 8000);
 }
 
 function showLiveAlertToast(app) {
