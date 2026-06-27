@@ -2484,12 +2484,24 @@ function togglePrivacyMode() {
   localStorage.setItem('privacy_mode', isPrivacyMode);
   updatePrivacyIcon();
   
+  // Resolve active role
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
+  const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+
   // Refresh UI Components
   applyFilters();
-  renderExpirationsDashboard();
-  if (typeof filterAuditLogs === 'function') {
+  
+  if (activeRole !== 'yonetim') {
+    renderExpirationsDashboard();
+  }
+  
+  if (activeRole === 'superadmin' && typeof filterAuditLogs === 'function') {
     filterAuditLogs();
   }
+  
   if (currentAppId) {
     const drawer = document.getElementById('drawer-overlay');
     if (drawer && drawer.classList.contains('active')) {
