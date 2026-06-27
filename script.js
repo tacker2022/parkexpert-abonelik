@@ -3419,14 +3419,23 @@ function applyFilters() {
 
 function updateMetrics(apps) {
   const total = apps.length;
-  const countNew = apps.filter(a => a.status === 'Yeni' || a.status === 'Beklemede').length;
+  const pendingApps = apps.filter(a => a.status === 'Yeni' || a.status === 'Beklemede');
+  const countNew = pendingApps.length;
   const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
   const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
+
+  const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
+  const countOperator = pendingApps.filter(a => a.management_approval === 'İzin Verildi' || !a.management_approval).length;
 
   document.getElementById('stats-total').textContent = total;
   document.getElementById('stats-new').textContent = countNew;
   document.getElementById('stats-approved').textContent = countApproved;
   document.getElementById('stats-rejected').textContent = countRejected;
+
+  const elYonetim = document.getElementById('stats-new-yonetim');
+  const elOperator = document.getElementById('stats-new-operator');
+  if (elYonetim) elYonetim.textContent = countYonetim;
+  if (elOperator) elOperator.textContent = countOperator;
 }
 
 /* ==========================================================================

@@ -277,7 +277,16 @@
                 <span class="pulse-dot" style="display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%; animation: pulse-glowing-blue 1.5s infinite ease-in-out; box-shadow: 0 0 6px #2563eb;"></span>
               </h4>
               <div class="metric-card-value" id="stats-new">0</div>
-              <span class="metric-card-subtitle" style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">İncelenmeyi bekleyenler</span>
+              <div class="metric-card-breakdown" style="display: flex; gap: 0.4rem; align-items: center; margin-top: 0.35rem; font-size: 0.725rem; font-weight: 500;">
+                <span id="stats-new-yonetim-badge" style="background: rgba(245, 158, 11, 0.08); color: #d97706; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;" title="Yönetim Ön Onayında Bekleyenler">
+                  <span style="display: inline-block; width: 4px; height: 4px; background: #d97706; border-radius: 50%;"></span>
+                  Yönetim: <strong id="stats-new-yonetim">0</strong>
+                </span>
+                <span id="stats-new-operator-badge" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;" title="ParkExpert Operatör Onayında Bekleyenler">
+                  <span style="display: inline-block; width: 4px; height: 4px; background: #2563eb; border-radius: 50%;"></span>
+                  Operatör: <strong id="stats-new-operator">0</strong>
+                </span>
+              </div>
             </div>
             <div class="metric-card-icon new">
               <i data-lucide="clock"></i>
