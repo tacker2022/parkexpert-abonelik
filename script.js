@@ -3654,6 +3654,10 @@ function updateMetrics(apps) {
     if (titleRejected) titleRejected.textContent = 'Reddedildi';
     if (subRejected) subRejected.textContent = 'Reddedilmiş işlemler';
   }
+
+  if (typeof updateOperatorDashboardStats === 'function') {
+    updateOperatorDashboardStats();
+  }
 }
 
 /* ==========================================================================
@@ -6835,9 +6839,11 @@ function handleUserRoleChange() {
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'block';
 
-    // Hide Management Welcome Banner
+    // Hide Management & Operator Welcome Banners
     const welcomeBanner = document.getElementById('yonetim-welcome-banner');
     if (welcomeBanner) welcomeBanner.style.display = 'none';
+    const operatorBanner = document.getElementById('operator-welcome-banner');
+    if (operatorBanner) operatorBanner.style.display = 'none';
 
     // Show standard header title
     const headerTitle = document.querySelector('.admin-header-title');
@@ -6925,8 +6931,10 @@ function handleUserRoleChange() {
       if (document.getElementById('tab-companies')) document.getElementById('tab-companies').style.display = 'inline-flex';
       if (document.getElementById('tab-analytics')) document.getElementById('tab-analytics').style.display = 'none';
 
-      // Show Management Welcome Banner
+      // Show Management Welcome Banner & Hide Operator Welcome Banner
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+      const operatorBanner = document.getElementById('operator-welcome-banner');
+      if (operatorBanner) operatorBanner.style.display = 'none';
       const locationSelectorContainer = document.getElementById('yonetim-location-selector-container');
       if (welcomeBanner) {
         welcomeBanner.style.display = 'block';
@@ -7009,9 +7017,36 @@ function handleUserRoleChange() {
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
       if (welcomeBanner) welcomeBanner.style.display = 'none';
 
-      // Show standard header title
+      // Show Operator Welcome Banner
+      const operatorBanner = document.getElementById('operator-welcome-banner');
+      if (operatorBanner) {
+        operatorBanner.style.display = 'block';
+        const bannerAvatar = document.getElementById('operator-banner-avatar');
+        if (bannerAvatar && adminObj && adminObj.id) {
+          bannerAvatar.src = `/api/document?path=avatars/${adminObj.id}.jpg&_t=${Date.now()}`;
+        }
+        const welcomeTitle = document.getElementById('operator-welcome-title');
+        if (welcomeTitle) {
+          const hour = new Date().getHours();
+          let greeting = 'İyi Çalışmalar';
+          if (hour >= 5 && hour < 12) greeting = 'Günaydın';
+          else if (hour >= 12 && hour < 17) greeting = 'Tünaydın';
+          else if (hour >= 17 && hour < 22) greeting = 'İyi Akşamlar';
+          else greeting = 'İyi Geceler';
+          
+          welcomeTitle.textContent = `${greeting}, ${adminObj.name || 'Operatör'}`;
+        }
+        if (typeof initOperatorStatus === 'function') {
+          initOperatorStatus();
+        }
+        if (typeof updateOperatorDashboardStats === 'function') {
+          updateOperatorDashboardStats();
+        }
+      }
+
+      // Hide standard header title
       const headerTitle = document.querySelector('.admin-header-title');
-      if (headerTitle) headerTitle.style.display = 'block';
+      if (headerTitle) headerTitle.style.display = 'none';
 
       // Show test notification button
       const testNotificationBtn = document.getElementById('btn-test-notification');
@@ -7040,6 +7075,134 @@ function handleUserRoleChange() {
   populateLocationFilter();
   applyFilters();
 }
+
+function toggleOperatorStatusDropdown(event) {
+  if (event) event.stopPropagation();
+  const dropdown = document.getElementById('operator-status-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+function changeOperatorStatus(status) {
+  const selector = document.querySelector('.operator-status-selector');
+  const statusText = document.getElementById('operator-status-text');
+  const indicator = document.querySelector('.operator-online-indicator');
+  const dropdown = document.getElementById('operator-status-dropdown');
+  
+  if (dropdown) dropdown.classList.remove('show');
+  
+  let label = 'Çevrimiçi';
+  let color = '#10b981';
+  let shadow = 'rgba(16, 185, 129, 0.5)';
+  
+  if (status === 'break') {
+    label = 'Molada';
+    color = '#f59e0b';
+    shadow = 'rgba(245, 158, 11, 0.5)';
+  } else if (status === 'busy') {
+    label = 'Meşgul';
+    color = '#ef4444';
+    shadow = 'rgba(239, 68, 68, 0.5)';
+  }
+  
+  if (selector) {
+    selector.className = `operator-status-selector ${status}`;
+  }
+  if (statusText) {
+    statusText.textContent = label;
+  }
+  if (indicator) {
+    indicator.style.backgroundColor = color;
+    indicator.style.boxShadow = `0 0 10px ${shadow}`;
+  }
+  
+  localStorage.setItem('parkexpert_operator_status', status);
+}
+
+function initOperatorStatus() {
+  const savedStatus = localStorage.getItem('parkexpert_operator_status') || 'online';
+  changeOperatorStatus(savedStatus);
+}
+
+function updateOperatorDashboardStats() {
+  if (!allApplications) return;
+
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const getAppRequiresManagement = (a) => {
+    const otoparkObj = otoparks.find(p => p.name === a.parking_location);
+    return otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+  };
+
+  const pendingApps = allApplications.filter(a => a.status === 'Yeni' || a.status === 'Beklemede');
+  const countOperator = pendingApps.filter(a => !getAppRequiresManagement(a) || a.management_approval === 'İzin Verildi').length;
+
+  const countToday = allApplications.filter(a => {
+    if (a.status !== 'Onaylandı' || !a.subscription_expires_at) return false;
+    const expiresAt = new Date(a.subscription_expires_at);
+    const diffTime = expiresAt - new Date();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 29 && diffDays <= 31;
+  }).length;
+
+  const pendingEl = document.getElementById('operator-stat-pending');
+  const todayEl = document.getElementById('operator-stat-today');
+  const fractionEl = document.getElementById('operator-goal-fraction');
+  const progressEl = document.getElementById('operator-goal-progress');
+  const motivationEl = document.getElementById('operator-motivation-msg');
+
+  if (pendingEl) pendingEl.textContent = countOperator;
+  if (todayEl) todayEl.textContent = countToday;
+
+  const goal = 20;
+  if (fractionEl) fractionEl.textContent = `${countToday} / ${goal} Başvuru`;
+
+  if (progressEl) {
+    const percentage = Math.min(100, Math.round((countToday / goal) * 100));
+    progressEl.style.width = `${percentage}%`;
+  }
+
+  if (motivationEl) {
+    if (countToday >= goal) {
+      motivationEl.textContent = "Tebrikler! Bugünlük hedefini başarıyla tamamladın.";
+    } else if (countToday > 0) {
+      motivationEl.textContent = "Harika gidiyorsun! Bugün hedefini tamamlamana az kaldı.";
+    } else {
+      motivationEl.textContent = "Bugün henüz onaylanan başvuru yok. Başlamak için harika bir gün!";
+    }
+  }
+}
+
+function triggerOperatorQuickReview() {
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const getAppRequiresManagement = (a) => {
+    const otoparkObj = otoparks.find(p => p.name === a.parking_location);
+    return otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+  };
+  const pendingApps = allApplications.filter(a => a.status === 'Yeni' || a.status === 'Beklemede');
+  const operatorApps = pendingApps.filter(a => !getAppRequiresManagement(a) || a.management_approval === 'İzin Verildi');
+  
+  if (operatorApps.length > 0) {
+    openDrawer(operatorApps[0].id);
+  } else {
+    alert("Şu anda işlem bekleyen başvuru bulunmamaktadır.");
+  }
+}
+
+// Bind to window
+window.toggleOperatorStatusDropdown = toggleOperatorStatusDropdown;
+window.changeOperatorStatus = changeOperatorStatus;
+window.initOperatorStatus = initOperatorStatus;
+window.updateOperatorDashboardStats = updateOperatorDashboardStats;
+window.triggerOperatorQuickReview = triggerOperatorQuickReview;
+
+// Global click listener to close operator dropdown
+window.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('operator-status-dropdown');
+  if (dropdown && dropdown.classList.contains('show') && !e.target.closest('.operator-status-selector')) {
+    dropdown.classList.remove('show');
+  }
+});
 
 function renderYonetimLocationSelector(otoparksList) {
   const container = document.getElementById('yonetim-location-selector-container');

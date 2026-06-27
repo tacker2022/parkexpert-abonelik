@@ -277,6 +277,65 @@
           <div style="position: absolute; right: 50px; top: -30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.03); z-index: 1;"></div>
         </div>
 
+        <!-- Operator Welcome Banner -->
+        <div id="operator-welcome-banner" class="operator-welcome-card" style="display: none;">
+          <div class="operator-welcome-content">
+            <!-- Left Panel: Profile and Status switcher -->
+            <div class="operator-profile-area">
+              <div class="operator-avatar-wrapper">
+                <img id="operator-banner-avatar" src="" alt="Avatar" onerror="this.src='/api/document?path=avatars/default.jpg'">
+                <span class="operator-online-indicator"></span>
+              </div>
+              <div class="operator-status-selector">
+                <button id="operator-status-btn" class="operator-status-badge active-online" onclick="toggleOperatorStatusDropdown(event)">
+                  <span class="status-dot"></span>
+                  <span id="operator-status-text">Çevrimiçi</span>
+                  <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i>
+                </button>
+                <div id="operator-status-dropdown" class="operator-dropdown-menu">
+                  <button onclick="changeOperatorStatus('online')" class="status-item active-online"><span class="status-dot"></span> Çevrimiçi</button>
+                  <button onclick="changeOperatorStatus('break')" class="status-item active-break"><span class="status-dot"></span> Molada</button>
+                  <button onclick="changeOperatorStatus('busy')" class="status-item active-busy"><span class="status-dot"></span> Meşgul</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle Panel: Welcome Greeting and Daily Goal Tracker -->
+            <div class="operator-greetings-area">
+              <span class="operator-welcome-badge">PARKEXPERT OPERASYON</span>
+              <h2 id="operator-welcome-title">İyi Çalışmalar, Operatör</h2>
+              <div class="operator-goal-container">
+                <div class="goal-text-row">
+                  <span>Günlük Hedef İlerlemesi</span>
+                  <span id="operator-goal-fraction">0 / 20 Başvuru</span>
+                </div>
+                <div class="goal-progress-bar">
+                  <div id="operator-goal-progress" class="goal-progress-fill" style="width: 0%;"></div>
+                </div>
+                <div class="goal-motivation-text" id="operator-motivation-msg">
+                  Harika gidiyorsun! Bugün hedefini tamamlamana az kaldı.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: Fast Metrics & Quick Review CTA -->
+            <div class="operator-metrics-area">
+              <div class="operator-mini-metric">
+                <div class="metric-val" id="operator-stat-pending">0</div>
+                <div class="metric-lbl">İşlem Bekleyen</div>
+              </div>
+              <div class="operator-mini-metric">
+                <div class="metric-val" id="operator-stat-today">0</div>
+                <div class="metric-lbl">Bugün Onaylanan</div>
+              </div>
+              <button id="btn-operator-quick-review" class="btn-operator-cta" onclick="triggerOperatorQuickReview()">
+                <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+                <span>Hızlı İncele</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Summary Cards Section (Metrics) -->
         <section class="metrics-grid" aria-label="Başvuru İstatistikleri">
           <!-- Total -->
