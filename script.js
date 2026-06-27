@@ -6932,6 +6932,20 @@ function handleUserRoleChange() {
         welcomeBanner.style.display = 'block';
         const welcomeTitle = document.getElementById('yonetim-welcome-title');
         const welcomeSubtitle = document.getElementById('yonetim-welcome-subtitle');
+        const welcomeBadge = document.getElementById('yonetim-welcome-badge');
+
+        if (welcomeBadge) {
+          const rText = getDynamicRoleLabel(userRole, adminObj.otoparks);
+          let badgeText = rText.replace(/yönetimi/i, 'Yönetim');
+          if (badgeText === 'Yönetim Yetkilisi') {
+            badgeText = 'Yönetim';
+          }
+          badgeText = badgeText.toUpperCase().trim();
+          if (!badgeText.includes('ORTAKLIĞI')) {
+            badgeText = `${badgeText} ORTAKLIĞI`;
+          }
+          welcomeBadge.textContent = badgeText;
+        }
 
         if (adminObj && adminObj.otoparks && adminObj.otoparks.length > 1) {
           // Multi-location: show switcher
