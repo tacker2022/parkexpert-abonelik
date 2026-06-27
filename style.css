@@ -4815,4 +4815,213 @@ textarea.is-invalid {
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
 }
 
+/* Premium Glassmorphic Admin Cards */
+.admin-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: visible; /* Needed for tooltip popup */
+}
+
+.admin-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(15, 59, 162, 0.06);
+  border-color: rgba(15, 59, 162, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Online status pulsing indicator ring around avatar */
+.avatar-container {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.avatar-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background: transparent;
+}
+
+.avatar-ring.online {
+  background: linear-gradient(135deg, #10b981, #059669);
+  animation: online-pulse 2s infinite;
+}
+
+@keyframes online-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Interactive Clickable Contact Item */
+.admin-contact-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(15, 59, 162, 0.03);
+  border: 1px solid rgba(15, 59, 162, 0.06);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.admin-contact-item:hover {
+  background: rgba(15, 59, 162, 0.07);
+  border-color: rgba(15, 59, 162, 0.15);
+  color: var(--color-primary-dark);
+}
+
+.admin-contact-item i.copy-icon {
+  opacity: 0;
+  width: 12px;
+  height: 12px;
+  color: var(--color-primary);
+  transition: opacity 0.2s ease;
+}
+
+.admin-contact-item:hover i.copy-icon {
+  opacity: 1;
+}
+
+/* Dynamic Tooltip for Hidden Otoparks */
+.otopark-more-badge {
+  background: rgba(15, 59, 162, 0.08);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  position: relative;
+  transition: all 0.2s ease;
+  margin: 0.15rem 0.25rem 0.15rem 0;
+}
+
+.otopark-more-badge:hover {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.otopark-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: max-content;
+  max-width: 260px;
+  background: rgba(15, 23, 42, 0.95); /* Deep slate-gray */
+  backdrop-filter: blur(8px);
+  color: #fff;
+  text-align: left;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  font-size: 0.725rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tooltip Arrow */
+.otopark-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+}
+
+.otopark-more-badge:hover .otopark-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Premium footer button action bar */
+.admin-card__footer {
+  margin-top: auto;
+  border-top: 1px solid rgba(15, 59, 162, 0.08);
+  padding-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.admin-card__action-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.775rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+}
+
+.admin-card__action-btn--edit {
+  color: var(--color-primary);
+  background: rgba(15, 59, 162, 0.04);
+  border-color: rgba(15, 59, 162, 0.1);
+}
+
+.admin-card__action-btn--edit:hover {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(15, 59, 162, 0.15);
+}
+
+.admin-card__action-btn--delete {
+  color: #94a3b8; /* Secondary neutral gray */
+  background: transparent;
+}
+
+.admin-card__action-btn--delete:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
 

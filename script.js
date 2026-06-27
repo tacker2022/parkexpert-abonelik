@@ -6318,54 +6318,108 @@ function renderAdminsTable() {
     return;
   }
 
+  const activeUsernames = window.activeSessionUsernames || [];
+
   admins.forEach(admin => {
     const card = document.createElement('div');
-    card.className = 'otopark-card';
-    
-    const otoparkBadges = admin.otoparks.map(oto => 
-      `<span class="otopark-card__category otopark-card__category--sanayi" style="margin: 0.15rem 0.25rem 0.15rem 0; display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.5rem; text-transform: none;">${oto}</span>`
-    ).join('');
+    card.className = 'admin-card';
+
+    // 1. Dynamic Otopark grouping / Tooltip
+    let otoparkBadges = '';
+    if (admin.otoparks && admin.otoparks.length > 0) {
+      const maxVisible = 3;
+      const visibleParks = admin.otoparks.slice(0, maxVisible);
+      const remainingParks = admin.otoparks.slice(maxVisible);
+      
+      const visibleBadges = visibleParks.map(oto => 
+        `<span class="otopark-card__category otopark-card__category--sanayi" style="margin: 0.15rem 0.25rem 0.15rem 0; display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.5rem; text-transform: none;">${oto}</span>`
+      ).join('');
+
+      let moreBadge = '';
+      if (remainingParks.length > 0) {
+        const tooltipItems = remainingParks.map(oto => `• ${oto}`).join('<br>');
+        moreBadge = `
+          <span class="otopark-more-badge">
+            +${remainingParks.length} Otopark Yetkisi
+            <span class="otopark-tooltip">${tooltipItems}</span>
+          </span>
+        `;
+      }
+      otoparkBadges = visibleBadges + moreBadge;
+    }
 
     const adminRole = admin.role || 'admin';
     const roleLabel = adminRole === 'yonetim' ? 'Site/AVM Yönetimi' : 'ParkExpert Operatörü';
     const roleStyle = adminRole === 'yonetim' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706;' : 'background: rgba(16, 185, 129, 0.1); color: #16a34a;';
 
     const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    
+    // Check if user is currently online
+    const isOnline = activeUsernames.includes(admin.username);
+
+    // Interactive copy handlers
+    const phoneVal = admin.phone || '';
+    const emailVal = admin.email || '';
+
+    const phoneHtml = phoneVal 
+      ? `<div class="admin-contact-item" onclick="navigator.clipboard.writeText('${phoneVal}'); showToastNotification('Bilgi Kopyalandı', 'Telefon numarası panoya kopyalandı.', 'copy')" title="Kopyalamak için tıklayın">
+           <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="phone" style="width: 13px; height: 13px; color: var(--color-primary);"></i> ${phoneVal}</span>
+           <i data-lucide="copy" class="copy-icon"></i>
+         </div>`
+      : `<div class="admin-contact-item" style="cursor: default; background: transparent; border-color: transparent; padding: 0.2rem 0;">
+           <span style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-text-muted); font-style: italic;"><i data-lucide="phone" style="width: 13px; height: 13px;"></i> Telefon tanımlanmamış</span>
+         </div>`;
+
+    const emailHtml = emailVal 
+      ? `<div class="admin-contact-item" onclick="navigator.clipboard.writeText('${emailVal}'); showToastNotification('Bilgi Kopyalandı', 'E-posta adresi panoya kopyalandı.', 'copy')" title="Kopyalamak için tıklayın">
+           <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="mail" style="width: 13px; height: 13px; color: var(--color-primary);"></i> ${emailVal}</span>
+           <i data-lucide="copy" class="copy-icon"></i>
+         </div>`
+      : `<div class="admin-contact-item" style="cursor: default; background: transparent; border-color: transparent; padding: 0.2rem 0;">
+           <span style="display: flex; align-items: center; gap: 0.35rem; color: var(--color-text-muted); font-style: italic;"><i data-lucide="mail" style="width: 13px; height: 13px;"></i> E-posta tanımlanmamış</span>
+         </div>`;
+
     card.innerHTML = `
       <div class="otopark-card__header" style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
-        <div class="user-avatar" style="width: 42px; height: 42px; position: relative; overflow: hidden; background: var(--color-gradient-accent); border: 2px solid rgba(15, 59, 162, 0.1); flex-shrink: 0;">
-          <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
-          <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem;">${initials}</span>
+        <div class="avatar-container">
+          <div class="avatar-ring ${isOnline ? 'online' : ''}">
+            <div class="user-avatar" style="width: 38px; height: 38px; position: relative; overflow: hidden; background: var(--color-gradient-accent); border: none; flex-shrink: 0; margin: 0;">
+              <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
+              <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">${initials}</span>
+            </div>
+          </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.15rem; flex: 1;">
-          <div class="otopark-card__name" style="margin: 0; font-size: 0.95rem; font-weight: 700;">${admin.name}</div>
+          <div class="otopark-card__name" style="margin: 0; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+            ${admin.name}
+          </div>
           <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.15rem; flex-wrap: wrap;">
             <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none;">@${admin.username}</span>
             <span class="otopark-card__category" style="${roleStyle} font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none; border-radius: 4px;">${roleLabel}</span>
           </div>
         </div>
       </div>
-      <div class="otopark-card__body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
-        <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.25rem;">
+      <div class="otopark-card__body" style="padding: 0.5rem 0 0 0; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.35rem;">
           <span class="otopark-card__label" style="margin-bottom: 0.15rem;">İletişim Bilgileri</span>
-          <div style="font-size: 0.825rem; color: var(--color-text-dark); display: flex; flex-direction: column; gap: 0.25rem;">
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="phone" style="width: 13px; height: 13px; color: var(--color-text-muted);"></i> ${admin.phone || '<span style="color: var(--color-text-muted); font-style: italic;">Telefon tanımlanmamış</span>'}</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><i data-lucide="mail" style="width: 13px; height: 13px; color: var(--color-text-muted);"></i> ${admin.email || '<span style="color: var(--color-text-muted); font-style: italic;">E-posta tanımlanmamış</span>'}</span>
+          <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+            ${phoneHtml}
+            ${emailHtml}
           </div>
         </div>
-        <div class="otopark-card__field otopark-card__field--full">
+        <div class="otopark-card__field otopark-card__field--full" style="margin-top: 0.25rem;">
           <span class="otopark-card__label" style="margin-bottom: 0.25rem;">Yetkili Olduğu Otoparklar</span>
-          <div style="margin-top: 0.25rem;">
+          <div style="margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.15rem;">
             ${otoparkBadges || '<span style="color: var(--color-text-muted); font-style: italic;">Yetkili otopark atanmamış</span>'}
           </div>
         </div>
       </div>
-      <div class="otopark-card__footer" style="margin-top: auto; border-top: 1px solid var(--color-border-light); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
-        <button class="otopark-card__edit-btn" onclick="editAdmin('${admin.id}')" style="background: none; border: none; font-size: 0.8rem; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
+      <div class="admin-card__footer">
+        <button class="admin-card__action-btn admin-card__action-btn--edit" onclick="editAdmin('${admin.id}')">
           <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
         </button>
-        <button class="otopark-card__edit-btn" onclick="deleteAdmin('${admin.id}')" style="background: none; border: none; font-size: 0.8rem; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
-          <i data-lucide="trash-2" style="width: 12px; height: 12px; color: #ef4444;"></i> Sil
+        <button class="admin-card__action-btn admin-card__action-btn--delete" onclick="deleteAdmin('${admin.id}')">
+          <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil
         </button>
       </div>
     `;
@@ -10204,6 +10258,12 @@ async function fetchActiveSessions() {
     }
     
     const data = await res.json();
+    
+    // Store active session usernames globally to show online statuses on admin cards
+    window.activeSessionUsernames = data.map(s => s.username);
+    
+    // Refresh admin cards with live online status indicators
+    renderAdminsTable();
     
     if (countSpan) {
       countSpan.textContent = `(${data.length} aktif oturum)`;
