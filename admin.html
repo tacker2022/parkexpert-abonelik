@@ -422,6 +422,10 @@
           <section class="admin-actions-bar">
             <h3>Başvuru Listesi <span id="table-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 sonuç)</span></h3>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn-export" onclick="createTestApplication()" id="btn-create-test-app" style="display: none; background: #8b5cf6; border: 1px solid #7c3aed; color: white; transition: all 0.2s;">
+                <i data-lucide="user-plus" style="width: 16px; height: 16px; color: white;"></i>
+                <span style="color: white;">Test Müşterisi Oluştur</span>
+              </button>
               <button class="btn-export" onclick="exportToExcel()" id="btn-excel-export">
                 <i data-lucide="download" style="width: 16px; height: 16px;"></i>
                 <span>Standart Excel</span>

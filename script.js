@@ -3734,16 +3734,30 @@ function openDrawer(appId) {
       // Standard admin or superadmin
       footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Başvuru Durumunu Güncelle</div>`;
       if (approval === 'Beklemede') {
-        footerHtml += `
-          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #b45309; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-            <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color:#d97706;"></i>
-            <span>Şu an işlem yapılamaz, yönetim onayı bekleniyor.</span>
-          </div>
-          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none;">
-            <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
-            <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
-          </div>
-        `;
+        if (userRole === 'superadmin') {
+          footerHtml += `
+            <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); color: #6d28d9; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <i data-lucide="shield-alert" style="width: 16px; height: 16px; color:#7c3aed;"></i>
+              <span>Yönetim onayı bekleniyor (Süper Admin yetkisiyle bypass edebilirsiniz).</span>
+            </div>
+            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+              <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla (Bypass)</button>
+              <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet (Bypass)</button>
+              <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: inline-block;">Sil</button>
+            </div>
+          `;
+        } else {
+          footerHtml += `
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #b45309; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color:#d97706;"></i>
+              <span>Şu an işlem yapılamaz, yönetim onayı bekleniyor.</span>
+            </div>
+            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none;">
+              <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
+              <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
+            </div>
+          `;
+        }
       } else if (approval === 'İzin Verildi') {
         footerHtml += `
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
@@ -4098,9 +4112,16 @@ async function updateCurrentAppStatus(newStatus) {
     // Find and update status in database array
     const appIndex = allApplications.findIndex(a => a.id === currentAppId);
     if (appIndex !== -1) {
-      allApplications[appIndex].status = newStatus;
-      if (updatedApp && updatedApp.subscription_expires_at) {
-        allApplications[appIndex].subscription_expires_at = updatedApp.subscription_expires_at;
+      if (updatedApp) {
+        allApplications[appIndex].status = updatedApp.status || newStatus;
+        if (updatedApp.management_approval) {
+          allApplications[appIndex].management_approval = updatedApp.management_approval;
+        }
+        if (updatedApp.subscription_expires_at) {
+          allApplications[appIndex].subscription_expires_at = updatedApp.subscription_expires_at;
+        }
+      } else {
+        allApplications[appIndex].status = newStatus;
       }
       
       // Refresh table rendering with current filter set
@@ -4167,6 +4188,64 @@ async function updateCurrentManagementApproval(approvalStatus) {
 
       // Show toast / success notification
       showToastNotification('Yönetim Onayı Güncellendi', `Başvuru yönetim onayı durumu '${approvalStatus}' olarak güncellendi.`, 'check');
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+async function createTestApplication() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  // Pre-filled random mock test customer data
+  const names = ["Yusuf Testoğlu", "Elif Deneme", "Canan Örnek", "Murat Simülasyon", "Aylin Beta"];
+  const randomName = names[Math.floor(Math.random() * names.length)];
+  const randomPlate = "34TS" + Math.floor(1000 + Math.random() * 9000);
+  const randomPhone = "+90505" + Math.floor(1000000 + Math.random() * 9000000);
+  const randomEmail = `test_${Math.floor(Math.random()*10000)}@parkexpert.net`;
+  
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+  const randomOtopark = otoparks.length > 0 ? otoparks[Math.floor(Math.random() * otoparks.length)].name : "Birlik Sanayi Sitesi - Beylikdüzü";
+
+  const payload = {
+    subscription_type: "bireysel",
+    parking_location: randomOtopark,
+    full_name: randomName,
+    plate_number: randomPlate,
+    phone: randomPhone,
+    email: randomEmail,
+    tc_identity: "11111111111",
+    brand_model: "Toyota Corolla (Test)",
+    subscription_period: "1_month",
+    start_date: new Date().toISOString().split('T')[0]
+  };
+
+  try {
+    const res = await fetch("/api/applications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Test müşterisi oluşturulamadı.");
+    }
+
+    showToastNotification('Test Müşterisi Oluşturuldu', `Yeni test kaydı '${randomName} (${randomPlate})' başarıyla oluşturuldu.`, 'check');
+    
+    // Refresh application list
+    if (typeof loadApplications === 'function') {
+      await loadApplications();
     }
   } catch (err) {
     console.error(err);
@@ -5712,6 +5791,12 @@ function handleUserRoleChange() {
       }
     }
   }
+  
+  const testAppBtn = document.getElementById('btn-create-test-app');
+  if (testAppBtn) {
+    testAppBtn.style.display = val === 'superadmin' ? 'inline-flex' : 'none';
+  }
+
   loadApplications();
   populateLocationFilter();
   applyFilters();

@@ -87,7 +87,7 @@ export async function onRequest(context) {
 
   const headers = {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -209,10 +209,14 @@ export async function onRequest(context) {
         }
       } else {
         // Admin or Superadmin
-        // Prevent approval if management_approval is still Beklemede
+        // Prevent approval if management_approval is still Beklemede (superadmin bypasses this check)
         const currentApproval = management_approval !== undefined ? management_approval : (oldApp.management_approval || "Beklemede");
         if (status === "Onaylandı" && currentApproval === "Beklemede") {
-          return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
+          if (user.role === "superadmin") {
+            updateBody.management_approval = "İzin Verildi";
+          } else {
+            return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
+          }
         }
 
         if (status !== undefined) {
@@ -611,6 +615,103 @@ export async function onRequest(context) {
       }
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    }
+
+    // ----------------------------------------------------
+    // POST: Create a test application (Superadmin only)
+    // ----------------------------------------------------
+    if (method === "POST") {
+      if (user.role !== "superadmin") {
+        return new Response(JSON.stringify({ error: "Yalnızca süper yöneticiler test müşterisi oluşturabilir!" }), { status: 403, headers });
+      }
+
+      const requestData = await context.request.json();
+      const { 
+        subscription_type, 
+        parking_location, 
+        full_name, 
+        plate_number, 
+        phone, 
+        email, 
+        tc_identity, 
+        brand_model, 
+        subscription_period, 
+        start_date 
+      } = requestData;
+
+      if (!parking_location || !full_name || !plate_number || !phone || !email) {
+        return new Response(JSON.stringify({ error: "Eksik parametreler" }), { status: 400, headers });
+      }
+
+      // Generate a unique application ID starting with PE-
+      const appId = "PE-" + Math.floor(100000 + Math.random() * 900000);
+
+      const payload = {
+        id: appId,
+        full_name: full_name,
+        email: email,
+        phone: phone,
+        plate_number: plate_number,
+        parking_location: parking_location,
+        subscription_type: subscription_type || "bireysel",
+        status: "Beklemede",
+        management_approval: "Beklemede",
+        tc_no: tc_identity || "11111111111",
+        car_model: brand_model || "Test Aracı",
+        notes: "Süper Admin tarafından oluşturulmuş test müşterisi.",
+        date_applied: new Date().toISOString(),
+        // Mock PDF/Images paths
+        ruhsat_url: `applications/${appId}/ruhsat.pdf`,
+        kimlik_url: `applications/${appId}/kimlik.pdf`,
+        dekont_url: `applications/${appId}/dekont.pdf`
+      };
+
+      // Create empty mock files in R2 BUCKET so UI does not fail on viewing files
+      if (bucket) {
+        try {
+          const emptyFile = new Uint8Array([0]);
+          await bucket.put(`applications/${appId}/ruhsat.pdf`, emptyFile, { httpMetadata: { contentType: "application/pdf" } });
+          await bucket.put(`applications/${appId}/kimlik.pdf`, emptyFile, { httpMetadata: { contentType: "application/pdf" } });
+          await bucket.put(`applications/${appId}/dekont.pdf`, emptyFile, { httpMetadata: { contentType: "application/pdf" } });
+        } catch (r2Err) {
+          console.error("R2 Test File Upload Error:", r2Err);
+        }
+      }
+
+      const res = await fetch(`${supabaseUrl}/rest/v1/applications`, {
+        method: "POST",
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return new Response(JSON.stringify({ error: `Supabase insert error: ${errText}` }), { status: res.status, headers });
+      }
+
+      const data = await res.json();
+
+      // Log audit
+      const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      context.waitUntil(
+        logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "create_test_app",
+          targetId: appId,
+          details: `Test başvurusu #${appId} (${full_name}) oluşturuldu.`,
+          ipAddress
+        })
+      );
+
+      return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
     }
 
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
