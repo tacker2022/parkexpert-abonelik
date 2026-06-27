@@ -252,20 +252,7 @@
           <button onclick="togglePrivacyMode()" class="btn-toggle-privacy" id="btn-toggle-privacy" title="Gizlilik Modunu Aç/Kapat" style="background: none; border: 1px solid rgba(15, 59, 162, 0.2); background: rgba(15, 59, 162, 0.03); color: var(--color-primary); border-radius: var(--radius-lg); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast);">
             <i id="privacy-icon" data-lucide="eye" style="width: 18px; height: 18px;"></i>
           </button>
-          
-          <!-- Theme Accent Selector -->
-          <div class="theme-accent-selector" style="position: relative;">
-            <button id="theme-selector-btn" onclick="toggleThemeDropdown(event)" class="btn-theme-selector" title="Renk Temasını Değiştir" style="background: none; border: 1px solid rgba(255, 208, 0, 0.2); background: rgba(255, 208, 0, 0.03); color: var(--color-accent-gold); border-radius: var(--radius-lg); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); outline: none;">
-              <i data-lucide="palette" style="width: 18px; height: 18px;"></i>
-            </button>
-            <div id="theme-dropdown-menu" class="theme-dropdown-menu">
-              <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; padding: 0.2rem 0.4rem; letter-spacing: 0.05em;">Renk Teması</div>
-              <button onclick="setThemeAccent('gold')" class="theme-item" style="color: #ffd000;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ffd000; display: inline-block;"></span> Altın Sarısı</button>
-              <button onclick="setThemeAccent('emerald')" class="theme-item" style="color: #10b981;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Zümrüt Yeşili</button>
-              <button onclick="setThemeAccent('cyan')" class="theme-item" style="color: #06b6d4;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Elektrik Mavisi</button>
-              <button onclick="setThemeAccent('purple')" class="theme-item" style="color: #a855f7;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Modern Mor</button>
-            </div>
-          </div>
+
 
           <button onclick="handleAdminLogout()" class="btn-logout" title="Güvenli Çıkış Yap" style="background: none; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03); color: #ef4444; border-radius: var(--radius-lg); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast);">
             <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
