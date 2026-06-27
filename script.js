@@ -6,6 +6,7 @@
 const STORAGE_KEY = 'parkexpert_applications';
 const ADMIN_USERS_KEY = 'parkexpert_admin_users';
 let currentAdminUser = 'superadmin';
+let activeOtoparkCategoryFilter = 'all';
 
 function isYonetimRole(role) {
   return role === 'yonetim' || role === 'yonetim_avm' || role === 'yonetim_site';
@@ -4892,22 +4893,49 @@ function renderOtoparksTable() {
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
 
+  // Update category segment control counts dynamically
+  const countAll = otoparks.length;
+  const countSanayi = otoparks.filter(p => p.category === 'OSB / Sanayi Sitesi Otoparkları' || p.category === 'Sanayi Sitesi Otoparkları').length;
+  const countAvm = otoparks.filter(p => p.category === 'AVM Otoparkları').length;
+  const countAcik = otoparks.filter(p => p.category === 'Açık Otoparklar / Bağımsız Otoparklar').length;
+
+  const countAllEl = document.getElementById('count-otopark-all');
+  const countSanayiEl = document.getElementById('count-otopark-sanayi');
+  const countAvmEl = document.getElementById('count-otopark-avm');
+  const countAcikEl = document.getElementById('count-otopark-acik');
+
+  if (countAllEl) countAllEl.textContent = countAll;
+  if (countSanayiEl) countSanayiEl.textContent = countSanayi;
+  if (countAvmEl) countAvmEl.textContent = countAvm;
+  if (countAcikEl) countAcikEl.textContent = countAcik;
+
+  // Filter otoparks list based on active filter
+  let filteredOtoparks = otoparks;
+  if (activeOtoparkCategoryFilter !== 'all') {
+    filteredOtoparks = otoparks.filter(park => {
+      if (activeOtoparkCategoryFilter === 'Sanayi Sitesi Otoparkları') {
+        return park.category === 'OSB / Sanayi Sitesi Otoparkları' || park.category === 'Sanayi Sitesi Otoparkları';
+      }
+      return park.category === activeOtoparkCategoryFilter;
+    });
+  }
+
   if (countEl) {
-    countEl.textContent = `(${otoparks.length} konum)`;
+    countEl.textContent = `(${filteredOtoparks.length} konum)`;
   }
 
   gridContainer.innerHTML = '';
 
-  if (otoparks.length === 0) {
+  if (filteredOtoparks.length === 0) {
     gridContainer.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-size: 0.95rem;">
-        Sistemde tanımlı otopark işletmesi bulunamadı.
+        Seçilen kategoride otopark işletmesi bulunamadı.
       </div>
     `;
     return;
   }
 
-  otoparks.forEach(park => {
+  filteredOtoparks.forEach(park => {
     // Category badge class
     let catClass = 'otopark-card__category--sanayi';
     if (park.category === 'AVM Otoparkları') {
@@ -10539,6 +10567,23 @@ function filterAdminRole(role, btn) {
 }
 
 window.filterAdminRole = filterAdminRole;
+
+function filterOtoparkCategory(category, btn) {
+  activeOtoparkCategoryFilter = category;
+  
+  // Update active status UI for otopark segmented controls
+  const container = document.getElementById('otoparks-category-filter-container');
+  if (container) {
+    container.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+  }
+  if (btn) {
+    btn.classList.add('active');
+  }
+
+  renderOtoparksTable();
+}
+
+window.filterOtoparkCategory = filterOtoparkCategory;
 
 
 

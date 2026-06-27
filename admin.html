@@ -794,8 +794,24 @@
             </button>
           </section>
 
+          <!-- Otopark Category Segment Filter Controls -->
+          <div class="admin-segment-control" id="otoparks-category-filter-container">
+            <button class="segment-btn active" onclick="filterOtoparkCategory('all', this)">
+              <span>Tüm Konumlar</span> <span class="segment-btn-count" id="count-otopark-all">0</span>
+            </button>
+            <button class="segment-btn" onclick="filterOtoparkCategory('Sanayi Sitesi Otoparkları', this)">
+              <span>Sanayi Sitesi / OSB</span> <span class="segment-btn-count" id="count-otopark-sanayi">0</span>
+            </button>
+            <button class="segment-btn" onclick="filterOtoparkCategory('AVM Otoparkları', this)">
+              <span>AVM Otoparkları</span> <span class="segment-btn-count" id="count-otopark-avm">0</span>
+            </button>
+            <button class="segment-btn" onclick="filterOtoparkCategory('Açık Otoparklar / Bağımsız Otoparklar', this)">
+              <span>Açık / Bağımsız</span> <span class="segment-btn-count" id="count-otopark-acik">0</span>
+            </button>
+          </div>
+
           <!-- Otoparks Card Grid Container -->
-          <div class="otoparks-grid" id="otoparks-grid-container" style="margin-top: 1.5rem;">
+          <div class="otoparks-grid" id="otoparks-grid-container" style="margin-top: 0.5rem;">
             <!-- Rendered via JS -->
           </div>
         </div>
