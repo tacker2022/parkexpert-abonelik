@@ -5163,6 +5163,77 @@ async function addOtoparkCategory() {
   }
 }
 
+async function editOtoparkCategory(oldCategory) {
+  const newCategory = prompt("Kategori adını girin:", oldCategory);
+  if (newCategory === null) return; // Cancelled
+  
+  const trimmed = newCategory.trim();
+  if (!trimmed) {
+    alert("Kategori adı boş olamaz.");
+    return;
+  }
+  
+  if (trimmed === oldCategory) return;
+  
+  if (window.otoparkCategories.includes(trimmed)) {
+    alert("Bu kategori zaten mevcut.");
+    return;
+  }
+  
+  try {
+    // 1. Update matching otoparks in the database first
+    const OTOPARKS_KEY = 'parkexpert_otoparks';
+    const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+    const matchingOtoparks = otoparks.filter(p => p.category === oldCategory);
+    
+    const token = localStorage.getItem('parkexpert_token');
+    if (!token) throw new Error("Oturum bulunamadı.");
+    
+    for (const park of matchingOtoparks) {
+      const payload = {
+        id: park.id,
+        name: park.name,
+        category: trimmed,
+        companyTitle: park.companyTitle || park.company_title || '',
+        taxOffice: park.taxOffice || park.tax_office || '',
+        taxNumber: park.taxNumber || park.tax_number || '',
+        bankName: park.bankName || park.bank_name || '',
+        iban: park.iban || '',
+        priceEmployee: park.priceEmployee || park.price_employee || 0,
+        priceExternal: park.priceExternal || park.price_external || 0,
+        supportPhone: park.supportPhone || park.support_phone || '',
+        isActive: park.isActive !== false && park.is_active !== false,
+        templates: park.templates,
+        notificationEmails: park.notificationEmails || park.notification_emails || null,
+        summaryEmails: park.summaryEmails || park.summary_emails || null,
+        requiresManagementApproval: park.requiresManagementApproval === true || park.requires_management_approval === true
+      };
+      
+      const res = await fetch('/api/otoparks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        throw new Error(`"${park.name}" otoparkı güncellenemedi.`);
+      }
+    }
+    
+    // 2. Update the categories list
+    const updatedCategories = window.otoparkCategories.map(c => c === oldCategory ? trimmed : c);
+    await saveOtoparkCategories(updatedCategories);
+    
+    alert("Kategori ve ilişkili otoparklar başarıyla güncellendi.");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
 async function deleteOtoparkCategory(category) {
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
@@ -5213,33 +5284,126 @@ function renderCategoryChips() {
       font-size: 0.85rem;
       font-weight: 600;
       color: var(--color-text-dark);
+      position: relative;
     `;
     
     const textSpan = document.createElement('span');
     textSpan.textContent = cat;
+    chip.appendChild(textSpan);
     
-    const deleteBtn = document.createElement('button');
-    deleteBtn.innerHTML = '&times;';
-    deleteBtn.style.cssText = `
+    // Elegant menu toggle button
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '<i data-lucide="more-vertical" style="width: 14px; height: 14px;"></i>';
+    menuBtn.style.cssText = `
       background: none;
       border: none;
-      padding: 0;
+      padding: 0.1rem;
       margin: 0;
       cursor: pointer;
-      color: #ef4444;
+      color: var(--color-text-muted);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
-      line-height: 1;
-      transition: color 0.2s;
+      border-radius: 4px;
+      transition: all 0.2s;
     `;
-    deleteBtn.onmouseover = () => deleteBtn.style.color = '#b91c1c';
-    deleteBtn.onmouseout = () => deleteBtn.style.color = '#ef4444';
-    deleteBtn.onclick = () => deleteOtoparkCategory(cat);
+    menuBtn.onmouseover = () => {
+      menuBtn.style.color = 'var(--color-primary)';
+      menuBtn.style.background = 'rgba(37, 99, 235, 0.1)';
+    };
+    menuBtn.onmouseout = () => {
+      menuBtn.style.color = 'var(--color-text-muted)';
+      menuBtn.style.background = 'none';
+    };
     
-    chip.appendChild(textSpan);
-    chip.appendChild(deleteBtn);
+    // Dropdown options menu container
+    const dropdown = document.createElement('div');
+    dropdown.style.cssText = `
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 0.25rem;
+      background: #ffffff;
+      border: 1px solid var(--color-border-light);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      border-radius: var(--radius-sm);
+      min-width: 120px;
+      z-index: 100;
+      overflow: hidden;
+    `;
+    
+    const editOption = document.createElement('button');
+    editOption.innerHTML = '<i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle';
+    editOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text-dark);
+      cursor: pointer;
+      transition: background 0.15s;
+    `;
+    editOption.onmouseover = () => editOption.style.background = '#f1f5f9';
+    editOption.onmouseout = () => editOption.style.background = 'none';
+    editOption.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.style.display = 'none';
+      editOtoparkCategory(cat);
+    };
+    
+    const deleteOption = document.createElement('button');
+    deleteOption.innerHTML = '<i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil';
+    deleteOption.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #ef4444;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-top: 1px solid var(--color-border-light);
+    `;
+    deleteOption.onmouseover = () => deleteOption.style.background = '#fef2f2';
+    deleteOption.onmouseout = () => deleteOption.style.background = 'none';
+    deleteOption.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.style.display = 'none';
+      deleteOtoparkCategory(cat);
+    };
+    
+    dropdown.appendChild(editOption);
+    dropdown.appendChild(deleteOption);
+    
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      // Close any other open category dropdowns first
+      document.querySelectorAll('.category-chip div').forEach(el => {
+        if (el !== dropdown) el.style.display = 'none';
+      });
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    };
+    
+    // Close dropdown on document click
+    const docClickListener = () => {
+      dropdown.style.display = 'none';
+    };
+    document.addEventListener('click', docClickListener);
+    
+    chip.appendChild(menuBtn);
+    chip.appendChild(dropdown);
     container.appendChild(chip);
   });
 
@@ -5319,6 +5483,7 @@ function renderOtoparkCategoryFilters() {
 
 window.addOtoparkCategory = addOtoparkCategory;
 window.deleteOtoparkCategory = deleteOtoparkCategory;
+window.editOtoparkCategory = editOtoparkCategory;
 window.loadOtoparkCategories = loadOtoparkCategories;
 
 function editOtopark(otoparkId) {
