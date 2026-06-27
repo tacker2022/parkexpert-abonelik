@@ -3173,6 +3173,21 @@ async function loadApplications() {
   filteredApplications = [...allApplications];
   populateCompanyFilter();
   applyFilters();
+
+  // Refresh location switcher selector badge counts
+  const select = document.getElementById('active-user-role');
+  if (select) {
+    const activeRoleVal = select.value;
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const userJson = localStorage.getItem('parkexpert_user');
+    const loggedInUser = userJson ? JSON.parse(userJson) : {};
+    const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+    const activeRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+
+    if (activeRole === 'yonetim' && activeAdminObj.otoparks && activeAdminObj.otoparks.length > 1) {
+      renderYonetimLocationSelector(activeAdminObj.otoparks);
+    }
+  }
 }
 
 function populateCompanyFilter() {
@@ -6039,6 +6054,9 @@ function renderYonetimLocationSelector(otoparksList) {
   const container = document.getElementById('yonetim-location-selector-container');
   if (!container) return;
 
+  // Retrieve current active location filter value to persist active state
+  const selectedLocation = document.getElementById('filter-location')?.value || '';
+
   container.innerHTML = '';
   
   if (!otoparksList || otoparksList.length <= 1) {
@@ -6048,18 +6066,40 @@ function renderYonetimLocationSelector(otoparksList) {
 
   container.style.display = 'flex';
 
+  // Count total pending for "Tüm Konumlar" (management_approval is 'Beklemede' and status is 'Beklemede'/'Yeni')
+  const totalPending = allApplications.filter(app => 
+    (app.status === 'Yeni' || app.status === 'Beklemede') &&
+    app.management_approval === 'Beklemede'
+  ).length;
+
   // 1. Add "Tüm Konumlar" Pill
   const allPill = document.createElement('button');
-  allPill.className = 'location-pill active';
-  allPill.innerHTML = '<i data-lucide="map" style="width: 14px; height: 14px;"></i><span>Tüm Konumlar</span>';
+  allPill.className = `location-pill ${selectedLocation === '' ? 'active' : ''}`;
+  
+  let allPillHtml = '<i data-lucide="map" style="width: 14px; height: 14px;"></i><span>Tüm Konumlar</span>';
+  if (totalPending > 0) {
+    allPillHtml += `<span class="location-pill-badge">${totalPending}</span>`;
+  }
+  allPill.innerHTML = allPillHtml;
   allPill.onclick = () => selectYonetimLocation('', allPill);
   container.appendChild(allPill);
 
   // 2. Add individual otopark pills
   otoparksList.forEach(parkName => {
+    const pendingCount = allApplications.filter(app => 
+      app.parking_location === parkName &&
+      (app.status === 'Yeni' || app.status === 'Beklemede') &&
+      app.management_approval === 'Beklemede'
+    ).length;
+
     const pill = document.createElement('button');
-    pill.className = 'location-pill';
-    pill.innerHTML = `<i data-lucide="map-pin" style="width: 14px; height: 14px;"></i><span>${parkName}</span>`;
+    pill.className = `location-pill ${selectedLocation === parkName ? 'active' : ''}`;
+    
+    let pillHtml = `<i data-lucide="map-pin" style="width: 14px; height: 14px;"></i><span>${parkName}</span>`;
+    if (pendingCount > 0) {
+      pillHtml += `<span class="location-pill-badge">${pendingCount}</span>`;
+    }
+    pill.innerHTML = pillHtml;
     pill.onclick = () => selectYonetimLocation(parkName, pill);
     container.appendChild(pill);
   });

@@ -4780,4 +4780,39 @@ textarea.is-invalid {
   transform: none;
 }
 
+/* Pulsing Badge for Location Pills */
+@keyframes pulse-badge {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.location-pill-badge {
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.675rem;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 10px;
+  margin-left: 6px;
+  animation: pulse-badge 2s infinite;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.location-pill.active .location-pill-badge {
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
 
