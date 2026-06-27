@@ -165,7 +165,47 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: "Kategori listesi geçersiz formatta (dizi olmalıdır)." }), { status: 400, headers });
       }
 
+      // Check if categories setting already exists to get its ID
+      const existingRes = await fetch(`${supabaseUrl}/rest/v1/system_settings?key=eq.otopark_categories&select=id`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+      
+      let targetId = null;
+      if (existingRes.ok) {
+        const rows = await existingRes.json();
+        if (rows.length > 0) {
+          targetId = rows[0].id;
+        }
+      }
+      
+      // If it doesn't exist, dynamically find next ID or generate a UUID
+      if (!targetId) {
+        const allRes = await fetch(`${supabaseUrl}/rest/v1/system_settings?select=id`, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+        
+        if (allRes.ok) {
+          const allRows = await allRes.json();
+          const isNumeric = allRows.every(r => !isNaN(parseInt(r.id)));
+          if (isNumeric && allRows.length > 0) {
+            const numericIds = allRows.map(r => parseInt(r.id));
+            targetId = String(Math.max(...numericIds) + 1);
+          } else {
+            targetId = crypto.randomUUID();
+          }
+        } else {
+          targetId = crypto.randomUUID();
+        }
+      }
+
       const dbPayload = {
+        id: targetId,
         key: "otopark_categories",
         value: payload,
         updated_at: new Date().toISOString()
