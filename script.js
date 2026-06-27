@@ -3424,7 +3424,7 @@ function updateMetrics(apps) {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
-  const activeAdminObj = admins.find(a => a.id === activeRoleVal) || loggedInUser;
+  const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
   const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
   const total = apps.length;
@@ -3783,7 +3783,7 @@ function openDrawer(appId) {
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
     const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-    const activeAdminObj = admins.find(a => a.id === currentAdminUser) || loggedInUser;
+    const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
     const userRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
     const approval = app.management_approval || 'Beklemede';
     
@@ -5182,7 +5182,7 @@ function switchAdminTab(tabName) {
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-  const activeAdminObj = admins.find(a => a.id === currentAdminUser) || loggedInUser;
+  const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
   const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
   if (activeRole === 'yonetim' && tabName !== 'applications') {
@@ -5868,7 +5868,7 @@ function handleUserRoleChange() {
 
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
-    const adminObj = admins.find(a => a.id === val) || loggedInUser;
+    const adminObj = admins.find(a => String(a.id) === String(val)) || loggedInUser;
     const userRole = adminObj.role || 'admin';
     
     if (adminObj && adminObj.name) {
@@ -6062,7 +6062,7 @@ function populateLocationFilter() {
   let allowedOtoparks = otoparks;
   if (currentAdminUser !== 'superadmin') {
     const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-    const activeAdminObj = admins.find(a => a.id === currentAdminUser);
+    const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser));
     if (activeAdminObj) {
       const allowedNames = activeAdminObj.otoparks || [];
       allowedOtoparks = otoparks.filter(park => allowedNames.includes(park.name));
@@ -6637,7 +6637,7 @@ function openCreateAdminModal() {
 
 function editAdmin(adminId) {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-  const adminObj = admins.find(a => a.id === adminId);
+  const adminObj = admins.find(a => String(a.id) === String(adminId));
   if (!adminObj) return;
 
   const photoInput = document.getElementById('edit-admin-photo');
