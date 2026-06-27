@@ -114,23 +114,80 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ error: "Bu işlem için Süper Yönetici yetkiniz bulunmalıdır." }), { status: 403, headers });
   }
 
+  const url = new URL(context.request.url);
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const limit = parseInt(url.searchParams.get("limit") || "50");
+  const search = url.searchParams.get("search") || "";
+  const actionType = url.searchParams.get("action_type") || "";
+  const startDate = url.searchParams.get("start_date") || "";
+  const endDate = url.searchParams.get("end_date") || "";
+  const isExport = url.searchParams.get("export") === "true";
+
   try {
-    // Fetch logs from Supabase
-    // If the table doesn't exist, return empty array fallback
-    const res = await fetch(`${supabaseUrl}/rest/v1/audit_logs?select=*&order=created_at.desc&limit=500`, {
-      headers: {
-        "apikey": supabaseAnonKey,
-        "Authorization": `Bearer ${supabaseAnonKey}`
-      }
+    const queryParams = [];
+    queryParams.push("select=*");
+    queryParams.push("order=created_at.desc");
+
+    if (actionType) {
+      queryParams.push(`action_type=eq.${encodeURIComponent(actionType)}`);
+    }
+    if (startDate) {
+      const startIso = new Date(startDate + "T00:00:00.000Z").toISOString();
+      queryParams.push(`created_at=gte.${encodeURIComponent(startIso)}`);
+    }
+    if (endDate) {
+      const endIso = new Date(endDate + "T23:59:59.999Z").toISOString();
+      queryParams.push(`created_at=lte.${encodeURIComponent(endIso)}`);
+    }
+    if (search) {
+      queryParams.push(`or=(admin_username.ilike.*${encodeURIComponent(search)}*,details.ilike.*${encodeURIComponent(search)}*,ip_address.ilike.*${encodeURIComponent(search)}*)`);
+    }
+
+    if (!isExport) {
+      const offset = (page - 1) * limit;
+      queryParams.push(`limit=${limit}`);
+      queryParams.push(`offset=${offset}`);
+    }
+
+    const supabaseQueryUrl = `${supabaseUrl}/rest/v1/audit_logs?${queryParams.join("&")}`;
+
+    const headersToSupabase = {
+      "apikey": supabaseAnonKey,
+      "Authorization": `Bearer ${supabaseAnonKey}`
+    };
+    if (!isExport) {
+      headersToSupabase["Prefer"] = "count=exact";
+    }
+
+    const res = await fetch(supabaseQueryUrl, {
+      headers: headersToSupabase
     });
 
     if (!res.ok) {
-      console.warn("[audit_logs API] Failed to query audit_logs table. Returning empty array fallback.");
-      return new Response(JSON.stringify([]), { status: 200, headers });
+      console.warn("[audit_logs API] Failed to query audit_logs table. Returning empty response fallback.");
+      return new Response(JSON.stringify(isExport ? [] : { data: [], page, limit, totalCount: 0 }), { status: 200, headers });
     }
 
     const data = await res.json();
-    return new Response(JSON.stringify(data), { status: 200, headers });
+
+    if (isExport) {
+      return new Response(JSON.stringify(data), { status: 200, headers });
+    } else {
+      const contentRange = res.headers.get("content-range") || "";
+      let totalCount = 0;
+      if (contentRange) {
+        const parts = contentRange.split("/");
+        if (parts.length === 2) {
+          totalCount = parseInt(parts[1]) || 0;
+        }
+      }
+      return new Response(JSON.stringify({
+        data,
+        page,
+        limit,
+        totalCount
+      }), { status: 200, headers });
+    }
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
   }

@@ -9090,6 +9090,8 @@ async function submitBulkSMS(event) {
 }
 
 let allAuditLogs = [];
+let auditCurrentPage = 1;
+let auditTotalCount = 0;
 
 async function loadAuditLogs() {
   const tbody = document.getElementById('audit-logs-table-body');
@@ -9106,8 +9108,21 @@ async function loadAuditLogs() {
   const token = localStorage.getItem('parkexpert_token');
   if (!token) return;
 
+  const searchQuery = (document.getElementById('audit-search-query')?.value || '').trim();
+  const filterAction = document.getElementById('audit-filter-action')?.value || '';
+  const startDateVal = document.getElementById('audit-filter-start-date')?.value || '';
+  const endDateVal = document.getElementById('audit-filter-end-date')?.value || '';
+
+  const params = new URLSearchParams();
+  params.set("page", auditCurrentPage);
+  params.set("limit", "50");
+  if (searchQuery) params.set("search", searchQuery);
+  if (filterAction) params.set("action_type", filterAction);
+  if (startDateVal) params.set("start_date", startDateVal);
+  if (endDateVal) params.set("end_date", endDateVal);
+
   try {
-    const response = await fetch(`/api/audit_logs?_t=${Date.now()}`, {
+    const response = await fetch(`/api/audit_logs?${params.toString()}`, {
       headers: {
         "Authorization": `Bearer ${token}`
       }
@@ -9118,8 +9133,12 @@ async function loadAuditLogs() {
       throw new Error(errData.error || "Günlükler yüklenemedi.");
     }
 
-    allAuditLogs = await response.json();
-    filterAuditLogs();
+    const result = await response.json();
+    allAuditLogs = result.data || [];
+    auditTotalCount = result.totalCount || 0;
+
+    renderAuditLogsTable(allAuditLogs);
+    updateAuditPaginationControls();
   } catch (err) {
     console.error("Failed to load audit logs:", err);
     tbody.innerHTML = `
@@ -9133,42 +9152,38 @@ async function loadAuditLogs() {
 }
 
 function filterAuditLogs() {
-  const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
-  const filterAction = document.getElementById('audit-filter-action')?.value || '';
-  const startDateVal = document.getElementById('audit-filter-start-date')?.value || '';
-  const endDateVal = document.getElementById('audit-filter-end-date')?.value || '';
-
-  const filtered = allAuditLogs.filter(log => {
-    // Action Type Filter
-    if (filterAction && log.action_type !== filterAction) return false;
-
-    // Date Range Filter
-    if (log.created_at) {
-      const logDate = new Date(log.created_at);
-      if (startDateVal) {
-        const start = new Date(startDateVal + "T00:00:00");
-        if (logDate < start) return false;
-      }
-      if (endDateVal) {
-        const end = new Date(endDateVal + "T23:59:59");
-        if (logDate > end) return false;
-      }
-    } else if (startDateVal || endDateVal) {
-      return false;
-    }
-
-    // Search Query (username or details)
-    if (searchQuery) {
-      const matchesUsername = log.admin_username?.toLowerCase().includes(searchQuery);
-      const matchesDetails = log.details?.toLowerCase().includes(searchQuery);
-      if (!matchesUsername && !matchesDetails) return false;
-    }
-
-    return true;
-  });
-
-  renderAuditLogsTable(filtered);
+  auditCurrentPage = 1;
+  loadAuditLogs();
 }
+
+function updateAuditPaginationControls() {
+  const infoEl = document.getElementById('audit-pagination-info');
+  const prevBtn = document.getElementById('btn-audit-prev');
+  const nextBtn = document.getElementById('btn-audit-next');
+  if (!infoEl || !prevBtn || !nextBtn) return;
+
+  const limit = 50;
+  const start = auditTotalCount === 0 ? 0 : (auditCurrentPage - 1) * limit + 1;
+  const end = Math.min(auditCurrentPage * limit, auditTotalCount);
+
+  infoEl.textContent = `Gösterilen: ${start} - ${end} / Toplam: ${auditTotalCount}`;
+
+  prevBtn.disabled = auditCurrentPage <= 1;
+  nextBtn.disabled = end >= auditTotalCount;
+}
+
+function changeAuditPage(direction) {
+  const limit = 50;
+  const maxPage = Math.ceil(auditTotalCount / limit);
+  
+  const targetPage = auditCurrentPage + direction;
+  if (targetPage >= 1 && (direction < 0 || targetPage <= maxPage)) {
+    auditCurrentPage = targetPage;
+    loadAuditLogs();
+  }
+}
+
+window.changeAuditPage = changeAuditPage;
 
 function renderAuditLogsTable(logs) {
   const tbody = document.getElementById('audit-logs-table-body');
@@ -9294,89 +9309,109 @@ function renderAuditLogsTable(logs) {
 window.loadAuditLogs = loadAuditLogs;
 window.filterAuditLogs = filterAuditLogs;
 
-function downloadAuditLogsCSV() {
-  if (!allAuditLogs || allAuditLogs.length === 0) {
-    showToastNotification("Hata", "İndirilecek denetim kaydı bulunamadı.", "alert-triangle");
-    return;
-  }
+async function downloadAuditLogsCSV() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
 
-  // Get filtered logs
-  const searchQuery = (document.getElementById('audit-search-query')?.value || '').toLowerCase().trim();
+  const searchQuery = (document.getElementById('audit-search-query')?.value || '').trim();
   const filterAction = document.getElementById('audit-filter-action')?.value || '';
   const startDateVal = document.getElementById('audit-filter-start-date')?.value || '';
   const endDateVal = document.getElementById('audit-filter-end-date')?.value || '';
 
-  const filtered = allAuditLogs.filter(log => {
-    if (filterAction && log.action_type !== filterAction) return false;
-    
-    if (log.created_at) {
-      const logDate = new Date(log.created_at);
-      if (startDateVal) {
-        const start = new Date(startDateVal + "T00:00:00");
-        if (logDate < start) return false;
+  showToastNotification("Bilgi", "Arşiv hazırlanıyor, lütfen bekleyin...", "info");
+
+  const params = new URLSearchParams();
+  params.set("export", "true");
+  if (searchQuery) params.set("search", searchQuery);
+  if (filterAction) params.set("action_type", filterAction);
+  if (startDateVal) params.set("start_date", startDateVal);
+  if (endDateVal) params.set("end_date", endDateVal);
+
+  try {
+    const response = await fetch(`/api/audit_logs?${params.toString()}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
       }
-      if (endDateVal) {
-        const end = new Date(endDateVal + "T23:59:59");
-        if (logDate > end) return false;
-      }
-    } else if (startDateVal || endDateVal) {
-      return false;
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Günlükler indirilemedi.");
     }
 
-    if (searchQuery) {
-      const matchesUsername = log.admin_username?.toLowerCase().includes(searchQuery);
-      const matchesDetails = log.details?.toLowerCase().includes(searchQuery);
-      if (!matchesUsername && !matchesDetails) return false;
+    const logsToExport = await response.json();
+    if (!logsToExport || logsToExport.length === 0) {
+      showToastNotification("Hata", "İndirilecek denetim kaydı bulunamadı.", "alert-triangle");
+      return;
     }
-    return true;
-  });
 
-  if (filtered.length === 0) {
-    showToastNotification("Hata", "Filtreleme kriterlerine uygun kayıt bulunamadı.", "alert-triangle");
-    return;
+    // Helper to format date
+    const formatCSVDate = (dateStr) => {
+      if (!dateStr) return '-';
+      try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          return `${day}.${month}.${year} ${hours}:${minutes}`;
+        }
+      } catch (e) {}
+      return dateStr;
+    };
+
+    // Build CSV content
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += "Tarih;Yönetici;Yetki Rolü;İşlem Türü;İşlem Detayı;IP Adresi\n";
+
+    logsToExport.forEach(log => {
+      const date = formatCSVDate(log.created_at);
+      const username = log.admin_username || '';
+      
+      let role = 'Temsilci/Admin';
+      if (log.admin_role === 'superadmin') role = 'Süper Admin';
+      else if (log.admin_role === 'yonetim') role = 'Site Yönetimi';
+
+      // Translate action label
+      let actionLabel = log.action_type || '';
+      switch (log.action_type) {
+        case 'approve_app': actionLabel = 'Başvuru Onaylandı ✅'; break;
+        case 'reject_app': actionLabel = 'Başvuru Reddedildi ❌'; break;
+        case 'management_approve': actionLabel = 'Yönetim İzni Verildi 🟢'; break;
+        case 'management_reject': actionLabel = 'Yönetim Reddedildi 🔴'; break;
+        case 'extend_subscription': actionLabel = 'Abonelik Süresi Uzatıldı ⏳'; break;
+        case 'edit_application': actionLabel = 'Başvuru Düzenlendi ✏️'; break;
+        case 'update_settings': actionLabel = 'Sistem Ayarları Değişti ⚙️'; break;
+        case 'create_otopark': actionLabel = 'Yeni Otopark Eklendi ➕'; break;
+        case 'update_otopark': actionLabel = 'Otopark Güncellendi 🔄'; break;
+        case 'delete_otopark': actionLabel = 'Otopark Silindi 🗑️'; break;
+        case 'create_admin': actionLabel = 'Yeni Yönetici Eklendi 👤'; break;
+        case 'update_admin': actionLabel = 'Yönetici Güncellendi 👤'; break;
+        case 'delete_admin': actionLabel = 'Yönetici Silindi 🗑️'; break;
+      }
+
+      const details = (log.details || '').replace(/;/g, ',').replace(/\n/g, ' '); // escape semi-colons and newlines
+      const ip = log.ip_address || '';
+
+      csvContent += `"${date}";"${username}";"${role}";"${actionLabel}";"${details}";"${ip}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `denetim_gunlukleri_arşiv_${new Date().toISOString().substring(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToastNotification("Başarılı", "Tüm arşiv başarıyla dışa aktarıldı.", "check");
+  } catch (err) {
+    console.error("Export failed:", err);
+    showToastNotification("Hata", `Dışa aktarım başarısız: ${err.message}`, "alert-triangle");
   }
-
-  // Helper to format date
-  const formatCSVDate = (dateStr) => {
-    if (!dateStr) return '-';
-    try {
-      const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        return `${day}.${month}.${year} ${hours}:${minutes}`;
-      }
-    } catch (e) {}
-    return dateStr;
-  };
-
-  // Build CSV content
-  // Headers with UTF-8 BOM so Turkish characters display correctly in Excel
-  let csvContent = "\uFEFF";
-  csvContent += "Tarih;Yönetici;Yetki Rolü;İşlem Türü;İşlem Detayı;IP Adresi\n";
-
-  filtered.forEach(log => {
-    const date = formatCSVDate(log.created_at);
-    const username = log.admin_username || '';
-    const role = log.admin_role === 'superadmin' ? 'Süper Admin' : 'Otopark Admin';
-    const action = log.action_type || '';
-    const details = (log.details || '').replace(/;/g, ',').replace(/\n/g, ' '); // escape semi-colons and newlines
-    const ip = log.ip_address || '';
-
-    csvContent += `"${date}";"${username}";"${role}";"${action}";"${details}";"${ip}"\n`;
-  });
-
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `denetim_gunlukleri_${new Date().toISOString().substring(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
 window.downloadAuditLogsCSV = downloadAuditLogsCSV;

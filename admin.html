@@ -1412,6 +1412,15 @@
               </tbody>
             </table>
           </div>
+          
+          <!-- Audit Logs Pagination -->
+          <div id="audit-logs-pagination" style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.75rem 1.5rem; border-radius: var(--radius-lg); font-size: 0.85rem; font-weight: 500; color: var(--color-text-muted); box-shadow: var(--shadow-sm);">
+            <div id="audit-pagination-info">Gösterilen: 0 - 0 / Toplam: 0</div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn" id="btn-audit-prev" onclick="changeAuditPage(-1)" style="min-height: 32px; padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); outline: none;">Geri</button>
+              <button class="btn" id="btn-audit-next" onclick="changeAuditPage(1)" style="min-height: 32px; padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); outline: none;">İleri</button>
+            </div>
+          </div>
         </div>
 
       </main>
