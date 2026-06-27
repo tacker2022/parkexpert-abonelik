@@ -5197,7 +5197,7 @@ function switchAdminTab(tabName) {
   const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
   const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
-  if (activeRole === 'yonetim' && tabName !== 'applications') {
+  if (activeRole === 'yonetim' && tabName !== 'applications' && tabName !== 'expirations' && tabName !== 'companies') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -5912,9 +5912,9 @@ function handleUserRoleChange() {
     }
 
     if (userRole === 'yonetim') {
-      // Hide everything except applications
-      if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'none';
-      if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'none';
+      // Show allowed sidebar tabs
+      if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
+      if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'none';
       if (tabOto) tabOto.style.display = 'none';
       if (tabAdm) tabAdm.style.display = 'none';
@@ -5923,6 +5923,12 @@ function handleUserRoleChange() {
       if (tabBulk) tabBulk.style.display = 'none';
       if (tabAuditLogs) tabAuditLogs.style.display = 'none';
       if (dangerZone) dangerZone.style.display = 'none';
+
+      // Horizontal switcher tabs visibility
+      if (document.getElementById('tab-applications')) document.getElementById('tab-applications').style.display = 'inline-flex';
+      if (document.getElementById('tab-expirations')) document.getElementById('tab-expirations').style.display = 'inline-flex';
+      if (document.getElementById('tab-companies')) document.getElementById('tab-companies').style.display = 'inline-flex';
+      if (document.getElementById('tab-analytics')) document.getElementById('tab-analytics').style.display = 'none';
 
       // Show Management Welcome Banner
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
@@ -5947,7 +5953,7 @@ function handleUserRoleChange() {
       const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
       if (locationFilterGroup) locationFilterGroup.style.display = 'none';
 
-      if (currentAdminTab !== 'applications') {
+      if (currentAdminTab !== 'applications' && currentAdminTab !== 'expirations' && currentAdminTab !== 'companies') {
         switchAdminTab('applications');
       }
     } else {
@@ -5962,6 +5968,12 @@ function handleUserRoleChange() {
       if (tabBulk) tabBulk.style.display = 'none';
       if (tabAuditLogs) tabAuditLogs.style.display = 'none';
       if (dangerZone) dangerZone.style.display = 'none';
+
+      // Horizontal switcher tabs visibility
+      if (document.getElementById('tab-applications')) document.getElementById('tab-applications').style.display = 'inline-flex';
+      if (document.getElementById('tab-expirations')) document.getElementById('tab-expirations').style.display = 'inline-flex';
+      if (document.getElementById('tab-companies')) document.getElementById('tab-companies').style.display = 'inline-flex';
+      if (document.getElementById('tab-analytics')) document.getElementById('tab-analytics').style.display = 'inline-flex';
 
       // Hide Management Welcome Banner
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
