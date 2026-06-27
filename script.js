@@ -9302,7 +9302,7 @@ function renderAuditLogsTable(logs) {
       <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
         <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
       </td>
-      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; line-height: 1.4; white-space: normal; word-break: break-word; min-width: 350px;">${maskAuditDetails(log.details || '')}</td>
+      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; line-height: 1.4; white-space: normal; word-break: break-word; min-width: 250px;">${maskAuditDetails(log.details || '')}</td>
       <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
     `;
 
