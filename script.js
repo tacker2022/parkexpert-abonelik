@@ -3182,14 +3182,18 @@ function populateCompanyFilter() {
   const currentVal = filterCompany.value;
   filterCompany.innerHTML = '<option value="">Tüm Firmalar</option>';
   
-  // Get unique companies from allApplications
-  const companies = [...new Set(allApplications.map(app => app.company_name).filter(Boolean))];
-  companies.sort((a, b) => a.localeCompare(b, 'tr'));
+  // Get unique companies from allApplications, mapping empty/null to 'SERBEST ÇALIŞAN'
+  const companies = [...new Set(allApplications.map(app => app.company_name || 'SERBEST ÇALIŞAN'))];
+  companies.sort((a, b) => {
+    if (a === 'SERBEST ÇALIŞAN') return 1;
+    if (b === 'SERBEST ÇALIŞAN') return -1;
+    return a.localeCompare(b, 'tr');
+  });
   
   companies.forEach(company => {
     const opt = document.createElement('option');
     opt.value = company;
-    opt.textContent = company;
+    opt.textContent = company === 'SERBEST ÇALIŞAN' ? 'SERBEST ÇALIŞAN (Şirketsiz)' : company;
     filterCompany.appendChild(opt);
   });
   
@@ -3383,7 +3387,8 @@ function applyFilters() {
     const matchesLocation = !location || app.parking_location === location;
 
     // 3. Company match
-    const matchesCompany = !company || app.company_name === company;
+    const appCompany = app.company_name || 'SERBEST ÇALIŞAN';
+    const matchesCompany = !company || appCompany === company;
 
     // 4. Status match (Map 'Yeni' filter selection to 'Beklemede' DB value)
     const matchesStatus = !status || app.status === status || (status === 'Yeni' && app.status === 'Beklemede');
@@ -6184,7 +6189,9 @@ function populateLocationFilter() {
   let allowedOtoparks = otoparks;
   if (currentAdminUser !== 'superadmin') {
     const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
-    const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser));
+    const userJson = localStorage.getItem('parkexpert_user');
+    const loggedInUser = userJson ? JSON.parse(userJson) : {};
+    const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
     if (activeAdminObj) {
       const allowedNames = activeAdminObj.otoparks || [];
       allowedOtoparks = otoparks.filter(park => allowedNames.includes(park.name));
