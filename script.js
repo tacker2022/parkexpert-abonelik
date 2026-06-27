@@ -5029,6 +5029,124 @@ function renderOtoparksTable() {
       `;
     }
 
+    // Match admins assigned to this otopark
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const assignedAdmins = admins.filter(admin => admin.otoparks && admin.otoparks.includes(park.name));
+
+    const managementAdmins = assignedAdmins.filter(admin => isYonetimRole(admin.role));
+    const operatorAdmins = assignedAdmins.filter(admin => !isYonetimRole(admin.role));
+
+    let authoritiesHtml = '';
+    
+    if (assignedAdmins.length > 0) {
+      let managementSectionHtml = '';
+      if (managementAdmins.length > 0) {
+        managementSectionHtml = `
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 0;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: #d97706; display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="building-2" style="width: 11px; height: 11px;"></i> Yönetim Yetkilisi
+            </span>
+            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+              ${managementAdmins.map(admin => {
+                const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                return `
+                  <div class="authority-badge-item" style="display: flex; align-items: center; gap: 0.45rem; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.12); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); min-width: 0; transition: all 0.2s ease;" title="${admin.name} (@${admin.username})">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b, #d97706); border: 1px solid rgba(245, 158, 11, 0.2); flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                      <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
+                      <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.6rem; color: #fff;">${initials}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                      <span style="font-size: 0.725rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">${admin.name}</span>
+                      <span style="font-size: 0.6rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;">@${admin.username}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        managementSectionHtml = `
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 0; opacity: 0.65;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="building-2" style="width: 11px; height: 11px;"></i> Yönetim Yetkilisi
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.4rem; background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.08); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); height: 32px;">
+              <span style="font-size: 0.7rem; font-style: italic; color: var(--color-text-muted);">Atanmadı</span>
+            </div>
+          </div>
+        `;
+      }
+
+      let operatorSectionHtml = '';
+      if (operatorAdmins.length > 0) {
+        operatorSectionHtml = `
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 0;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: #16a34a; display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="shield-check" style="width: 11px; height: 11px;"></i> Operatör
+            </span>
+            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+              ${operatorAdmins.map(admin => {
+                const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                return `
+                  <div class="authority-badge-item" style="display: flex; align-items: center; gap: 0.45rem; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.12); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); min-width: 0; transition: all 0.2s ease;" title="${admin.name} (@${admin.username})">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(16, 185, 129, 0.2); flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                      <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
+                      <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.6rem; color: #fff;">${initials}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                      <span style="font-size: 0.725rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">${admin.name}</span>
+                      <span style="font-size: 0.6rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;">@${admin.username}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        operatorSectionHtml = `
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 0; opacity: 0.65;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="shield-check" style="width: 11px; height: 11px;"></i> Operatör
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.4rem; background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.08); padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); height: 32px;">
+              <span style="font-size: 0.7rem; font-style: italic; color: var(--color-text-muted);">Atanmadı</span>
+            </div>
+          </div>
+        `;
+      }
+
+      authoritiesHtml = `
+        <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(15, 59, 162, 0.02); border: 1px solid rgba(15, 59, 162, 0.06); border-radius: var(--radius-md); padding: 0.65rem 0.75rem; margin-top: 0.25rem; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-primary-dark); display: inline-flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="users" style="width: 12px; height: 12px; color: var(--color-primary);"></i> Atanan Yetkililer
+            </span>
+            <span style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 600;">(${assignedAdmins.length} yetkili)</span>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            ${managementSectionHtml}
+            ${operatorSectionHtml}
+          </div>
+        </div>
+      `;
+    } else {
+      authoritiesHtml = `
+        <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.35rem; background: rgba(0, 0, 0, 0.01); border: 1px dashed rgba(0, 0, 0, 0.06); border-radius: var(--radius-md); padding: 0.65rem 0.75rem; margin-top: 0.25rem; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.65;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="users" style="width: 12px; height: 12px;"></i> Atanan Yetkililer
+            </span>
+            <span style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 600;">(0 yetkili)</span>
+          </div>
+          <div style="font-size: 0.7rem; font-style: italic; color: var(--color-text-muted); text-align: center; padding: 0.2rem 0;">
+            Henüz yetkili atanmamış
+          </div>
+        </div>
+      `;
+    }
+
     const card = document.createElement('div');
     card.className = `otopark-card${cardStatusClass}`;
     card.innerHTML = `
@@ -5083,6 +5201,8 @@ function renderOtoparksTable() {
         <div class="otopark-card__field otopark-card__field--full" style="margin-top: 0.25rem;">
           ${preApproveHtml}
         </div>
+
+        ${authoritiesHtml}
 
         <!-- Toggle details button -->
         <button type="button" class="otopark-card__toggle-btn" onclick="toggleCardDetails('${park.id}', this)" style="grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; margin-top: 0.5rem; background: rgba(37, 99, 235, 0.04); border: 1px dashed rgba(37, 99, 235, 0.2); border-radius: var(--radius-sm); padding: 0.45rem; font-size: 0.75rem; font-weight: 700; color: var(--color-primary); cursor: pointer; transition: all 0.2s;">

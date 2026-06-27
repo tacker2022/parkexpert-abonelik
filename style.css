@@ -3705,6 +3705,13 @@ textarea.is-invalid {
   opacity: 0.85;
 }
 
+.authority-badge-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(15, 59, 162, 0.15) !important;
+}
+
 /* Responsive Grid styling */
 @media (max-width: 768px) {
   .otoparks-grid {
