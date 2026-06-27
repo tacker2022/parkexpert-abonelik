@@ -7,6 +7,10 @@ const STORAGE_KEY = 'parkexpert_applications';
 const ADMIN_USERS_KEY = 'parkexpert_admin_users';
 let currentAdminUser = 'superadmin';
 
+function isYonetimRole(role) {
+  return role === 'yonetim' || role === 'yonetim_avm' || role === 'yonetim_site';
+}
+
 // OCR Integration States
 let ocrCache = {};
 let currentRotation = {};
@@ -3184,7 +3188,7 @@ async function loadApplications() {
     const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
     const activeRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
-    if (activeRole === 'yonetim' && activeAdminObj.otoparks && activeAdminObj.otoparks.length > 1) {
+    if (isYonetimRole(activeRole) && activeAdminObj.otoparks && activeAdminObj.otoparks.length > 1) {
       renderYonetimLocationSelector(activeAdminObj.otoparks);
     }
   }
@@ -3218,6 +3222,7 @@ function populateCompanyFilter() {
 function renderTable(apps) {
   const tbody = document.getElementById('table-body');
   const countEl = document.getElementById('table-results-count');
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
   
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -3265,27 +3270,33 @@ function renderTable(apps) {
 
     const approval = app.management_approval || 'Beklemede';
     let approvalHtml = '';
-    if (approval === 'Beklemede') {
-      approvalHtml = `
-        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b45309; background: rgba(245, 158, 11, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.15); width: fit-content; text-transform: uppercase;">
-          <i data-lucide="alert-triangle" style="width: 10px; height: 10px; color: #d97706;"></i>
-          <span>Yönetim Onayında</span>
-        </div>
-      `;
-    } else if (approval === 'İzin Verildi') {
-      approvalHtml = `
-        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #15803d; background: rgba(16, 185, 129, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.15); width: fit-content; text-transform: uppercase;">
-          <i data-lucide="check-circle" style="width: 10px; height: 10px; color: #16a34a;"></i>
-          <span>Yönetim İzin Verdi</span>
-        </div>
-      `;
-    } else {
-      approvalHtml = `
-        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b91c1c; background: rgba(239, 68, 68, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.15); width: fit-content; text-transform: uppercase;">
-          <i data-lucide="x-circle" style="width: 10px; height: 10px; color: #dc2626;"></i>
-          <span>Yönetim Reddetti</span>
-        </div>
-      `;
+    
+    const otoparkObj = otoparks.find(p => p.name === app.parking_location);
+    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) : false;
+    
+    if (requiresManagement) {
+      if (approval === 'Beklemede') {
+        approvalHtml = `
+          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b45309; background: rgba(245, 158, 11, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.15); width: fit-content; text-transform: uppercase;">
+            <i data-lucide="alert-triangle" style="width: 10px; height: 10px; color: #d97706;"></i>
+            <span>Yönetim Onayında</span>
+          </div>
+        `;
+      } else if (approval === 'İzin Verildi') {
+        approvalHtml = `
+          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #15803d; background: rgba(16, 185, 129, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.15); width: fit-content; text-transform: uppercase;">
+            <i data-lucide="check-circle" style="width: 10px; height: 10px; color: #16a34a;"></i>
+            <span>Yönetim İzin Verdi</span>
+          </div>
+        `;
+      } else {
+        approvalHtml = `
+          <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b91c1c; background: rgba(239, 68, 68, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.15); width: fit-content; text-transform: uppercase;">
+            <i data-lucide="x-circle" style="width: 10px; height: 10px; color: #dc2626;"></i>
+            <span>Yönetim Reddetti</span>
+          </div>
+        `;
+      }
     }
 
     tr.innerHTML = `
@@ -3457,14 +3468,20 @@ function updateMetrics(apps) {
   const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
   const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const getAppRequiresManagement = (a) => {
+    const otoparkObj = otoparks.find(p => p.name === a.parking_location);
+    return otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+  };
+
   const total = apps.length;
   const pendingApps = apps.filter(a => a.status === 'Yeni' || a.status === 'Beklemede');
 
-  if (userRole === 'yonetim') {
+  if (isYonetimRole(userRole)) {
     // Management-specific counts
-    const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
-    const countApproved = apps.filter(a => a.management_approval === 'İzin Verildi').length;
-    const countRejected = apps.filter(a => a.management_approval === 'Reddedildi').length;
+    const countYonetim = pendingApps.filter(a => getAppRequiresManagement(a) && a.management_approval === 'Beklemede').length;
+    const countApproved = apps.filter(a => getAppRequiresManagement(a) && a.management_approval === 'İzin Verildi').length;
+    const countRejected = apps.filter(a => getAppRequiresManagement(a) && a.management_approval === 'Reddedildi').length;
 
     document.getElementById('stats-total').textContent = total;
     document.getElementById('stats-new').textContent = countYonetim;
@@ -3502,8 +3519,8 @@ function updateMetrics(apps) {
     const countApproved = apps.filter(a => a.status === 'Onaylandı').length;
     const countRejected = apps.filter(a => a.status === 'Reddedildi').length;
 
-    const countYonetim = pendingApps.filter(a => a.management_approval === 'Beklemede').length;
-    const countOperator = pendingApps.filter(a => a.management_approval === 'İzin Verildi' || !a.management_approval).length;
+    const countYonetim = pendingApps.filter(a => getAppRequiresManagement(a) && a.management_approval === 'Beklemede').length;
+    const countOperator = pendingApps.filter(a => !getAppRequiresManagement(a) || a.management_approval === 'İzin Verildi').length;
 
     document.getElementById('stats-total').textContent = total;
     document.getElementById('stats-new').textContent = countNew;
@@ -3817,82 +3834,25 @@ function openDrawer(appId) {
     const userRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
     const approval = app.management_approval || 'Beklemede';
     
+    // Check if the otopark requires management approval
+    const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+    const otoparkObj = otoparks.find(p => p.name === app.parking_location);
+    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) : false;
+    
     let footerHtml = '';
-    if (userRole === 'yonetim') {
-      footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Yönetim Onay Kararı</div>`;
-      if (approval === 'Beklemede') {
+    
+    if (!requiresManagement) {
+      // Management approval is NOT required
+      if (isYonetimRole(userRole)) {
+        footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Yönetim Onay Kararı</div>`;
         footerHtml += `
-          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
-            <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">İzin Verildi</button>
-            <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Reddet</button>
-          </div>
-        `;
-      } else if (approval === 'İzin Verildi') {
-        footerHtml += `
-          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-            <i data-lucide="check-circle" style="width: 16px; height: 16px; color:#16a34a;"></i>
-            <span>Bu başvuruye yönetim izni verildi. İşlem tamamlandı.</span>
+          <div style="background: rgba(15, 59, 162, 0.08); border: 1px solid rgba(15, 59, 162, 0.2); color: var(--color-primary-dark); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i data-lucide="info" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+            <span>Bu otopark için yönetim onayı gerekmemektedir.</span>
           </div>
         `;
       } else {
-        footerHtml += `
-          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-            <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
-            <span>Bu başvuru yönetim tarafından reddedildi.</span>
-          </div>
-        `;
-      }
-    } else {
-      // Standard admin or superadmin
-      footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Başvuru Durumunu Güncelle</div>`;
-      if (approval === 'Beklemede') {
-        if (userRole === 'superadmin') {
-          footerHtml += `
-            <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); color: #6d28d9; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-              <i data-lucide="shield-alert" style="width: 16px; height: 16px; color:#7c3aed;"></i>
-              <span>Yönetim onayı bekleniyor. Süper Admin olarak yönetim adına izin verebilirsiniz.</span>
-            </div>
-            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; margin-bottom: 0.75rem;">
-              <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İzni Ver</button>
-              <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İznini Reddet</button>
-            </div>
-            <div style="border-top: 1px dashed var(--color-border); margin: 0.75rem 0; padding-top: 0.75rem;">
-              <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 0.5rem; font-weight: 600;">Operatör Onay İşlemi (Yönetim İzninden Sonra Aktifleşir)</div>
-              <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none; margin-bottom: 0.5rem;">
-                <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
-                <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
-              </div>
-              <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="width: 100%; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast);">Başvuruyu Tamamen Sil</button>
-            </div>
-          `;
-        } else {
-          footerHtml += `
-            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #b45309; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-              <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color:#d97706;"></i>
-              <span>Şu an işlem yapılamaz, yönetim onayı bekleniyor.</span>
-            </div>
-            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none;">
-              <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
-              <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
-            </div>
-          `;
-        }
-      } else if (approval === 'İzin Verildi') {
-        footerHtml += `
-          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-            <i data-lucide="check-circle" style="width: 14px; height: 14px; color:#16a34a;"></i>
-            <span>Site / AVM yönetimi bu başvuruya izin verdi.</span>
-          </div>
-        `;
-        if (userRole === 'superadmin') {
-          footerHtml += `
-            <div style="margin-bottom: 0.75rem;">
-              <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
-                ⚠️ Yönetim İznini Geri Çek (Beklemeye Al)
-              </button>
-            </div>
-          `;
-        }
+        footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Başvuru Durumunu Güncelle</div>`;
         footerHtml += `
           <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
             <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla</button>
@@ -3900,21 +3860,107 @@ function openDrawer(appId) {
             <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: ${currentAdminUser === 'superadmin' ? 'inline-block' : 'none'};">Sil</button>
           </div>
         `;
-      } else {
-        footerHtml += `
-          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; ${userRole === 'superadmin' ? 'margin-bottom: 0.75rem;' : ''}">
-            <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
-            <span>Bu başvuru yönetim tarafından reddedilmiştir.</span>
-          </div>
-        `;
-        if (userRole === 'superadmin') {
+      }
+    } else {
+      // Management approval is required
+      if (isYonetimRole(userRole)) {
+        footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Yönetim Onay Kararı</div>`;
+        if (approval === 'Beklemede') {
           footerHtml += `
-            <div style="margin-bottom: 0.75rem;">
-              <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
-                ⚠️ Yönetim Red Kararını Geri Çek (Beklemeye Al)
-              </button>
+            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+              <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">İzin Verildi</button>
+              <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Reddet</button>
             </div>
           `;
+        } else if (approval === 'İzin Verildi') {
+          footerHtml += `
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <i data-lucide="check-circle" style="width: 16px; height: 16px; color:#16a34a;"></i>
+              <span>Bu başvuruye yönetim izni verildi. İşlem tamamlandı.</span>
+            </div>
+          `;
+        } else {
+          footerHtml += `
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
+              <span>Bu başvuru yönetim tarafından reddedildi.</span>
+            </div>
+          `;
+        }
+      } else {
+        // Standard admin or superadmin
+        footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Başvuru Durumunu Güncelle</div>`;
+        if (approval === 'Beklemede') {
+          if (userRole === 'superadmin') {
+            footerHtml += `
+              <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); color: #6d28d9; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <i data-lucide="shield-alert" style="width: 16px; height: 16px; color:#7c3aed;"></i>
+                <span>Yönetim onayı bekleniyor. Süper Admin olarak yönetim adına izin verebilirsiniz.</span>
+              </div>
+              <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; margin-bottom: 0.75rem;">
+                <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İzni Ver</button>
+                <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İznini Reddet</button>
+              </div>
+              <div style="border-top: 1px dashed var(--color-border); margin: 0.75rem 0; padding-top: 0.75rem;">
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 0.5rem; font-weight: 600;">Operatör Onay İşlemi (Yönetim İzninden Sonra Aktifleşir)</div>
+                <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none; margin-bottom: 0.5rem;">
+                  <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
+                  <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
+                </div>
+                <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="width: 100%; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast);">Başvuruyu Tamamen Sil</button>
+              </div>
+            `;
+          } else {
+            footerHtml += `
+              <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #b45309; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color:#d97706;"></i>
+                <span>Şu an işlem yapılamaz, yönetim onayı bekleniyor.</span>
+              </div>
+              <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none;">
+                <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
+                <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
+              </div>
+            `;
+          }
+        } else if (approval === 'İzin Verildi') {
+          footerHtml += `
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+              <i data-lucide="check-circle" style="width: 14px; height: 14px; color:#16a34a;"></i>
+              <span>Site / AVM yönetimi bu başvuruya izin verdi.</span>
+            </div>
+          `;
+          if (userRole === 'superadmin') {
+            footerHtml += `
+              <div style="margin-bottom: 0.75rem;">
+                <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
+                  ⚠️ Yönetim İznini Geri Çek (Beklemeye Al)
+                </button>
+              </div>
+            `;
+          }
+          footerHtml += `
+            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+              <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla</button>
+              <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet</button>
+              <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: ${currentAdminUser === 'superadmin' ? 'inline-block' : 'none'};">Sil</button>
+            </div>
+          `;
+        } else {
+          footerHtml += `
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; ${userRole === 'superadmin' ? 'margin-bottom: 0.75rem;' : ''}">
+              <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
+              <span>Bu başvuru yönetim tarafından reddedilmiştir.</span>
+            </div>
+          `;
+          if (userRole === 'superadmin') {
+            footerHtml += `
+              <div style="margin-bottom: 0.75rem;">
+                <button class="status-change-btn" onclick="updateCurrentManagementApproval('Beklemede')" style="width: 100%; min-height: 32px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); color: #b45309; font-weight: 700; font-size: 0.8rem; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
+                  ⚠️ Yönetim Red Kararını Geri Çek (Beklemeye Al)
+                </button>
+              </div>
+            `;
+          }
         }
       }
     }
@@ -5215,7 +5261,7 @@ function switchAdminTab(tabName) {
   const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
   const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
-  if (activeRole === 'yonetim' && tabName !== 'applications' && tabName !== 'expirations' && tabName !== 'companies') {
+  if (isYonetimRole(activeRole) && tabName !== 'applications' && tabName !== 'expirations' && tabName !== 'companies') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
     return;
@@ -5918,8 +5964,12 @@ function handleUserRoleChange() {
         avatar.onclick = null;
       }
       if (subtext) {
-        if (userRole === 'yonetim') {
-          subtext.textContent = `Yönetim • @${adminObj.username || 'yonetim'}`;
+        if (userRole === 'yonetim_avm') {
+          subtext.textContent = `AVM Yönetimi • @${adminObj.username}`;
+        } else if (userRole === 'yonetim_site') {
+          subtext.textContent = `Site Yönetimi • @${adminObj.username}`;
+        } else if (userRole === 'yonetim') {
+          subtext.textContent = `Yönetim • @${adminObj.username}`;
         } else {
           subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
         }
@@ -5929,7 +5979,7 @@ function handleUserRoleChange() {
       adminUserBlock.className = 'admin-user admin-user-representative';
     }
 
-    if (userRole === 'yonetim') {
+    if (isYonetimRole(userRole)) {
       // Show allowed sidebar tabs
       if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
@@ -6066,9 +6116,16 @@ function renderYonetimLocationSelector(otoparksList) {
 
   container.style.display = 'flex';
 
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const getAppRequiresManagement = (a) => {
+    const otoparkObj = otoparks.find(p => p.name === a.parking_location);
+    return otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+  };
+
   // Count total pending for "Tüm Konumlar" (management_approval is 'Beklemede' and status is 'Beklemede'/'Yeni')
   const totalPending = allApplications.filter(app => 
     (app.status === 'Yeni' || app.status === 'Beklemede') &&
+    getAppRequiresManagement(app) &&
     app.management_approval === 'Beklemede'
   ).length;
 
@@ -6089,6 +6146,7 @@ function renderYonetimLocationSelector(otoparksList) {
     const pendingCount = allApplications.filter(app => 
       app.parking_location === parkName &&
       (app.status === 'Yeni' || app.status === 'Beklemede') &&
+      getAppRequiresManagement(app) &&
       app.management_approval === 'Beklemede'
     ).length;
 
@@ -6309,7 +6367,7 @@ function renderAdminsTable() {
 
   // Calculate segment counts BEFORE filtering
   const allCount = admins.length;
-  const yonetimCount = admins.filter(a => a.role === 'yonetim').length;
+  const yonetimCount = admins.filter(a => isYonetimRole(a.role)).length;
   const operatorCount = admins.filter(a => (a.role || 'admin') === 'admin').length;
 
   const countAllEl = document.getElementById('count-admin-all');
@@ -6324,7 +6382,7 @@ function renderAdminsTable() {
   const filterRole = window.activeAdminRoleFilter || 'all';
   let filteredAdmins = admins;
   if (filterRole === 'yonetim') {
-    filteredAdmins = admins.filter(a => a.role === 'yonetim');
+    filteredAdmins = admins.filter(a => isYonetimRole(a.role));
   } else if (filterRole === 'admin') {
     filteredAdmins = admins.filter(a => (a.role || 'admin') === 'admin');
   }
@@ -6377,8 +6435,11 @@ function renderAdminsTable() {
     }
 
     const adminRole = admin.role || 'admin';
-    const roleLabel = adminRole === 'yonetim' ? 'Site/AVM Yönetimi' : 'ParkExpert Operatörü';
-    const roleStyle = adminRole === 'yonetim' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706;' : 'background: rgba(16, 185, 129, 0.1); color: #16a34a;';
+    let roleLabel = 'ParkExpert Operatörü';
+    if (adminRole === 'yonetim_avm') roleLabel = 'AVM Yönetimi';
+    else if (adminRole === 'yonetim_site') roleLabel = 'Site Yönetimi';
+    else if (adminRole === 'yonetim') roleLabel = 'Yönetim';
+    const roleStyle = isYonetimRole(adminRole) ? 'background: rgba(245, 158, 11, 0.1); color: #d97706;' : 'background: rgba(16, 185, 129, 0.1); color: #16a34a;';
 
     const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     
@@ -9914,7 +9975,9 @@ async function downloadAuditLogsCSV() {
       
       let role = 'Temsilci/Admin';
       if (log.admin_role === 'superadmin') role = 'Süper Admin';
-      else if (log.admin_role === 'yonetim') role = 'Site Yönetimi';
+      else if (log.admin_role === 'yonetim_avm') role = 'AVM Yönetimi';
+      else if (log.admin_role === 'yonetim_site') role = 'Site Yönetimi';
+      else if (log.admin_role === 'yonetim') role = 'Yönetim';
 
       // Translate action label
       let actionLabel = log.action_type || '';

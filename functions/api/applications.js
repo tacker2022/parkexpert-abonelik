@@ -193,10 +193,25 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: "Bu otoparkın verisini güncelleme yetkiniz yok!" }), { status: 403, headers });
       }
 
+      // Fetch otopark configuration to see if it requires management approval
+      const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(appLocation)}&select=requires_management_approval`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+      let requiresManagement = false;
+      if (otoparkRes.ok) {
+        const otoparksArr = await otoparkRes.json();
+        if (otoparksArr.length > 0) {
+          requiresManagement = otoparksArr[0].requires_management_approval === true;
+        }
+      }
+
       // Build dynamic update body
       const updateBody = {};
 
-      if (user.role === "yonetim") {
+      if (user.role === "yonetim" || user.role === "yonetim_avm" || user.role === "yonetim_site") {
         // Management role can only update management_approval
         if (status !== undefined || plate_number !== undefined || company_name !== undefined || subscription_expires_at !== undefined) {
           return new Response(JSON.stringify({ error: "Yönetim yetkisi bu alanları değiştiremez!" }), { status: 403, headers });
@@ -210,7 +225,7 @@ export async function onRequest(context) {
       } else {
         // Admin or Superadmin
         const currentApproval = management_approval !== undefined ? management_approval : (oldApp.management_approval || "Beklemede");
-        if (status === "Onaylandı" && currentApproval === "Beklemede") {
+        if (status === "Onaylandı" && requiresManagement && currentApproval === "Beklemede") {
           return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
         }
 
