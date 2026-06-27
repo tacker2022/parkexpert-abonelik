@@ -162,14 +162,14 @@ export async function onRequest(context) {
     // PATCH: Update application status (Approved / Rejected)
     // ----------------------------------------------------
     if (method === "PATCH") {
-      const requestData = await context.request.json();
-      const { id, status, plate_number, company_name, subscription_expires_at } = requestData;
+       const requestData = await context.request.json();
+      const { id, status, plate_number, company_name, subscription_expires_at, management_approval } = requestData;
       if (!id) {
         return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers });
       }
 
       // Check access: Fetch application first
-      const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}&select=parking_location,status,plate_number,company_name,subscription_expires_at,full_name`, {
+      const getRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}&select=parking_location,status,plate_number,company_name,subscription_expires_at,full_name,management_approval`, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
@@ -195,17 +195,39 @@ export async function onRequest(context) {
 
       // Build dynamic update body
       const updateBody = {};
-      if (status !== undefined) {
-        updateBody.status = status;
-        if (status === "Onaylandı") {
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + 30);
-          updateBody.subscription_expires_at = expiryDate.toISOString();
+
+      if (user.role === "yonetim") {
+        // Management role can only update management_approval
+        if (status !== undefined || plate_number !== undefined || company_name !== undefined || subscription_expires_at !== undefined) {
+          return new Response(JSON.stringify({ error: "Yönetim yetkisi bu alanları değiştiremez!" }), { status: 403, headers });
         }
+        if (management_approval !== undefined) {
+          updateBody.management_approval = management_approval;
+          if (management_approval === "Reddedildi") {
+            updateBody.status = "Reddedildi";
+          }
+        }
+      } else {
+        // Admin or Superadmin
+        // Prevent approval if management_approval is still Beklemede
+        const currentApproval = management_approval !== undefined ? management_approval : (oldApp.management_approval || "Beklemede");
+        if (status === "Onaylandı" && currentApproval === "Beklemede") {
+          return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
+        }
+
+        if (status !== undefined) {
+          updateBody.status = status;
+          if (status === "Onaylandı") {
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 30);
+            updateBody.subscription_expires_at = expiryDate.toISOString();
+          }
+        }
+        if (plate_number !== undefined) updateBody.plate_number = plate_number;
+        if (company_name !== undefined) updateBody.company_name = company_name;
+        if (subscription_expires_at !== undefined) updateBody.subscription_expires_at = subscription_expires_at;
+        if (management_approval !== undefined) updateBody.management_approval = management_approval;
       }
-      if (plate_number !== undefined) updateBody.plate_number = plate_number;
-      if (company_name !== undefined) updateBody.company_name = company_name;
-      if (subscription_expires_at !== undefined) updateBody.subscription_expires_at = subscription_expires_at;
 
       // Update in Supabase
       const updateRes = await fetch(`${supabaseUrl}/rest/v1/applications?id=eq.${id}`, {

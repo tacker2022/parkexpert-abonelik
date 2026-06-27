@@ -1628,6 +1628,13 @@
             <small style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-top: 0.25rem;">JPEG veya PNG formatında profil fotoğrafı seçin.</small>
           </div>
           <div class="form-group">
+            <label for="edit-admin-role" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Yetki Rolü <span style="color:red;">*</span></label>
+            <select id="edit-admin-role" required style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px;">
+              <option value="admin">ParkExpert Operatörü (Admin)</option>
+              <option value="yonetim">AVM / Site Yönetimi (Yönetim)</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label for="edit-admin-username" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Kullanıcı Adı (Sistem Girişi) <span style="color:red;">*</span></label>
             <input type="text" id="edit-admin-username" required placeholder="Örn. ahmetbirlik" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
           </div>

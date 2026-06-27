@@ -183,7 +183,7 @@ export async function onRequest(context) {
     // ----------------------------------------------------
     if (method === "POST") {
       const payload = await context.request.json();
-      const { id, name, username, password, otoparks, phone, email, photo_base64, is_self_avatar } = payload;
+      const { id, name, username, password, otoparks, phone, email, role, photo_base64, is_self_avatar } = payload;
 
       // Handle self avatar upload
       if (is_self_avatar) {
@@ -250,7 +250,8 @@ export async function onRequest(context) {
           username: username.toLowerCase(),
           otoparks,
           phone: phone || null,
-          email: email || null
+          email: email || null,
+          role: role || "admin"
         };
         // Only update password if provided
         if (password) {
@@ -371,7 +372,8 @@ export async function onRequest(context) {
           password: await hashPassword(password, context.env.PASSWORD_SALT),
           otoparks,
           phone: phone || null,
-          email: email || null
+          email: email || null,
+          role: role || "admin"
         };
 
         const createRes = await fetch(`${supabaseUrl}/rest/v1/admin_users`, {

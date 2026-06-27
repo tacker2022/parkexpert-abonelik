@@ -3234,6 +3234,31 @@ function renderTable(apps) {
     // Format Plaka beautifully (masked if privacy mode is ON)
     const plateFormatted = maskPlate(app.plate);
 
+    const approval = app.management_approval || 'Beklemede';
+    let approvalHtml = '';
+    if (approval === 'Beklemede') {
+      approvalHtml = `
+        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b45309; background: rgba(245, 158, 11, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.15); width: fit-content; text-transform: uppercase;">
+          <i data-lucide="alert-triangle" style="width: 10px; height: 10px; color: #d97706;"></i>
+          <span>Yönetim Onayında</span>
+        </div>
+      `;
+    } else if (approval === 'İzin Verildi') {
+      approvalHtml = `
+        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #15803d; background: rgba(16, 185, 129, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.15); width: fit-content; text-transform: uppercase;">
+          <i data-lucide="check-circle" style="width: 10px; height: 10px; color: #16a34a;"></i>
+          <span>Yönetim İzin Verdi</span>
+        </div>
+      `;
+    } else {
+      approvalHtml = `
+        <div style="margin-top: 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; color: #b91c1c; background: rgba(239, 68, 68, 0.08); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.15); width: fit-content; text-transform: uppercase;">
+          <i data-lucide="x-circle" style="width: 10px; height: 10px; color: #dc2626;"></i>
+          <span>Yönetim Reddetti</span>
+        </div>
+      `;
+    }
+
     tr.innerHTML = `
       <td style="font-weight: 700; color: var(--color-primary-dark);">${app.id}</td>
       <td>
@@ -3250,7 +3275,7 @@ function renderTable(apps) {
       <td><span class="col-otopark">${app.parking_location}</span></td>
       <td>${formatDateTR(app.created_at || app.date_applied)}</td>
       <td>${app.subscription_expires_at ? formatDateShortTR(app.subscription_expires_at) : '<span style="color:var(--color-text-muted);font-style:italic;font-size:0.85rem;">Belirtilmemiş</span>'}</td>
-      <td><span class="status-badge ${statusClass}">${app.status}</span></td>
+      <td style="display: flex; flex-direction: column; gap: 0.25rem;"><span class="status-badge ${statusClass}">${app.status}</span>${approvalHtml}</td>
       <td style="text-align: center;">
         <button class="btn-table-action" onclick="openDrawer('${app.id}')" title="Başvuru Detayını Gör">
           <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
@@ -3670,14 +3695,83 @@ function openDrawer(appId) {
     </div>
   `;
 
+  `;
+
+  // Update footer actions dynamically based on user role and management approval status
+  const footerContainer = document.querySelector('.status-actions-container');
+  if (footerContainer) {
+    const userJson = localStorage.getItem('parkexpert_user');
+    const loggedInUser = userJson ? JSON.parse(userJson) : {};
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const activeAdminObj = admins.find(a => a.id === currentAdminUser) || loggedInUser;
+    const userRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+    const approval = app.management_approval || 'Beklemede';
+    
+    let footerHtml = '';
+    if (userRole === 'yonetim') {
+      footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Yönetim Onay Kararı</div>`;
+      if (approval === 'Beklemede') {
+        footerHtml += `
+          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+            <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">İzin Verildi</button>
+            <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Reddet</button>
+          </div>
+        `;
+      } else if (approval === 'İzin Verildi') {
+        footerHtml += `
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i data-lucide="check-circle" style="width: 16px; height: 16px; color:#16a34a;"></i>
+            <span>Bu başvuruye yönetim izni verildi. İşlem tamamlandı.</span>
+          </div>
+        `;
+      } else {
+        footerHtml += `
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
+            <span>Bu başvuru yönetim tarafından reddedildi.</span>
+          </div>
+        `;
+      }
+    } else {
+      // Standard admin or superadmin
+      footerHtml += `<div class="status-actions-title" style="font-weight:700; font-size:0.85rem; color:var(--color-text-dark); margin-bottom:0.75rem;">Başvuru Durumunu Güncelle</div>`;
+      if (approval === 'Beklemede') {
+        footerHtml += `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #b45309; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color:#d97706;"></i>
+            <span>Şu an işlem yapılamaz, yönetim onayı bekleniyor.</span>
+          </div>
+          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none;">
+            <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
+            <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
+          </div>
+        `;
+      } else if (approval === 'İzin Verildi') {
+        footerHtml += `
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #15803d; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <i data-lucide="check-circle" style="width: 14px; height: 14px; color:#16a34a;"></i>
+            <span>Site / AVM yönetimi bu başvuruya izin verdi.</span>
+          </div>
+          <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
+            <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla</button>
+            <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet</button>
+            <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: ${currentAdminUser === 'superadmin' ? 'inline-block' : 'none'};">Sil</button>
+          </div>
+        `;
+      } else {
+        footerHtml += `
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #b91c1c; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i data-lucide="x-circle" style="width: 16px; height: 16px; color:#dc2626;"></i>
+            <span>Bu başvuru yönetim tarafından reddedilmiştir.</span>
+          </div>
+        `;
+      }
+    }
+    footerContainer.innerHTML = footerHtml;
+  }
+
   // Highlight active row in table
   highlightTableRow(appId);
-
-  // Show/Hide Delete Button in Drawer based on role
-  const deleteBtn = document.getElementById('btn-drawer-delete');
-  if (deleteBtn) {
-    deleteBtn.style.display = currentAdminUser === 'superadmin' ? 'inline-block' : 'none';
-  }
 
   // Show Drawer Overlay and slide-over panel
   drawer.classList.add('active');
@@ -4025,6 +4119,56 @@ async function updateCurrentAppStatus(newStatus) {
 
       // Show simulated admin status log
       console.log(`Application ${currentAppId} status updated to: ${newStatus}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+async function updateCurrentManagementApproval(approvalStatus) {
+  if (!currentAppId) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen tekrar giriş yapın.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/applications", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ id: currentAppId, management_approval: approvalStatus })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Durum güncellenirken hata oluştu.");
+    }
+
+    const data = await res.json();
+    const updatedApp = data.data && data.data[0];
+
+    // Find and update status in database array
+    const appIndex = allApplications.findIndex(a => a.id === currentAppId);
+    if (appIndex !== -1) {
+      allApplications[appIndex].management_approval = approvalStatus;
+      if (approvalStatus === 'Reddedildi') {
+        allApplications[appIndex].status = 'Reddedildi';
+      }
+      
+      // Refresh table rendering with current filter set
+      applyFilters();
+      
+      // Refresh the drawer body content to show updated status
+      openDrawer(currentAppId);
+
+      // Show toast / success notification
+      showToastNotification('Yönetim Onayı Güncellendi', `Başvuru yönetim onayı durumu '${approvalStatus}' olarak güncellendi.`, 'check');
     }
   } catch (err) {
     console.error(err);
@@ -4832,6 +4976,18 @@ async function toggleOtoparkStatus(otoparkId) {
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const activeAdminObj = admins.find(a => a.id === currentAdminUser) || loggedInUser;
+  const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+
+  if (activeRole === 'yonetim' && tabName !== 'applications') {
+    alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
+    switchAdminTab('applications');
+    return;
+  }
+
   if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs' || tabName === 'backups') && currentAdminUser !== 'superadmin') {
     alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
     switchAdminTab('applications');
@@ -5481,6 +5637,10 @@ function handleUserRoleChange() {
     if (tabAuditLogs) tabAuditLogs.style.display = 'inline-flex';
     if (dangerZone) dangerZone.style.display = 'block';
 
+    if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
+    if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
+    if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'inline-flex';
+
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'block';
   } else {
@@ -5490,6 +5650,7 @@ function handleUserRoleChange() {
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
     const adminObj = admins.find(a => a.id === val) || loggedInUser;
+    const userRole = adminObj.role || 'admin';
     
     if (adminObj && adminObj.name) {
       const initials = adminObj.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -5508,22 +5669,49 @@ function handleUserRoleChange() {
         avatar.onclick = null;
       }
       if (subtext) {
-        subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
+        if (userRole === 'yonetim') {
+          subtext.textContent = `Yönetim • @${adminObj.username || 'yonetim'}`;
+        } else {
+          subtext.textContent = `Temsilci • @${adminObj.username || 'admin'}`;
+        }
       }
     }
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-representative';
     }
-    if (tabOto) tabOto.style.display = 'none';
-    if (tabAdm) tabAdm.style.display = 'none';
-    if (tabSet) tabSet.style.display = 'none';
-    if (tabSmsReports) tabSmsReports.style.display = 'none';
-    if (tabBulk) tabBulk.style.display = 'none';
-    if (tabAuditLogs) tabAuditLogs.style.display = 'none';
-    if (dangerZone) dangerZone.style.display = 'none';
- 
-    if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs') {
-      switchAdminTab('applications');
+
+    if (userRole === 'yonetim') {
+      // Hide everything except applications
+      if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'none';
+      if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'none';
+      if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'none';
+      if (tabOto) tabOto.style.display = 'none';
+      if (tabAdm) tabAdm.style.display = 'none';
+      if (tabSet) tabSet.style.display = 'none';
+      if (tabSmsReports) tabSmsReports.style.display = 'none';
+      if (tabBulk) tabBulk.style.display = 'none';
+      if (tabAuditLogs) tabAuditLogs.style.display = 'none';
+      if (dangerZone) dangerZone.style.display = 'none';
+
+      if (currentAdminTab !== 'applications') {
+        switchAdminTab('applications');
+      }
+    } else {
+      // Standard admin representative
+      if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
+      if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
+      if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'inline-flex';
+      if (tabOto) tabOto.style.display = 'none';
+      if (tabAdm) tabAdm.style.display = 'none';
+      if (tabSet) tabSet.style.display = 'none';
+      if (tabSmsReports) tabSmsReports.style.display = 'none';
+      if (tabBulk) tabBulk.style.display = 'none';
+      if (tabAuditLogs) tabAuditLogs.style.display = 'none';
+      if (dangerZone) dangerZone.style.display = 'none';
+  
+      if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs' || currentAdminTab === 'backups') {
+        switchAdminTab('applications');
+      }
     }
   }
   loadApplications();
@@ -5705,6 +5893,10 @@ function renderAdminsTable() {
       `<span class="otopark-card__category otopark-card__category--sanayi" style="margin: 0.15rem 0.25rem 0.15rem 0; display: inline-block; font-size: 0.7rem; padding: 0.2rem 0.5rem; text-transform: none;">${oto}</span>`
     ).join('');
 
+    const adminRole = admin.role || 'admin';
+    const roleLabel = adminRole === 'yonetim' ? 'Site/AVM Yönetimi' : 'ParkExpert Operatörü';
+    const roleStyle = adminRole === 'yonetim' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706;' : 'background: rgba(16, 185, 129, 0.1); color: #16a34a;';
+
     const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     card.innerHTML = `
       <div class="otopark-card__header" style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
@@ -5714,7 +5906,10 @@ function renderAdminsTable() {
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.15rem; flex: 1;">
           <div class="otopark-card__name" style="margin: 0; font-size: 0.95rem; font-weight: 700;">${admin.name}</div>
-          <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none;">@${admin.username}</span>
+          <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.15rem; flex-wrap: wrap;">
+            <span class="otopark-card__category otopark-card__category--avm" style="background: rgba(15, 59, 162, 0.1); color: var(--color-primary-dark); font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none;">@${admin.username}</span>
+            <span class="otopark-card__category" style="${roleStyle} font-weight: 700; width: fit-content; margin: 0; padding: 0.1rem 0.4rem; font-size: 0.7rem; text-transform: none; border-radius: 4px;">${roleLabel}</span>
+          </div>
         </div>
       </div>
       <div class="otopark-card__body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
@@ -6156,6 +6351,9 @@ function openCreateAdminModal() {
   document.getElementById('edit-admin-username').style.cursor = 'text';
   document.getElementById('admin-edit-title').textContent = 'Yeni Yönetici Yetkilendir';
   
+  const roleSelect = document.getElementById('edit-admin-role');
+  if (roleSelect) roleSelect.value = 'admin';
+
   const passInput = document.getElementById('edit-admin-password');
   if (passInput) {
     passInput.required = true;
@@ -6188,6 +6386,9 @@ function editAdmin(adminId) {
   document.getElementById('edit-admin-username').style.backgroundColor = '#ffffff';
   document.getElementById('edit-admin-username').style.cursor = 'text';
   document.getElementById('admin-edit-title').textContent = 'Yönetici Bilgilerini Düzenle';
+
+  const roleSelect = document.getElementById('edit-admin-role');
+  if (roleSelect) roleSelect.value = adminObj.role || 'admin';
 
   const passInput = document.getElementById('edit-admin-password');
   if (passInput) {
@@ -6271,6 +6472,8 @@ async function saveAdminConfig(event) {
     });
   }
 
+  const role = document.getElementById('edit-admin-role')?.value || 'admin';
+
   const payload = {
     id: id || undefined,
     name,
@@ -6278,6 +6481,7 @@ async function saveAdminConfig(event) {
     otoparks: selectedOtoparks,
     phone: phone || null,
     email: email || null,
+    role,
     photo_base64: photoBase64
   };
 
