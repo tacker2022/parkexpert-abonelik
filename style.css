@@ -5024,4 +5024,58 @@ textarea.is-invalid {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
+/* Segmented Control for Admin Filtering */
+.admin-segment-control {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(15, 59, 162, 0.08);
+  padding-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.segment-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.segment-btn:hover {
+  color: var(--color-primary);
+  background: rgba(15, 59, 162, 0.04);
+}
+
+.segment-btn.active {
+  background: rgba(15, 59, 162, 0.08);
+  color: var(--color-primary);
+}
+
+.segment-btn-count {
+  background: rgba(15, 59, 162, 0.08);
+  color: var(--color-primary);
+  font-size: 0.675rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.segment-btn.active .segment-btn-count {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
 

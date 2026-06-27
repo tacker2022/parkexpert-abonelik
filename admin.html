@@ -805,8 +805,21 @@
             </button>
           </section>
 
+          <!-- Admin Role Segment Filter Controls -->
+          <div class="admin-segment-control" id="admin-role-filter-container">
+            <button class="segment-btn active" onclick="filterAdminRole('all', this)">
+              <span>Tüm Yetkililer</span> <span class="segment-btn-count" id="count-admin-all">0</span>
+            </button>
+            <button class="segment-btn" onclick="filterAdminRole('yonetim', this)">
+              <span>Site/AVM Yönetimleri</span> <span class="segment-btn-count" id="count-admin-yonetim">0</span>
+            </button>
+            <button class="segment-btn" onclick="filterAdminRole('admin', this)">
+              <span>ParkExpert Operatörleri</span> <span class="segment-btn-count" id="count-admin-operator">0</span>
+            </button>
+          </div>
+
           <!-- Admins Grid Container -->
-          <div class="otoparks-grid" id="admins-grid-container" style="margin-top: 1.5rem;">
+          <div class="otoparks-grid" id="admins-grid-container" style="margin-top: 1rem;">
             <!-- Rendered via JS -->
           </div>
 

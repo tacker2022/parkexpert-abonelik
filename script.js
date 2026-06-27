@@ -6307,12 +6307,40 @@ function renderAdminsTable() {
     countEl.textContent = `(${admins.length} yetkili)`;
   }
 
+  // Calculate segment counts BEFORE filtering
+  const allCount = admins.length;
+  const yonetimCount = admins.filter(a => a.role === 'yonetim').length;
+  const operatorCount = admins.filter(a => (a.role || 'admin') === 'admin').length;
+
+  const countAllEl = document.getElementById('count-admin-all');
+  const countYonetimEl = document.getElementById('count-admin-yonetim');
+  const countOperatorEl = document.getElementById('count-admin-operator');
+
+  if (countAllEl) countAllEl.textContent = allCount;
+  if (countYonetimEl) countYonetimEl.textContent = yonetimCount;
+  if (countOperatorEl) countOperatorEl.textContent = operatorCount;
+
+  // Filter admins based on selected filter
+  const filterRole = window.activeAdminRoleFilter || 'all';
+  let filteredAdmins = admins;
+  if (filterRole === 'yonetim') {
+    filteredAdmins = admins.filter(a => a.role === 'yonetim');
+  } else if (filterRole === 'admin') {
+    filteredAdmins = admins.filter(a => (a.role || 'admin') === 'admin');
+  }
+
   container.innerHTML = '';
 
-  if (admins.length === 0) {
+  if (filteredAdmins.length === 0) {
+    let emptyMsg = 'Sistemde tanımlı yetkili bulunamadı. "Yeni Yönetici Tanımla" butonu ile ekleyebilirsiniz.';
+    if (filterRole === 'yonetim') {
+      emptyMsg = 'Sistemde tanımlı Site/AVM Yönetimi bulunamadı.';
+    } else if (filterRole === 'admin') {
+      emptyMsg = 'Sistemde tanımlı ParkExpert Operatörü bulunamadı.';
+    }
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-size: 0.95rem;">
-        Sistemde tanımlı yetkili bulunamadı. "Yeni Yönetici Tanımla" butonu ile ekleyebilirsiniz.
+        ${emptyMsg}
       </div>
     `;
     return;
@@ -6320,7 +6348,7 @@ function renderAdminsTable() {
 
   const activeUsernames = window.activeSessionUsernames || [];
 
-  admins.forEach(admin => {
+  filteredAdmins.forEach(admin => {
     const card = document.createElement('div');
     card.className = 'admin-card';
 
@@ -10391,6 +10419,23 @@ async function terminateSession(jti, expiresAt, username) {
 
 window.fetchActiveSessions = fetchActiveSessions;
 window.terminateSession = terminateSession;
+
+function filterAdminRole(role, btn) {
+  window.activeAdminRoleFilter = role;
+  
+  // Update active status UI for segmented controls
+  const container = document.getElementById('admin-role-filter-container');
+  if (container) {
+    container.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+  }
+  if (btn) {
+    btn.classList.add('active');
+  }
+
+  renderAdminsTable();
+}
+
+window.filterAdminRole = filterAdminRole;
 
 
 
