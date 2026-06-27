@@ -4999,42 +4999,52 @@ function renderOtoparksTable() {
         </div>
       </div>
       <div class="otopark-card__body">
-        <div class="otopark-card__field otopark-card__field--full">
-          <span class="otopark-card__label">Şirket Unvanı</span>
-          <span class="otopark-card__value" style="text-transform: uppercase;">${park.companyTitle || 'Belirtilmedi'}</span>
-        </div>
-        <div class="otopark-card__field">
-          <span class="otopark-card__label">Vergi Dairesi</span>
-          <span class="otopark-card__value">${park.taxOffice || 'Belirtilmedi'}</span>
-        </div>
-        <div class="otopark-card__field">
-          <span class="otopark-card__label">Vergi No</span>
-          <span class="otopark-card__value">${park.taxNumber || 'Belirtilmedi'}</span>
-        </div>
-        <div class="otopark-card__field">
-          <span class="otopark-card__label">Banka</span>
-          <span class="otopark-card__value" style="color: var(--color-primary-dark); font-weight: 700;">${park.bankName}</span>
-        </div>
         <div class="otopark-card__field">
           <span class="otopark-card__label">Fiyatlar</span>
           <span class="otopark-card__value otopark-card__value--price">
             <span class="otopark-card__price-emp">${park.priceEmployee}</span> · <span class="otopark-card__price-ext">${park.priceExternal}</span>
           </span>
         </div>
-        <div class="otopark-card__field otopark-card__field--full">
-          <span class="otopark-card__label">IBAN</span>
-          <span class="otopark-card__value otopark-card__value--iban">
-            <span>${park.iban}</span>
-            <button type="button" class="btn-copy-iban" onclick="copyIbanToClipboard(this, '${park.iban}')" title="IBAN Kopyala">
-              <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
-              <span class="copy-tooltip" style="font-size: 0.65rem; padding: 0.2rem 0.35rem;">Kopyalandı!</span>
-            </button>
-          </span>
+        
+        <!-- Collapsible details section -->
+        <div class="otopark-card__collapsible" id="collapsible-${park.id}">
+          <div class="otopark-card__field otopark-card__field--full">
+            <span class="otopark-card__label">Şirket Unvanı</span>
+            <span class="otopark-card__value" style="text-transform: uppercase;">${park.companyTitle || 'Belirtilmedi'}</span>
+          </div>
+          <div class="otopark-card__field">
+            <span class="otopark-card__label">Vergi Dairesi</span>
+            <span class="otopark-card__value">${park.taxOffice || 'Belirtilmedi'}</span>
+          </div>
+          <div class="otopark-card__field">
+            <span class="otopark-card__label">Vergi No</span>
+            <span class="otopark-card__value">${park.taxNumber || 'Belirtilmedi'}</span>
+          </div>
+          <div class="otopark-card__field otopark-card__field--full">
+            <span class="otopark-card__label">Banka</span>
+            <span class="otopark-card__value" style="color: var(--color-primary-dark); font-weight: 700;">${park.bankName}</span>
+          </div>
+          <div class="otopark-card__field otopark-card__field--full">
+            <span class="otopark-card__label">IBAN</span>
+            <span class="otopark-card__value otopark-card__value--iban">
+              <span>${park.iban}</span>
+              <button type="button" class="btn-copy-iban" onclick="copyIbanToClipboard(this, '${park.iban}')" title="IBAN Kopyala">
+                <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
+                <span class="copy-tooltip" style="font-size: 0.65rem; padding: 0.2rem 0.35rem;">Kopyalandı!</span>
+              </button>
+            </span>
+          </div>
         </div>
         
         <div class="otopark-card__field otopark-card__field--full" style="margin-top: 0.25rem;">
           ${preApproveHtml}
         </div>
+
+        <!-- Toggle details button -->
+        <button type="button" class="otopark-card__toggle-btn" onclick="toggleCardDetails('${park.id}', this)" style="grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; margin-top: 0.5rem; background: rgba(37, 99, 235, 0.04); border: 1px dashed rgba(37, 99, 235, 0.2); border-radius: var(--radius-sm); padding: 0.45rem; font-size: 0.75rem; font-weight: 700; color: var(--color-primary); cursor: pointer; transition: all 0.2s;">
+          <span class="toggle-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
+          <span class="toggle-text">Detayları Göster</span>
+        </button>
       </div>
       <div class="otopark-card__footer">
         <span class="otopark-card__support">
@@ -5485,6 +5495,67 @@ window.addOtoparkCategory = addOtoparkCategory;
 window.deleteOtoparkCategory = deleteOtoparkCategory;
 window.editOtoparkCategory = editOtoparkCategory;
 window.loadOtoparkCategories = loadOtoparkCategories;
+
+function toggleCardDetails(parkId, btn) {
+  const panel = document.getElementById(`collapsible-${parkId}`);
+  if (!panel) return;
+  
+  const icon = btn.querySelector('.toggle-icon');
+  const textSpan = btn.querySelector('.toggle-text');
+  
+  const isExpanded = panel.classList.contains('expanded');
+  
+  if (isExpanded) {
+    panel.classList.remove('expanded');
+    textSpan.textContent = 'Detayları Göster';
+    if (icon) {
+      icon.innerHTML = '<i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>';
+    }
+  } else {
+    panel.classList.add('expanded');
+    textSpan.textContent = 'Detayları Gizle';
+    if (icon) {
+      icon.innerHTML = '<i data-lucide="chevron-up" style="width: 14px; height: 14px;"></i>';
+    }
+  }
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleAllCardDetails(expand) {
+  const panels = document.querySelectorAll('.otopark-card__collapsible');
+  const toggleButtons = document.querySelectorAll('.otopark-card__toggle-btn');
+  
+  panels.forEach(panel => {
+    if (expand) {
+      panel.classList.add('expanded');
+    } else {
+      panel.classList.remove('expanded');
+    }
+  });
+  
+  toggleButtons.forEach(btn => {
+    const icon = btn.querySelector('.toggle-icon');
+    const textSpan = btn.querySelector('.toggle-text');
+    
+    if (expand) {
+      if (textSpan) textSpan.textContent = 'Detayları Gizle';
+      if (icon) {
+        icon.innerHTML = '<i data-lucide="chevron-up" style="width: 14px; height: 14px;"></i>';
+      }
+    } else {
+      if (textSpan) textSpan.textContent = 'Detayları Göster';
+      if (icon) {
+        icon.innerHTML = '<i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>';
+      }
+    }
+  });
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window.toggleCardDetails = toggleCardDetails;
+window.toggleAllCardDetails = toggleAllCardDetails;
 
 function editOtopark(otoparkId) {
   const OTOPARKS_KEY = 'parkexpert_otoparks';

@@ -810,10 +810,22 @@
           <!-- Otoparks Header Controls -->
           <section class="admin-actions-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <h3>Otopark İşletmeleri Yönetimi <span id="otoparks-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 otopark)</span></h3>
-            <button class="btn btn-primary" id="btn-add-otopark" onclick="openCreateOtoparkModal()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
-              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-              <span>Yeni Otopark Ekle</span>
-            </button>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <!-- Global Expand/Collapse Buttons -->
+              <button class="btn" onclick="toggleAllCardDetails(true)" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; background: #fff; border: 1px solid var(--color-border-light); cursor: pointer; color: var(--color-text-dark); transition: all 0.2s;">
+                <i data-lucide="chevrons-down" style="width: 14px; height: 14px;"></i>
+                <span>Tümünü Aç</span>
+              </button>
+              <button class="btn" onclick="toggleAllCardDetails(false)" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; background: #fff; border: 1px solid var(--color-border-light); cursor: pointer; color: var(--color-text-dark); transition: all 0.2s;">
+                <i data-lucide="chevrons-up" style="width: 14px; height: 14px;"></i>
+                <span>Tümünü Kapa</span>
+              </button>
+              
+              <button class="btn btn-primary" id="btn-add-otopark" onclick="openCreateOtoparkModal()" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <span>Yeni Otopark Ekle</span>
+              </button>
+            </div>
           </section>
 
           <!-- Otopark Category Segment Filter Controls -->
