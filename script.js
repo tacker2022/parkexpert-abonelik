@@ -6863,6 +6863,10 @@ function handleUserRoleChange() {
       };
     }
     if (subtext) subtext.innerHTML = `<span class="badge-role badge-role-superadmin">SÜPER ADMİN</span><span class="badge-username">@superadmin</span>`;
+    const activeOtoparksEl = document.getElementById('active-user-otoparks');
+    if (activeOtoparksEl) {
+      activeOtoparksEl.innerHTML = `<span class="badge-otopark" style="font-size: 0.65rem; font-weight: 700; background: rgba(255, 208, 0, 0.1); color: #ffd000; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 208, 0, 0.15);">Tüm Otoparklar</span>`;
+    }
     if (adminUserBlock) {
       adminUserBlock.className = 'admin-user admin-user-superadmin';
     }
@@ -6942,6 +6946,18 @@ function handleUserRoleChange() {
           else badgeClass = 'badge-role-yonetim-custom';
         }
         subtext.innerHTML = `<span class="badge-role ${badgeClass}">${roleText.toLocaleUpperCase('tr-TR')}</span><span class="badge-username">@${adminObj.username}</span>`;
+        const activeOtoparksEl = document.getElementById('active-user-otoparks');
+        if (activeOtoparksEl) {
+          if (adminObj.otoparks && adminObj.otoparks.length > 0) {
+            activeOtoparksEl.innerHTML = adminObj.otoparks.map(name => `
+              <span class="badge-otopark" title="${name}" style="font-size: 0.65rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); display: inline-block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(37, 99, 235, 0.15);">
+                📍 ${name}
+              </span>
+            `).join('');
+          } else {
+            activeOtoparksEl.innerHTML = `<span style="font-size: 0.65rem; color: #ef4444; font-weight: 700;">Yetkili Otopark Yok</span>`;
+          }
+        }
       }
     }
     if (adminUserBlock) {
@@ -7077,6 +7093,23 @@ function handleUserRoleChange() {
           else greeting = 'İyi Geceler';
           
           welcomeTitle.textContent = `${greeting}, ${adminObj.name || 'Operatör'}`;
+        }
+        const bannerOtoparksEl = document.getElementById('operator-banner-otoparks');
+        if (bannerOtoparksEl) {
+          if (adminObj.otoparks && adminObj.otoparks.length > 0) {
+            bannerOtoparksEl.innerHTML = `
+              <span style="font-size: 0.725rem; font-weight: 700; color: rgba(255, 255, 255, 0.7); margin-right: 0.25rem;">Yetkili Otoparklar:</span>
+              ${adminObj.otoparks.map(name => `
+                <span class="badge-banner-otopark" style="font-size: 0.7rem; font-weight: 700; background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid rgba(255, 255, 255, 0.15);">
+                  <i data-lucide="map-pin" style="width: 10px; height: 10px; opacity: 0.8;"></i>
+                  ${name}
+                </span>
+              `).join('')}
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+          } else {
+            bannerOtoparksEl.innerHTML = `<span style="font-size: 0.725rem; font-weight: 700; color: #ef4444;">Yetki verilmiş otopark bulunmamaktadır!</span>`;
+          }
         }
         if (typeof initOperatorStatus === 'function') {
           initOperatorStatus();
