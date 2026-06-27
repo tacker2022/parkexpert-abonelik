@@ -9134,8 +9134,13 @@ async function loadAuditLogs() {
     }
 
     const result = await response.json();
-    allAuditLogs = result.data || [];
-    auditTotalCount = result.totalCount || 0;
+    if (Array.isArray(result)) {
+      allAuditLogs = result;
+      auditTotalCount = result.length;
+    } else {
+      allAuditLogs = result.data || [];
+      auditTotalCount = result.totalCount || 0;
+    }
 
     renderAuditLogsTable(allAuditLogs);
     updateAuditPaginationControls();
