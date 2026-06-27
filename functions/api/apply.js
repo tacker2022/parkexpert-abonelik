@@ -230,8 +230,8 @@ export async function onRequest(context) {
           const bankName = park.bank_name || "Vakıfbank";
           const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
           const companyTitle = park.company_title || "PARKEXPERT";
-          const isBirlikSanayi = parkingLocation === "Birlik Sanayi Sitesi - Beylikdüzü";
-          const price = (subscriptionType.includes("Kurumsal") && !isBirlikSanayi) 
+          const isBirlikSanayi = park.id === "birlik-sanayi";
+          const price = (subscriptionType.includes("Kurumsal") && !isBirlikSanayi && !park.apply_employee_price_to_corporate) 
             ? (park.price_external || "2400 TL") 
             : (park.price_employee || "1200 TL");
           const supportPhone = park.support_phone || "0216 504 47 22";

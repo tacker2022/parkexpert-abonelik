@@ -161,7 +161,8 @@ export async function onRequest(context) {
         templates,
         notificationEmails,
         summaryEmails,
-        requiresManagementApproval
+        requiresManagementApproval,
+        applyEmployeePriceToCorporate
       } = payload;
 
       if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
@@ -182,7 +183,8 @@ export async function onRequest(context) {
         is_active: isActive !== false,
         notification_emails: notificationEmails || null,
         summary_emails: summaryEmails || null,
-        requires_management_approval: requiresManagementApproval === true
+        requires_management_approval: requiresManagementApproval === true,
+        apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true
       };
 
       if (templates !== undefined) {
@@ -190,6 +192,25 @@ export async function onRequest(context) {
       }
 
       if (id) {
+        // Get the old name of the otopark first to check if name is being changed
+        let oldName = null;
+        try {
+          const oldRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${id}&select=name`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          if (oldRes.ok) {
+            const oldData = await oldRes.json();
+            if (oldData.length > 0) {
+              oldName = oldData[0].name;
+            }
+          }
+        } catch (err) {
+          console.error("Error retrieving old otopark name:", err);
+        }
+
         // UPDATE otopark
         const updateRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${id}`, {
           method: "PATCH",
@@ -208,6 +229,49 @@ export async function onRequest(context) {
         }
 
         const data = await updateRes.json();
+
+        // Cascade updates to applications and admin_users if name changed
+        if (oldName && oldName !== name) {
+          try {
+            // 1. Update applications.parking_location references
+            await fetch(`${supabaseUrl}/rest/v1/applications?parking_location=eq.${encodeURIComponent(oldName)}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": supabaseAnonKey,
+                "Authorization": `Bearer ${supabaseAnonKey}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ parking_location: name })
+            });
+
+            // 2. Update admin_users.otoparks arrays references
+            const adminsRes = await fetch(`${supabaseUrl}/rest/v1/admin_users?select=*`, {
+              headers: {
+                "apikey": supabaseAnonKey,
+                "Authorization": `Bearer ${supabaseAnonKey}`
+              }
+            });
+            if (adminsRes.ok) {
+              const admins = await adminsRes.json();
+              for (const admin of admins) {
+                if (admin.otoparks && admin.otoparks.includes(oldName)) {
+                  const updatedOtoparks = admin.otoparks.map(o => o === oldName ? name : o);
+                  await fetch(`${supabaseUrl}/rest/v1/admin_users?id=eq.${admin.id}`, {
+                    method: "PATCH",
+                    headers: {
+                      "apikey": supabaseAnonKey,
+                      "Authorization": `Bearer ${supabaseAnonKey}`,
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ otoparks: updatedOtoparks })
+                  });
+                }
+              }
+            }
+          } catch (cascadeErr) {
+            console.error("Error executing cascade updates for otopark name change:", cascadeErr);
+          }
+        }
 
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";

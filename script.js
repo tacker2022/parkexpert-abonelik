@@ -645,6 +645,9 @@ async function populateOtoparkSelection() {
         if (p.price_external !== undefined) {
           p.priceExternal = p.price_external;
         }
+        if (p.apply_employee_price_to_corporate !== undefined) {
+          p.applyEmployeePriceToCorporate = p.apply_employee_price_to_corporate;
+        }
         if (p.support_phone !== undefined) {
           p.supportPhone = p.support_phone;
         }
@@ -2323,7 +2326,7 @@ function triggerWhatsAppNotification(app) {
     'whatsapp-sim-code': app.id,
     'whatsapp-sim-plate': app.plate,
     'whatsapp-sim-location': app.parking_location,
-    'whatsapp-sim-price': (app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL'),
+    'whatsapp-sim-price': (app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi' && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL'),
     'whatsapp-sim-phone': park.supportPhone || '0216 504 47 22',
     'whatsapp-sim-bank': park.bankName || 'Vakıfbank',
     'whatsapp-sim-iban': park.iban || 'TR23 0001 5001 5800 7302 9104 88',
@@ -3355,7 +3358,7 @@ function renderTable(apps) {
     let approvalHtml = '';
     
     const otoparkObj = otoparks.find(p => p.name === app.parking_location);
-    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) : false;
+    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval === true || otoparkObj.requires_management_approval === true) : false;
     
     if (requiresManagement) {
       if (approval === 'Beklemede') {
@@ -3502,7 +3505,24 @@ function applyFilters() {
   const status = document.getElementById('filter-status').value;
   const dateVal = document.getElementById('filter-date').value;
 
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const isYonetim = isYonetimRole(userRole);
+
   filteredApplications = allApplications.filter(app => {
+    // Role-based visibility check for Yonetim (Only show locations that require management approval)
+    if (isYonetim) {
+      const otoparkObj = otoparks.find(p => p.name === app.parking_location);
+      const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+      if (!requiresManagement) return false;
+    }
+
     // 1. Text search match (plate, name, phone, email, appCode)
     const matchesQuery = !query || 
       app.full_name.toLowerCase().includes(query) ||
@@ -3944,7 +3964,7 @@ function openDrawer(appId) {
     // Check if the otopark requires management approval
     const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
     const otoparkObj = otoparks.find(p => p.name === app.parking_location);
-    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) : false;
+    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval === true || otoparkObj.requires_management_approval === true) : false;
     
     let footerHtml = '';
     
@@ -4177,7 +4197,7 @@ function adminOpenWhatsAppSimulation(appId) {
           <div><strong>📦 Başvuru Kodu:</strong> <span style="color: #075e54; font-weight: 700;">${app.id}</span></div>
           <div><strong>🚗 Araç Plakası:</strong> <span style="text-transform: uppercase; font-weight: 700;">${app.plate}</span></div>
           <div><strong>📍 Otopark Konumu:</strong> <span>${app.parking_location}</span></div>
-          <div><strong>💸 Personel / Harici Fiyatı:</strong> <span>${(app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü') ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL')}</span></div>
+          <div><strong>💸 Personel / Harici Fiyatı:</strong> <span>${(app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi' && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL')}</span></div>
           <div><strong>📞 Destek Telefonu:</strong> <span>${park.supportPhone || '0216 504 47 22'}</span></div>
         </div>
 
@@ -5060,7 +5080,7 @@ function renderOtoparksTable() {
       approvalTitle = 'Otopark Ön Onayı';
     }
 
-    const isPreApproveActive = park.requiresManagementApproval === true;
+    const isPreApproveActive = park.requiresManagementApproval === true || park.requires_management_approval === true;
     let preApproveHtml = '';
     if (isPreApproveActive) {
       preApproveHtml = `
@@ -5779,12 +5799,20 @@ function editOtopark(otoparkId) {
 
   document.getElementById('edit-otopark-id').value = park.id;
   
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
   const nameInput = document.getElementById('edit-otopark-name');
   if (nameInput) {
     nameInput.value = park.name;
-    nameInput.readOnly = true;
-    nameInput.style.backgroundColor = '#f1f5f9';
-    nameInput.style.cursor = 'not-allowed';
+    if (loggedInUser.role === 'superadmin') {
+      nameInput.readOnly = false;
+      nameInput.style.backgroundColor = '#ffffff';
+      nameInput.style.cursor = 'text';
+    } else {
+      nameInput.readOnly = true;
+      nameInput.style.backgroundColor = '#f1f5f9';
+      nameInput.style.cursor = 'not-allowed';
+    }
   }
 
   const catSelect = document.getElementById('edit-otopark-category');
@@ -5806,6 +5834,7 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
   document.getElementById('edit-otopark-req-approval').checked = park.requiresManagementApproval === true;
+  document.getElementById('edit-otopark-apply-emp-price-to-corp').checked = park.applyEmployeePriceToCorporate === true;
   updateOtoparkApprovalLabel(park.category || 'OSB / Sanayi Sitesi Otoparkları');
   document.getElementById('edit-otopark-notif-emails').value = park.notificationEmails || '';
   document.getElementById('edit-otopark-summary-emails').value = park.summaryEmails || '';
@@ -5833,6 +5862,7 @@ async function loadOtoparks() {
           if (p.notification_emails !== undefined) p.notificationEmails = p.notification_emails;
           if (p.summary_emails !== undefined) p.summaryEmails = p.summary_emails;
           if (p.requires_management_approval !== undefined) p.requiresManagementApproval = p.requires_management_approval;
+          if (p.apply_employee_price_to_corporate !== undefined) p.applyEmployeePriceToCorporate = p.apply_employee_price_to_corporate;
         });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     }
@@ -5865,6 +5895,7 @@ async function saveOtoparkConfig(event) {
   const notificationEmailsVal = document.getElementById('edit-otopark-notif-emails').value.trim();
   const summaryEmailsVal = document.getElementById('edit-otopark-summary-emails').value.trim();
   const requiresManagementApprovalVal = document.getElementById('edit-otopark-req-approval').checked;
+  const applyEmployeePriceToCorporateVal = document.getElementById('edit-otopark-apply-emp-price-to-corp').checked;
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   let existingTemplates = undefined;
@@ -5892,7 +5923,8 @@ async function saveOtoparkConfig(event) {
     templates: existingTemplates,
     notificationEmails: notificationEmailsVal,
     summaryEmails: summaryEmailsVal,
-    requiresManagementApproval: requiresManagementApprovalVal
+    requiresManagementApproval: requiresManagementApprovalVal,
+    applyEmployeePriceToCorporate: applyEmployeePriceToCorporateVal
   };
 
   try {
@@ -5912,6 +5944,12 @@ async function saveOtoparkConfig(event) {
 
     closeModal('modal-otopark-edit');
     await loadOtoparks();
+    if (typeof populateActiveUserSelect === 'function') {
+      await populateActiveUserSelect();
+    }
+    if (typeof loadApplications === 'function') {
+      await loadApplications();
+    }
     renderOtoparksTable();
     populateLocationFilter();
 
@@ -6004,7 +6042,8 @@ async function toggleOtoparkStatus(otoparkId) {
     templates: park.templates,
     notificationEmails: park.notificationEmails || park.notification_emails,
     summaryEmails: park.summaryEmails || park.summary_emails,
-    requiresManagementApproval: park.requiresManagementApproval === true || park.requires_management_approval === true
+    requiresManagementApproval: park.requiresManagementApproval === true || park.requires_management_approval === true,
+    applyEmployeePriceToCorporate: park.applyEmployeePriceToCorporate === true || park.apply_employee_price_to_corporate === true
   };
 
   try {
@@ -6061,7 +6100,8 @@ async function toggleOtoparkPreApprove(otoparkId) {
     templates: park.templates,
     notificationEmails: park.notificationEmails || park.notification_emails,
     summaryEmails: park.summaryEmails || park.summary_emails,
-    requiresManagementApproval: !currentPreApprove
+    requiresManagementApproval: !currentPreApprove,
+    applyEmployeePriceToCorporate: park.applyEmployeePriceToCorporate === true || park.apply_employee_price_to_corporate === true
   };
 
   try {
@@ -7771,8 +7811,25 @@ function renderExpirationsDashboard() {
     return { ...app, remainingDays };
   });
 
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const isYonetim = isYonetimRole(userRole);
+
   // 3. Apply base filters (Location & Search Query)
   let preFiltered = appsWithDays.filter(app => {
+    // Role-based visibility check for Yonetim (Only show locations that require management approval)
+    if (isYonetim) {
+      const otoparkObj = otoparks.find(p => p.name === app.parking_location);
+      const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+      if (!requiresManagement) return false;
+    }
+
     // Location Filter
     if (filterLocation && app.parking_location !== filterLocation) return false;
 
@@ -8948,8 +9005,8 @@ function updateAnalyticsCharts(apps) {
   apps.forEach(app => {
     if (app.status === 'Onaylandı') {
       const park = otoparks.find(p => p.name === app.parking_location) || {};
-      const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && app.parking_location !== 'Birlik Sanayi Sitesi - Beylikdüzü';
-      const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
+      const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi';
+      const priceStr = (isKurumsal && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
       const price = parsePrice(priceStr);
 
       totalRevenue += price;
@@ -9036,8 +9093,8 @@ function updateAnalyticsCharts(apps) {
         const name = app.parking_location;
 
         const park = otoparks.find(p => p.name === name) || {};
-        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && name !== 'Birlik Sanayi Sitesi - Beylikdüzü';
-        const priceStr = isKurumsal ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
+        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi';
+        const priceStr = (isKurumsal && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
         const price = parsePrice(priceStr);
 
         if (otoparkRevenues[name] && otoparkRevenues[name][mKey] !== undefined) {
