@@ -266,12 +266,24 @@ export async function onRequest(context) {
         }
         
         if (subscription_expires_at !== undefined || (status === "Onaylandı" && updateBody.subscription_expires_at)) {
-          auditActionType = "extend_subscription";
+          if (status !== "Onaylandı") {
+            auditActionType = "extend_subscription";
+          }
           const oldDate = oldApp.subscription_expires_at ? oldApp.subscription_expires_at.substring(0, 10) : "Tanımsız";
           const newDate = updateBody.subscription_expires_at ? updateBody.subscription_expires_at.substring(0, 10) : "Tanımsız";
           if (oldDate !== newDate) {
             detailParts.push(`Bitiş Tarihi: ${oldDate} ➔ ${newDate}.`);
           }
+        }
+        if (management_approval !== undefined && oldApp.management_approval !== management_approval) {
+          if (auditActionType === "edit_application") {
+            if (management_approval === "İzin Verildi") {
+              auditActionType = "management_approve";
+            } else if (management_approval === "Reddedildi") {
+              auditActionType = "management_reject";
+            }
+          }
+          detailParts.push(`Yönetim Onayı: "${oldApp.management_approval || 'Beklemede'}" ➔ "${management_approval}".`);
         }
         if (plate_number !== undefined && oldApp.plate_number !== plate_number) {
           detailParts.push(`Plaka: "${oldApp.plate_number || ''}" ➔ "${plate_number}".`);

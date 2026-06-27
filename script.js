@@ -9200,6 +9200,14 @@ function renderAuditLogsTable(logs) {
         actionLabel = 'Başvuru Reddedildi ❌';
         actionStyle = 'background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;';
         break;
+      case 'management_approve':
+        actionLabel = 'Yönetim İzni Verildi 🟢';
+        actionStyle = 'background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;';
+        break;
+      case 'management_reject':
+        actionLabel = 'Yönetim Reddedildi 🔴';
+        actionStyle = 'background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7;';
+        break;
       case 'extend_subscription':
         actionLabel = 'Abonelik Süresi Uzatıldı ⏳';
         actionStyle = 'background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a;';
