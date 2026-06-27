@@ -2494,9 +2494,7 @@ function togglePrivacyMode() {
   // Refresh UI Components
   applyFilters();
   
-  if (activeRole !== 'yonetim') {
-    renderExpirationsDashboard();
-  }
+  renderExpirationsDashboard();
   
   if (activeRole === 'superadmin' && typeof filterAuditLogs === 'function') {
     filterAuditLogs();
@@ -5932,13 +5930,30 @@ function handleUserRoleChange() {
 
       // Show Management Welcome Banner
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+      const locationSelectorContainer = document.getElementById('yonetim-location-selector-container');
       if (welcomeBanner) {
         welcomeBanner.style.display = 'block';
-        const otoparkName = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : 'Site/AVM';
         const welcomeTitle = document.getElementById('yonetim-welcome-title');
         const welcomeSubtitle = document.getElementById('yonetim-welcome-subtitle');
-        if (welcomeTitle) welcomeTitle.textContent = `Hoş Geldiniz, ${otoparkName} Yönetimi`;
-        if (welcomeSubtitle) welcomeSubtitle.textContent = `${otoparkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
+
+        if (adminObj && adminObj.otoparks && adminObj.otoparks.length > 1) {
+          // Multi-location: show switcher
+          if (welcomeTitle) welcomeTitle.textContent = 'Hoş Geldiniz, Yönetim Paneli';
+          if (welcomeSubtitle) welcomeSubtitle.textContent = 'Abonelik onay işlemlerini, durum güncellemelerini ve başvuruları bu ekran üzerinden kolayca yönetebilirsiniz.';
+          renderYonetimLocationSelector(adminObj.otoparks);
+        } else {
+          // Single location: hide switcher
+          if (locationSelectorContainer) locationSelectorContainer.style.display = 'none';
+          const otoparkName = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : 'Site/AVM';
+          if (welcomeTitle) welcomeTitle.textContent = `Hoş Geldiniz, ${otoparkName} Yönetimi`;
+          if (welcomeSubtitle) welcomeSubtitle.textContent = `${otoparkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
+          
+          // Force filter values to the single otopark
+          const select = document.getElementById('filter-location');
+          const expirySelect = document.getElementById('expiry-filter-location');
+          if (select) select.value = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : '';
+          if (expirySelect) expirySelect.value = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : '';
+        }
       }
 
       // Hide standard header title
@@ -5952,6 +5967,10 @@ function handleUserRoleChange() {
       // Hide location filter group
       const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
       if (locationFilterGroup) locationFilterGroup.style.display = 'none';
+
+      // Hide expirations location filter group
+      const expiryLocationFilterGroup = document.getElementById('expiry-filter-location')?.closest('.filter-group');
+      if (expiryLocationFilterGroup) expiryLocationFilterGroup.style.display = 'none';
 
       if (currentAdminTab !== 'applications' && currentAdminTab !== 'expirations' && currentAdminTab !== 'companies') {
         switchAdminTab('applications');
@@ -5990,6 +6009,10 @@ function handleUserRoleChange() {
       // Show location filter group
       const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
       if (locationFilterGroup) locationFilterGroup.style.display = 'flex';
+
+      // Show expirations location filter group
+      const expiryLocationFilterGroup = document.getElementById('expiry-filter-location')?.closest('.filter-group');
+      if (expiryLocationFilterGroup) expiryLocationFilterGroup.style.display = 'flex';
   
       if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs' || currentAdminTab === 'backups') {
         switchAdminTab('applications');
@@ -6005,6 +6028,81 @@ function handleUserRoleChange() {
   loadApplications();
   populateLocationFilter();
   applyFilters();
+}
+
+function renderYonetimLocationSelector(otoparksList) {
+  const container = document.getElementById('yonetim-location-selector-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+  
+  if (!otoparksList || otoparksList.length <= 1) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'flex';
+
+  // 1. Add "Tüm Konumlar" Pill
+  const allPill = document.createElement('button');
+  allPill.className = 'location-pill active';
+  allPill.innerHTML = '<i data-lucide="map" style="width: 14px; height: 14px;"></i><span>Tüm Konumlar</span>';
+  allPill.onclick = () => selectYonetimLocation('', allPill);
+  container.appendChild(allPill);
+
+  // 2. Add individual otopark pills
+  otoparksList.forEach(parkName => {
+    const pill = document.createElement('button');
+    pill.className = 'location-pill';
+    pill.innerHTML = `<i data-lucide="map-pin" style="width: 14px; height: 14px;"></i><span>${parkName}</span>`;
+    pill.onclick = () => selectYonetimLocation(parkName, pill);
+    container.appendChild(pill);
+  });
+
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons({ node: container });
+  }
+}
+
+function selectYonetimLocation(parkName, clickedPill) {
+  // Update active class on pills
+  const container = document.getElementById('yonetim-location-selector-container');
+  if (container) {
+    container.querySelectorAll('.location-pill').forEach(pill => {
+      pill.classList.remove('active');
+    });
+  }
+  if (clickedPill) {
+    clickedPill.classList.add('active');
+  }
+
+  // Update Welcome Banner texts
+  const welcomeTitle = document.getElementById('yonetim-welcome-title');
+  const welcomeSubtitle = document.getElementById('yonetim-welcome-subtitle');
+  if (welcomeTitle && welcomeSubtitle) {
+    if (parkName === '') {
+      welcomeTitle.textContent = 'Hoş Geldiniz, Yönetim Paneli';
+      welcomeSubtitle.textContent = 'Abonelik onay işlemlerini, durum güncellemelerini ve başvuruları bu ekran üzerinden kolayca yönetebilirsiniz.';
+    } else {
+      welcomeTitle.textContent = `Hoş Geldiniz, ${parkName} Yönetimi`;
+      welcomeSubtitle.textContent = `${parkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
+    }
+  }
+
+  // Filter application list and expirations dashboard!
+  const select = document.getElementById('filter-location');
+  const expirySelect = document.getElementById('expiry-filter-location');
+  
+  if (select) {
+    select.value = parkName;
+  }
+  if (expirySelect) {
+    expirySelect.value = parkName;
+  }
+
+  // Trigger filtering
+  applyFilters();
+  renderExpirationsDashboard();
 }
 
 async function handleHeaderAvatarUpload(input) {
