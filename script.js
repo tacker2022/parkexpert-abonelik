@@ -3022,6 +3022,15 @@ async function initAdminController() {
     });
   }
 
+  const editOtoparkCategorySelect = document.getElementById('edit-otopark-category');
+  if (editOtoparkCategorySelect) {
+    editOtoparkCategorySelect.addEventListener('change', (e) => {
+      if (typeof updateOtoparkApprovalLabel === 'function') {
+        updateOtoparkApprovalLabel(e.target.value);
+      }
+    });
+  }
+
   // Initialize admin password policy
   initAdminPasswordPolicy();
 
@@ -5053,6 +5062,20 @@ function renderOtoparksTable() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function updateOtoparkApprovalLabel(category) {
+  const labelEl = document.getElementById('edit-otopark-req-approval-label');
+  if (!labelEl) return;
+
+  if (category === 'OSB / Sanayi Sitesi Otoparkları' || category === 'Sanayi Sitesi Otoparkları') {
+    labelEl.textContent = 'Sanayi Sitesi / OSB Yönetimi Ön Onayı Gerekli';
+  } else if (category === 'AVM Otoparkları') {
+    labelEl.textContent = 'AVM Yönetimi Ön Onayı Gerekli';
+  } else if (category === 'Açık Otoparklar / Bağımsız Otoparklar') {
+    labelEl.textContent = 'Otopark Yönetimi Ön Onayı Gerekli';
+  } else {
+    labelEl.textContent = 'Site / AVM Yönetimi Ön Onayı Gerekli';
+  }
+}
 
 function editOtopark(otoparkId) {
   const OTOPARKS_KEY = 'parkexpert_otoparks';
@@ -5089,6 +5112,7 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
   document.getElementById('edit-otopark-req-approval').checked = park.requiresManagementApproval === true;
+  updateOtoparkApprovalLabel(park.category || 'OSB / Sanayi Sitesi Otoparkları');
   document.getElementById('edit-otopark-notif-emails').value = park.notificationEmails || '';
   document.getElementById('edit-otopark-summary-emails').value = park.summaryEmails || '';
 
@@ -7198,6 +7222,11 @@ async function deleteAdmin(adminId) {
 function openCreateOtoparkModal() {
   document.getElementById('otopark-edit-form').reset();
   document.getElementById('edit-otopark-id').value = '';
+  
+  const defaultCategory = document.getElementById('edit-otopark-category') 
+    ? document.getElementById('edit-otopark-category').value 
+    : 'OSB / Sanayi Sitesi Otoparkları';
+  updateOtoparkApprovalLabel(defaultCategory);
   
   const nameInput = document.getElementById('edit-otopark-name');
   if (nameInput) {
