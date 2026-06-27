@@ -12,6 +12,46 @@ function isYonetimRole(role) {
   return role === 'yonetim' || role === 'yonetim_avm' || role === 'yonetim_site';
 }
 
+function getDynamicRoleLabel(role, adminOtoparks) {
+  if (role === 'superadmin') return 'Süper Admin';
+  if (role === 'admin') return 'ParkExpert Operatörü';
+  if (!isYonetimRole(role)) return role;
+  
+  if (!adminOtoparks || adminOtoparks.length === 0) {
+    return 'Yönetim Yetkilisi';
+  }
+
+  const allOtoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  const uniqueCategories = new Set();
+  
+  adminOtoparks.forEach(parkName => {
+    const parkObj = allOtoparks.find(p => p.name === parkName);
+    if (parkObj && parkObj.category) {
+      uniqueCategories.add(parkObj.category);
+    }
+  });
+
+  if (uniqueCategories.size === 0) {
+    return 'Yönetim Yetkilisi';
+  }
+
+  if (uniqueCategories.size === 1) {
+    const category = Array.from(uniqueCategories)[0];
+    if (category === 'AVM Otoparkları') {
+      return 'AVM Yönetimi';
+    } else if (category === 'OSB / Sanayi Sitesi Otoparkları' || category === 'Sanayi Sitesi Otoparkları') {
+      return 'OSB / Sanayi Yönetimi';
+    } else if (category === 'Açık Otoparklar / Bağımsız Otoparklar') {
+      return 'Lokasyon Yönetimi';
+    } else {
+      const cleanCat = category.replace(/\s+Otoparkları$/, '');
+      return `${cleanCat} Yönetimi`;
+    }
+  }
+
+  return 'Genel Yönetim';
+}
+
 // OCR Integration States
 let ocrCache = {};
 let currentRotation = {};
@@ -6830,8 +6870,10 @@ function handleUserRoleChange() {
         avatarInitials.style.display = 'inline-flex';
       }
       if (avatar) {
-        if (userRole === 'yonetim_avm' || userRole === 'yonetim_site' || userRole === 'yonetim') {
-          avatar.className = `user-avatar user-avatar-yonetim user-avatar-${userRole}`;
+        if (isYonetimRole(userRole)) {
+          avatar.className = 'user-avatar user-avatar-yonetim';
+        } else if (userRole === 'superadmin') {
+          avatar.className = 'user-avatar user-avatar-superadmin';
         } else {
           avatar.className = 'user-avatar user-avatar-representative';
         }
@@ -6840,20 +6882,25 @@ function handleUserRoleChange() {
         avatar.onclick = null;
       }
       if (subtext) {
-        if (userRole === 'yonetim_avm') {
-          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-avm">AVM Yönetimi</span><span class="badge-username">@${adminObj.username}</span>`;
-        } else if (userRole === 'yonetim_site') {
-          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-site">Site Yönetimi</span><span class="badge-username">@${adminObj.username}</span>`;
-        } else if (userRole === 'yonetim') {
-          subtext.innerHTML = `<span class="badge-role badge-role-yonetim-general">Genel Yönetim</span><span class="badge-username">@${adminObj.username}</span>`;
-        } else {
-          subtext.innerHTML = `<span class="badge-role badge-role-operator">Temsilci</span><span class="badge-username">@${adminObj.username || 'admin'}</span>`;
+        const roleText = getDynamicRoleLabel(userRole, adminObj.otoparks);
+        let badgeClass = 'badge-role-operator';
+        if (userRole === 'superadmin') {
+          badgeClass = 'badge-role-superadmin';
+        } else if (isYonetimRole(userRole)) {
+          if (roleText.includes('AVM')) badgeClass = 'badge-role-yonetim-avm';
+          else if (roleText.includes('Site')) badgeClass = 'badge-role-yonetim-site';
+          else if (roleText.includes('Sanayi') || roleText.includes('OSB')) badgeClass = 'badge-role-yonetim-osb';
+          else if (roleText.includes('Genel')) badgeClass = 'badge-role-yonetim-general';
+          else badgeClass = 'badge-role-yonetim-custom';
         }
+        subtext.innerHTML = `<span class="badge-role ${badgeClass}">${roleText}</span><span class="badge-username">@${adminObj.username}</span>`;
       }
     }
     if (adminUserBlock) {
-      if (userRole === 'yonetim_avm' || userRole === 'yonetim_site' || userRole === 'yonetim') {
-        adminUserBlock.className = `admin-user admin-user-yonetim admin-user-${userRole}`;
+      if (isYonetimRole(userRole)) {
+        adminUserBlock.className = 'admin-user admin-user-yonetim';
+      } else if (userRole === 'superadmin') {
+        adminUserBlock.className = 'admin-user admin-user-superadmin';
       } else {
         adminUserBlock.className = 'admin-user admin-user-representative';
       }
@@ -7315,10 +7362,7 @@ function renderAdminsTable() {
     }
 
     const adminRole = admin.role || 'admin';
-    let roleLabel = 'ParkExpert Operatörü';
-    if (adminRole === 'yonetim_avm') roleLabel = 'AVM Yönetimi';
-    else if (adminRole === 'yonetim_site') roleLabel = 'Site Yönetimi';
-    else if (adminRole === 'yonetim') roleLabel = 'Yönetim';
+    const roleLabel = getDynamicRoleLabel(adminRole, admin.otoparks);
     const roleStyle = isYonetimRole(adminRole) ? 'background: rgba(245, 158, 11, 0.1); color: #d97706;' : 'background: rgba(16, 185, 129, 0.1); color: #16a34a;';
 
     const initials = admin.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -10721,7 +10765,12 @@ function renderAuditLogsTable(logs) {
     if (log.admin_role === 'superadmin') {
       roleBadge = `<span class="status-badge" style="background-color: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; font-weight: 700; font-size: 0.75rem;">Süper Admin</span>`;
     } else {
-      roleBadge = `<span class="status-badge" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.75rem;">Otopark Admin</span>`;
+      const dynamicLabel = getDynamicRoleLabel(log.admin_role, null);
+      let badgeStyle = 'background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;';
+      if (isYonetimRole(log.admin_role)) {
+        badgeStyle = 'background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;';
+      }
+      roleBadge = `<span class="status-badge" style="${badgeStyle} font-weight: 700; font-size: 0.75rem;">${dynamicLabel}</span>`;
     }
 
     // Action Translation
@@ -10864,9 +10913,7 @@ async function downloadAuditLogsCSV() {
       
       let role = 'Temsilci/Admin';
       if (log.admin_role === 'superadmin') role = 'Süper Admin';
-      else if (log.admin_role === 'yonetim_avm') role = 'AVM Yönetimi';
-      else if (log.admin_role === 'yonetim_site') role = 'Site Yönetimi';
-      else if (log.admin_role === 'yonetim') role = 'Yönetim';
+      else role = getDynamicRoleLabel(log.admin_role, null);
 
       // Translate action label
       let actionLabel = log.action_type || '';

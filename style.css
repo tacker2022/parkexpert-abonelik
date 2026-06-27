@@ -5031,10 +5031,22 @@ textarea.is-invalid {
   border: 1px solid rgba(6, 182, 212, 0.2);
 }
 
+.admin-sidebar .admin-user .badge-role-yonetim-osb {
+  background: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
 .admin-sidebar .admin-user .badge-role-yonetim-general {
   background: rgba(99, 102, 241, 0.1);
   color: #4f46e5;
   border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.admin-sidebar .admin-user .badge-role-yonetim-custom {
+  background: rgba(107, 114, 128, 0.1);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.2);
 }
 
 .admin-sidebar .admin-user .badge-role-operator {
