@@ -3738,12 +3738,19 @@ function openDrawer(appId) {
           footerHtml += `
             <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); color: #6d28d9; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
               <i data-lucide="shield-alert" style="width: 16px; height: 16px; color:#7c3aed;"></i>
-              <span>Yönetim onayı bekleniyor (Süper Admin yetkisiyle bypass edebilirsiniz).</span>
+              <span>Yönetim onayı bekleniyor. Süper Admin olarak yönetim adına izin verebilirsiniz.</span>
             </div>
-            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%;">
-              <button class="status-change-btn btn-set-approve" onclick="updateCurrentAppStatus('Onaylandı')" style="flex: 1; min-height: 38px;">Onayla (Bypass)</button>
-              <button class="status-change-btn btn-set-reject" onclick="updateCurrentAppStatus('Reddedildi')" style="flex: 1; min-height: 38px;">Reddet (Bypass)</button>
-              <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="flex: 1; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); display: inline-block;">Sil</button>
+            <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; margin-bottom: 0.75rem;">
+              <button class="status-change-btn btn-set-approve" onclick="updateCurrentManagementApproval('İzin Verildi')" style="flex: 1; min-height: 38px; background: #10b981; border: 1px solid #10b981; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İzni Ver</button>
+              <button class="status-change-btn btn-set-reject" onclick="updateCurrentManagementApproval('Reddedildi')" style="flex: 1; min-height: 38px; background: #ef4444; border: 1px solid #ef4444; color:#ffffff; font-weight:700; border-radius:var(--radius-sm); cursor:pointer; transition: all 0.2s;">Yönetim İznini Reddet</button>
+            </div>
+            <div style="border-top: 1px dashed var(--color-border); margin: 0.75rem 0; padding-top: 0.75rem;">
+              <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 0.5rem; font-weight: 600;">Operatör Onay İşlemi (Yönetim İzninden Sonra Aktifleşir)</div>
+              <div class="status-btn-group" style="display: flex; gap: 0.5rem; width: 100%; opacity: 0.5; pointer-events: none; margin-bottom: 0.5rem;">
+                <button class="status-change-btn btn-set-approve" disabled style="flex: 1; min-height: 38px;">Onayla</button>
+                <button class="status-change-btn btn-set-reject" disabled style="flex: 1; min-height: 38px;">Reddet</button>
+              </div>
+              <button class="status-change-btn btn-set-delete" id="btn-drawer-delete" onclick="deleteCurrentApplication()" style="width: 100%; min-height: 38px; background: #dc2626; border: 1px solid #dc2626; color: #ffffff; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast);">Başvuruyu Tamamen Sil</button>
             </div>
           `;
         } else {

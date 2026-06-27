@@ -209,14 +209,9 @@ export async function onRequest(context) {
         }
       } else {
         // Admin or Superadmin
-        // Prevent approval if management_approval is still Beklemede (superadmin bypasses this check)
         const currentApproval = management_approval !== undefined ? management_approval : (oldApp.management_approval || "Beklemede");
         if (status === "Onaylandı" && currentApproval === "Beklemede") {
-          if (user.role === "superadmin") {
-            updateBody.management_approval = "İzin Verildi";
-          } else {
-            return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
-          }
+          return new Response(JSON.stringify({ error: "Yönetim onayı verilmemiş bir başvuru onaylanamaz!" }), { status: 400, headers });
         }
 
         if (status !== undefined) {
