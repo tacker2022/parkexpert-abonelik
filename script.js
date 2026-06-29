@@ -12399,23 +12399,42 @@ function showCompanySuggestions(query) {
     c.name.toLocaleUpperCase('tr-TR').includes(cleanQuery)
   );
 
-  if (filtered.length === 0) {
-    suggestionsBox.innerHTML = `
-      <div class="autocomplete-suggestion-item no-results">
-        Sonuç bulunamadı (elle girmeye devam edebilirsiniz)
-      </div>
-    `;
-    suggestionsBox.style.display = 'block';
-    return;
-  }
-
-  suggestionsBox.innerHTML = filtered.map(c => `
+  let suggestionsHtml = filtered.map(c => `
     <div class="autocomplete-suggestion-item" data-value="${c.name.replace(/"/g, '&quot;')}">
       🏢 ${c.name}
     </div>
   `).join('');
 
-  suggestionsBox.style.display = 'block';
+  // Add the "add-new" option if query is not empty and not an exact match
+  const hasExactMatch = filtered.some(c => c.name.trim().toLocaleUpperCase('tr-TR') === cleanQuery);
+  if (query.trim() !== '' && !hasExactMatch) {
+    suggestionsHtml += `
+      <div class="autocomplete-suggestion-item add-new-custom" data-value="${query.replace(/"/g, '&quot;')}" style="font-weight: 700; color: #2563eb; border-top: 1px dashed var(--color-border-light); background: rgba(37, 99, 235, 0.02);">
+        ➕ Listede bulamadım, yeni ekle: "${query}"
+      </div>
+    `;
+  }
+
+  if (filtered.length === 0 && query.trim() === '') {
+    suggestionsBox.innerHTML = '';
+    suggestionsBox.style.display = 'none';
+    return;
+  }
+
+  if (filtered.length === 0 && query.trim() !== '') {
+    suggestionsBox.innerHTML = `
+      <div class="autocomplete-suggestion-item no-results" style="padding-bottom: 0.25rem;">
+        Sonuç bulunamadı.
+      </div>
+      <div class="autocomplete-suggestion-item add-new-custom" data-value="${query.replace(/"/g, '&quot;')}" style="font-weight: 700; color: #2563eb; border-top: 1px dashed var(--color-border-light); background: rgba(37, 99, 235, 0.02);">
+        ➕ Listede bulamadım, yeni ekle: "${query}"
+      </div>
+    `;
+    suggestionsBox.style.display = 'block';
+  } else {
+    suggestionsBox.innerHTML = suggestionsHtml;
+    suggestionsBox.style.display = 'block';
+  }
 
   // Bind click handlers to options
   suggestionsBox.querySelectorAll('.autocomplete-suggestion-item:not(.no-results)').forEach(item => {
