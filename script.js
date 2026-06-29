@@ -6318,10 +6318,13 @@ function switchAdminTab(tabName) {
 
 function renderCompaniesTable(apps) {
   const container = document.getElementById('companies-grid-container');
+  const tableContainer = document.getElementById('companies-table-container');
+  const tableBody = document.getElementById('companies-table-body');
   const countEl = document.getElementById('companies-results-count');
   if (!container) return;
 
   container.innerHTML = '';
+  if (tableBody) tableBody.innerHTML = '';
 
   // 1. Group applications by company
   const groups = {};
@@ -6340,7 +6343,7 @@ function renderCompaniesTable(apps) {
     
     groups[companyKey].vehicles++;
     
-    const plate = app.plate ? app.plate.trim().toUpperCase() : '';
+    const plate = app.plate_number ? app.plate_number.trim().toUpperCase() : '';
     const ownerName = app.full_name ? app.full_name.trim() : 'Bilinmeyen Sürücü';
     
     groups[companyKey].records.push({
@@ -6371,7 +6374,7 @@ function renderCompaniesTable(apps) {
     countEl.textContent = `(${groupList.length} firma / grup)`;
   }
 
-  // 3. Handle Empty State
+  // Handle Empty State
   if (groupList.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 4.5rem 2rem; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md);">
@@ -6386,69 +6389,154 @@ function renderCompaniesTable(apps) {
         </div>
       </div>
     `;
+    if (tableContainer) tableContainer.style.display = 'none';
     if (typeof lucide !== 'undefined') lucide.createIcons();
     return;
   }
 
-  // 4. Render each company card
-  groupList.forEach(group => {
-    const isSerbest = group.name.toUpperCase() === 'SERBEST ÇALIŞAN';
-    const badgeIcon = isSerbest ? 'users' : 'building-2';
+  // Toggle layout display
+  if (typeof companyActiveView !== 'undefined' && companyActiveView === 'table') {
+    container.style.display = 'none';
+    if (tableContainer) tableContainer.style.display = 'block';
+    
+    if (tableBody) {
+      tableBody.innerHTML = groupList.map((group, idx) => {
+        // Calculate status counts
+        const approvedCount = group.applications.filter(a => a.status === 'Onaylandı').length;
+        const pendingCount = group.applications.filter(a => a.status === 'Bekleyen' || a.status === 'Yeni').length;
+        const rejectedCount = group.applications.filter(a => a.status === 'Reddedildi').length;
 
-    // Sort records by plate
-    group.records.sort((a, b) => a.plate.localeCompare(b.plate, 'tr'));
+        // Calculate locations
+        const locations = [...new Set(group.applications.map(a => a.parking_location))];
+        const locationsStr = locations.join(', ');
 
-    // Format combined records list
-    const recordsHtml = group.records.map(rec => {
-      const formatted = maskPlate(rec.plate);
-      
-      let statusClass = 'status-yeni';
-      let statusText = 'YENİ / BEKLEYEN';
-      if (rec.status === 'Onaylandı') {
-        statusClass = 'status-onaylandi';
-        statusText = 'ONAYLANDI';
-      } else if (rec.status === 'Reddedildi') {
-        statusClass = 'status-reddedildi';
-        statusText = 'REDDEDİLDİ';
-      }
+        // Calculate total revenue from approved apps
+        const totalRevenue = group.applications
+          .filter(a => a.status === 'Onaylandı')
+          .reduce((sum, app) => {
+            const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+            const park = otoparks.find(p => p.name === app.parking_location) || {};
+            const isCorporate = app.subscription_type && app.subscription_type.includes('Kurumsal');
+            const isBirlikSanayi = park.id === 'birlik-sanayi' || (park.name && park.name.includes('Birlik Sanayi'));
+            const priceStr = (isCorporate && !isBirlikSanayi && !park.applyEmployeePriceToCorporate) 
+              ? (park.priceExternal || '2400 TL') 
+              : (park.priceEmployee || '1200 TL');
+            return sum + (parseInt(priceStr.replace(/[^\d]/g, '')) || 0);
+          }, 0);
 
-      return `
-        <div class="company-plate-row">
-          <span class="mini-tr-plate" onclick="openDrawer('${rec.appId}')" title="Abonelik Detayını Gör">${formatted}</span>
-          <span class="plate-owner-info">
-            <i data-lucide="user" style="width: 14px; height: 14px; color: var(--color-text-muted);"></i>
-            <span>${maskName(rec.owner)}</span>
+        const formattedRevenue = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(totalRevenue);
+
+        const statusBadgesHtml = `
+          <div style="display: flex; justify-content: center; gap: 0.25rem; flex-wrap: wrap;">
+            ${approvedCount > 0 ? `<span class="status-badge-compact status-onaylandi" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">${approvedCount} Onaylı</span>` : ''}
+            ${pendingCount > 0 ? `<span class="status-badge-compact status-yeni" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">${pendingCount} Bekleyen</span>` : ''}
+            ${rejectedCount > 0 ? `<span class="status-badge-compact status-reddedildi" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">${rejectedCount} Red</span>` : ''}
+          </div>
+        `;
+
+        return `
+          <tr style="border-bottom: 1px solid var(--color-border-light); hover: background-color: #f8fafc; transition: background 0.15s;">
+            <td style="padding: 0.85rem 1.25rem; font-weight: 700; color: var(--color-text-dark);">${group.name}</td>
+            <td style="padding: 0.85rem 1.25rem; color: var(--color-text-muted); font-size: 0.8rem;">${locationsStr}</td>
+            <td style="padding: 0.85rem 1.25rem; text-align: center; font-weight: 600;">${group.vehicles} Araç</td>
+            <td style="padding: 0.85rem 1.25rem; text-align: center;">${statusBadgesHtml}</td>
+            <td style="padding: 0.85rem 1.25rem; text-align: right; font-weight: 700; color: #25d366;">${formattedRevenue}</td>
+            <td style="padding: 0.85rem 1.25rem; text-align: right;">
+              <button onclick="toggleCompanyRowDetail(${idx})" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; min-height: 32px; font-size: 0.75rem; font-weight: 700; border-radius: var(--radius-sm); border: 1px solid var(--color-border-light); cursor: pointer; background: transparent; display: inline-flex; align-items: center; gap: 0.25rem;">
+                <i data-lucide="eye" style="width: 13px; height: 13px;"></i> Detay
+              </button>
+            </td>
+          </tr>
+          <tr id="company-row-detail-${idx}" style="display: none; background: #f8fafc; border-bottom: 1px solid var(--color-border-light);">
+            <td colspan="6" style="padding: 1rem 1.5rem;">
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); margin: 0 0 0.25rem 0; border-bottom: 1px dashed var(--color-border-light); padding-bottom: 0.25rem;">KAYITLI PLAKALAR VE ABONELER</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
+                  ${group.applications.map(app => {
+                    let statusClass = 'status-yeni';
+                    if (app.status === 'Onaylandı') statusClass = 'status-onaylandi';
+                    else if (app.status === 'Reddedildi') statusClass = 'status-reddedildi';
+                    return `
+                      <div style="background: #ffffff; padding: 0.6rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                          <span onclick="openDrawer('${app.id}')" style="font-family: monospace; font-weight: 700; background: var(--color-primary); color: var(--color-text-dark); padding: 0.15rem 0.35rem; border-radius: 3px; letter-spacing: 0.5px; cursor: pointer; text-decoration: underline;" title="Detayları Gör">${maskPlate(app.plate_number || '')}</span>
+                          <span style="color: var(--color-text-dark); font-weight: 600;">${maskName(app.full_name || '')}</span>
+                        </div>
+                        <span class="status-badge-compact ${statusClass}" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px;">${app.status}</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } else {
+    container.style.display = 'grid';
+    if (tableContainer) tableContainer.style.display = 'none';
+
+    // 4. Render each company card
+    groupList.forEach(group => {
+      const isSerbest = group.name.toUpperCase() === 'SERBEST ÇALIŞAN';
+      const badgeIcon = isSerbest ? 'users' : 'building-2';
+
+      // Sort records by plate
+      group.records.sort((a, b) => a.plate.localeCompare(b.plate, 'tr'));
+
+      // Format combined records list
+      const recordsHtml = group.records.map(rec => {
+        const formatted = maskPlate(rec.plate);
+        
+        let statusClass = 'status-yeni';
+        let statusText = 'YENİ / BEKLEYEN';
+        if (rec.status === 'Onaylandı') {
+          statusClass = 'status-onaylandi';
+          statusText = 'ONAYLANDI';
+        } else if (rec.status === 'Reddedildi') {
+          statusClass = 'status-reddedildi';
+          statusText = 'REDDEDİLDİ';
+        }
+
+        return `
+          <div class="company-plate-row">
+            <span class="mini-tr-plate" onclick="openDrawer('${rec.appId}')" title="Abonelik Detayını Gör">${formatted}</span>
+            <span class="plate-owner-info">
+              <i data-lucide="user" style="width: 14px; height: 14px; color: var(--color-text-muted);"></i>
+              <span>${maskName(rec.owner)}</span>
+            </span>
+            <span class="status-badge-compact ${statusClass}">${statusText}</span>
+          </div>
+        `;
+      }).join('');
+
+      const card = document.createElement('article');
+      card.className = 'company-card';
+      card.innerHTML = `
+        <div class="company-card-header">
+          <div class="company-card-title">
+            <div class="company-badge-icon">
+              <i data-lucide="${badgeIcon}" style="width: 20px; height: 20px;"></i>
+            </div>
+            <span class="company-name-text" title="${group.name}">${group.name}</span>
+          </div>
+          <span class="company-vehicle-count">
+            <i data-lucide="car" style="width: 12px; height: 12px;"></i>
+            <span>${group.vehicles} Araç</span>
           </span>
-          <span class="status-badge-compact ${statusClass}">${statusText}</span>
+        </div>
+
+        <div class="company-plates-section">
+          <span class="company-section-title">Kayıtlı Plakalar ve Aboneler</span>
+          <div class="company-plates-list">
+            ${recordsHtml || '<span style="font-size: 0.8rem; color: var(--color-text-muted); font-style: italic;">Kayıt Yok</span>'}
+          </div>
         </div>
       `;
-    }).join('');
-
-    const card = document.createElement('article');
-    card.className = 'company-card';
-    card.innerHTML = `
-      <div class="company-card-header">
-        <div class="company-card-title">
-          <div class="company-badge-icon">
-            <i data-lucide="${badgeIcon}" style="width: 20px; height: 20px;"></i>
-          </div>
-          <span class="company-name-text" title="${group.name}">${group.name}</span>
-        </div>
-        <span class="company-vehicle-count">
-          <i data-lucide="car" style="width: 12px; height: 12px;"></i>
-          <span>${group.vehicles} Araç</span>
-        </span>
-      </div>
-
-      <div class="company-plates-section">
-        <span class="company-section-title">Kayıtlı Plakalar ve Aboneler</span>
-        <div class="company-plates-list">
-          ${recordsHtml || '<span style="font-size: 0.8rem; color: var(--color-text-muted); font-style: italic;">Kayıt Yok</span>'}
-        </div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
+      container.appendChild(card);
+    });
+  }
 
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -12321,6 +12409,51 @@ function showCompanySuggestions(query) {
   });
 }
 
+let companyActiveView = 'cards';
+
+function switchCompanyView(viewMode) {
+  companyActiveView = viewMode;
+  
+  const btnCards = document.getElementById('btn-view-cards');
+  const btnTable = document.getElementById('btn-view-table');
+  
+  if (btnCards && btnTable) {
+    if (viewMode === 'cards') {
+      btnCards.classList.add('active');
+      btnCards.style.background = 'var(--color-primary)';
+      btnCards.style.color = '#ffffff';
+      
+      btnTable.classList.remove('active');
+      btnTable.style.background = 'transparent';
+      btnTable.style.color = 'var(--color-text-muted)';
+    } else {
+      btnTable.classList.add('active');
+      btnTable.style.background = 'var(--color-primary)';
+      btnTable.style.color = '#ffffff';
+      
+      btnCards.classList.remove('active');
+      btnCards.style.background = 'transparent';
+      btnCards.style.color = 'var(--color-text-muted)';
+    }
+  }
+  
+  // Re-render
+  if (typeof filteredApplications !== 'undefined') {
+    renderCompaniesTable(filteredApplications);
+  }
+}
+
+function toggleCompanyRowDetail(idx) {
+  const detailRow = document.getElementById(`company-row-detail-${idx}`);
+  if (detailRow) {
+    if (detailRow.style.display === 'none') {
+      detailRow.style.display = 'table-row';
+    } else {
+      detailRow.style.display = 'none';
+    }
+  }
+}
+
 // Bind admin panel functions to window
 window.openCompanyManagementModal = openCompanyManagementModal;
 window.switchCompanyMgmtSubTab = switchCompanyMgmtSubTab;
@@ -12332,6 +12465,8 @@ window.deleteCompany = deleteCompany;
 window.filterCompanyMgmtList = filterCompanyMgmtList;
 window.loadPublicCompaniesForOtopark = loadPublicCompaniesForOtopark;
 window.showCompanySuggestions = showCompanySuggestions;
+window.switchCompanyView = switchCompanyView;
+window.toggleCompanyRowDetail = toggleCompanyRowDetail;
 
 
 

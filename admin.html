@@ -733,15 +733,45 @@
           <!-- Companies header controls -->
           <section class="admin-actions-bar">
             <h3>Firma ve Kümelenme Analizi <span id="companies-results-count" style="font-size: 0.9rem; color: var(--color-text-muted); font-weight: 500;">(0 firma)</span></h3>
-            <button class="btn btn-primary" onclick="openCompanyManagementModal()" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.5rem 0.75rem; font-weight: 700; border-radius: var(--radius-sm); border: none;">
-              <i data-lucide="settings" style="width: 15px; height: 15px;"></i>
-              <span>Firma Listesini Yönet</span>
-            </button>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <!-- View Switcher -->
+              <div class="segment-control" style="background: rgba(15, 59, 162, 0.03); padding: 0.25rem; border-radius: var(--radius-sm); display: inline-flex; gap: 0.25rem; border: 1px solid var(--color-border-light);">
+                <button class="segment-btn active" id="btn-view-cards" onclick="switchCompanyView('cards')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; background: var(--color-primary); color: #ffffff; transition: all 0.2s;">
+                  <i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i> <span>Kartlar</span>
+                </button>
+                <button class="segment-btn" id="btn-view-table" onclick="switchCompanyView('table')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; background: transparent; color: var(--color-text-muted); transition: all 0.2s;">
+                  <i data-lucide="list" style="width: 14px; height: 14px;"></i> <span>Tablo</span>
+                </button>
+              </div>
+              <button class="btn btn-primary" onclick="openCompanyManagementModal()" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.5rem 0.75rem; font-weight: 700; border-radius: var(--radius-sm); border: none;">
+                <i data-lucide="settings" style="width: 15px; height: 15px;"></i>
+                <span>Firma Listesini Yönet</span>
+              </button>
+            </div>
           </section>
           
           <!-- Companies Grid Container -->
           <div class="companies-grid" id="companies-grid-container">
             <!-- Rendered via JS -->
+          </div>
+
+          <!-- Companies Table Container -->
+          <div id="companies-table-container" style="display: none; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); box-shadow: 0 4px 20px rgba(0,0,0,0.02); overflow: hidden; margin-top: 1rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light); font-weight: 700; color: var(--color-text-dark);">
+                  <th style="padding: 0.85rem 1.25rem;">Firma / Kurum Adı</th>
+                  <th style="padding: 0.85rem 1.25rem;">Otopark / Konum</th>
+                  <th style="padding: 0.85rem 1.25rem; text-align: center; width: 110px;">Toplam Araç</th>
+                  <th style="padding: 0.85rem 1.25rem; text-align: center; width: 180px;">Durum Dağılımı</th>
+                  <th style="padding: 0.85rem 1.25rem; text-align: right; width: 150px;">Aylık Katkı (Ciro)</th>
+                  <th style="padding: 0.85rem 1.25rem; text-align: right; width: 140px;">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="companies-table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
 
