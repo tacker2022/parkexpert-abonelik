@@ -6459,7 +6459,7 @@ function renderCompaniesTable(apps) {
                     return `
                       <div style="background: #ffffff; padding: 0.6rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                          <span onclick="openDrawer('${app.id}')" style="font-family: monospace; font-weight: 700; background: var(--color-primary); color: var(--color-text-dark); padding: 0.15rem 0.35rem; border-radius: 3px; letter-spacing: 0.5px; cursor: pointer; text-decoration: underline;" title="Detayları Gör">${maskPlate(app.plate_number || '')}</span>
+                          <span onclick="openDrawer('${app.id}')" class="mini-tr-plate" title="Detayları Gör">${maskPlate(app.plate_number || '')}</span>
                           <span style="color: var(--color-text-dark); font-weight: 600;">${maskName(app.full_name || '')}</span>
                         </div>
                         <span class="status-badge-compact ${statusClass}" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px;">${app.status}</span>
