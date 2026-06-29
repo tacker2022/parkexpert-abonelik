@@ -12107,13 +12107,27 @@ async function loadOtoparkCompanies() {
 
   try {
     const res = await fetch(`/api/companies?otopark=${encodeURIComponent(otoparkName)}`);
-    if (!res.ok) throw new Error("API hatası");
+    
+    let data = [];
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { error: text };
+    }
 
-    companyMgmtLoadedList = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Sunucu hatası");
+    }
+
+    companyMgmtLoadedList = data;
     if (countSpan) countSpan.textContent = companyMgmtLoadedList.length;
 
     // Render list
     renderCompanyMgmtList(companyMgmtLoadedList);
+
+    // Refresh merge dropdowns if populated
+    populateMergeCompaniesDropdowns();
 
     // Show warning if user is not superadmin
     if (currentAdminUser === 'superadmin') {
@@ -12123,7 +12137,7 @@ async function loadOtoparkCompanies() {
     }
   } catch (err) {
     console.error("Error loading companies in modal:", err);
-    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: #ef4444;">Firmalar yüklenemedi. Lütfen tekrar deneyin.</td></tr>`;
+    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: #ef4444;">Firmalar yüklenemedi: ${err.message}</td></tr>`;
   }
 }
 
@@ -12326,7 +12340,14 @@ async function deleteCompany(id) {
       }
     });
 
-    const data = await res.json();
+    let data = {};
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { error: text };
+    }
+
     if (!res.ok) {
       alert(`Firma silinemedi: ${data.error || 'Bilinmeyen hata'}`);
       return;
@@ -12336,7 +12357,7 @@ async function deleteCompany(id) {
     loadOtoparkCompanies();
   } catch (err) {
     console.error("Error deleting company:", err);
-    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+    alert(`İşlem sırasında hata oluştu: ${err.message}`);
   }
 }
 
