@@ -5892,6 +5892,56 @@ textarea.is-invalid {
   transform: translateY(50%) translateX(6px) !important;
 }
 
+/* Autocomplete suggestions box styles */
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  margin-top: 2px;
+}
+
+.autocomplete-suggestion-item {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+  border-bottom: 1px solid rgba(0,0,0,0.02);
+}
+
+.autocomplete-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-suggestion-item:hover {
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--color-primary);
+}
+
+.autocomplete-suggestion-item.no-results {
+  color: var(--color-text-muted);
+  font-style: italic;
+  cursor: default;
+  background: transparent !important;
+}
+
 
 
 

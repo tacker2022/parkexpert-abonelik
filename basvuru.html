@@ -199,7 +199,10 @@
                     <span>Firma / Kurum Adı</span>
                     <span class="required-indicator" aria-hidden="true">*</span>
                   </label>
-                  <input type="text" id="company-name" name="company_name" placeholder="Örn: ABC Tekstil Ltd. Şti. veya Serbest Çalışan" required>
+                  <div class="autocomplete-container">
+                    <input type="text" id="company-name" name="company_name" placeholder="Örn: ABC Tekstil Ltd. Şti. veya Serbest Çalışan" required autocomplete="off">
+                    <div id="company-autocomplete-suggestions" class="autocomplete-suggestions"></div>
+                  </div>
                   <span class="error-message" id="error-company-name"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Lütfen çalıştığınız firma veya kurum adını girin.</span>
                 </div>
 

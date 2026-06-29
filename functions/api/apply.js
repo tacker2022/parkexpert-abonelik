@@ -146,6 +146,29 @@ export async function onRequest(context) {
       console.error("Error checking requires_management_approval:", e);
     }
 
+    // Case-insensitive normalization of company name
+    let normalizedCompanyName = companyName ? companyName.trim() : null;
+    if (normalizedCompanyName) {
+      try {
+        const compCheckRes = await fetch(`${supabaseUrl}/rest/v1/companies?otopark_name=eq.${encodeURIComponent(parkingLocation)}&select=name`, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+        if (compCheckRes.ok) {
+          const registeredCompanies = await compCheckRes.json();
+          const targetLower = normalizedCompanyName.toLowerCase();
+          const match = registeredCompanies.find(c => c.name.trim().toLowerCase() === targetLower);
+          if (match) {
+            normalizedCompanyName = match.name.trim(); // Use official spelling
+          }
+        }
+      } catch (err) {
+        console.error("Error normalizing company name in apply.js:", err);
+      }
+    }
+
     // Insert record into Supabase
     const payload = {
       id: appId,
@@ -154,7 +177,7 @@ export async function onRequest(context) {
       phone: phone,
       plate_number: plateNumber,
       parking_location: parkingLocation,
-      company_name: companyName,
+      company_name: normalizedCompanyName,
       tax_office: taxOffice,
       tax_number: taxNumber,
       subscription_type: subscriptionType,

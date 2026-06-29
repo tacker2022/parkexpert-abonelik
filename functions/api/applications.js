@@ -238,7 +238,31 @@ export async function onRequest(context) {
           }
         }
         if (plate_number !== undefined) updateBody.plate_number = plate_number;
-        if (company_name !== undefined) updateBody.company_name = company_name;
+        if (company_name !== undefined) {
+          let normalizedComp = company_name ? company_name.trim() : null;
+          if (normalizedComp) {
+            try {
+              const otoparkName = oldApp.parking_location;
+              const checkRes = await fetch(`${supabaseUrl}/rest/v1/companies?otopark_name=eq.${encodeURIComponent(otoparkName)}&select=name`, {
+                headers: {
+                  "apikey": supabaseAnonKey,
+                  "Authorization": `Bearer ${supabaseAnonKey}`
+                }
+              });
+              if (checkRes.ok) {
+                const registered = await checkRes.json();
+                const targetLower = normalizedComp.toLowerCase();
+                const match = registered.find(c => c.name.trim().toLowerCase() === targetLower);
+                if (match) {
+                  normalizedComp = match.name.trim();
+                }
+              }
+            } catch (e) {
+              console.error("Error normalizing company name in applications.js:", e);
+            }
+          }
+          updateBody.company_name = normalizedComp;
+        }
         if (subscription_expires_at !== undefined) updateBody.subscription_expires_at = subscription_expires_at;
         if (management_approval !== undefined) {
           updateBody.management_approval = management_approval;

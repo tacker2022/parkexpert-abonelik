@@ -927,6 +927,60 @@ function initWizardController() {
     });
   }
 
+  // Autocomplete suggestions event handlers
+  const otoparkSelect = document.getElementById('otopark-selection');
+  if (otoparkSelect) {
+    // Load initial otopark's companies on step load
+    if (otoparkSelect.value) {
+      loadPublicCompaniesForOtopark(otoparkSelect.value);
+    }
+    // Reload when otopark changes
+    otoparkSelect.addEventListener('change', () => {
+      loadPublicCompaniesForOtopark(otoparkSelect.value);
+    });
+  }
+
+  const companyInput = document.getElementById('company-name');
+  const suggestionsBox = document.getElementById('company-autocomplete-suggestions');
+  if (companyInput && suggestionsBox) {
+    // Show suggestions on focus/click
+    companyInput.addEventListener('focus', () => {
+      showCompanySuggestions(companyInput.value);
+    });
+    companyInput.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showCompanySuggestions(companyInput.value);
+    });
+
+    // Hide suggestions on click outside
+    document.addEventListener('click', (e) => {
+      if (!companyInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.style.display = 'none';
+      }
+    });
+
+    // Filter suggestions on typing
+    companyInput.addEventListener('input', () => {
+      // Small timeout to allow input event upper-casing to complete
+      setTimeout(() => {
+        showCompanySuggestions(companyInput.value);
+      }, 10);
+    });
+
+    // Case-insensitive normalization on focus out (blur)
+    companyInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        const val = companyInput.value.trim().toLocaleUpperCase('tr-TR');
+        if (val && selectedOtoparkCompaniesList.length > 0) {
+          const match = selectedOtoparkCompaniesList.find(c => c.name.trim().toLocaleUpperCase('tr-TR') === val);
+          if (match) {
+            companyInput.value = match.name.trim(); // Auto-correct to official casing
+          }
+        }
+      }, 200); // 200ms delay to allow click on suggestion item to register first!
+    });
+  }
+
   // Setup Date picker default min as today
   const dateInput = document.getElementById('start-date');
   if (dateInput) {
@@ -11854,6 +11908,430 @@ function filterOtoparkCategory(category, btn) {
 }
 
 window.filterOtoparkCategory = filterOtoparkCategory;
+
+/* ==========================================================================
+   FİRMA LİSTESİ YÖNETİMİ & OTOMATİK TAMAMLAMA ENTEGRASYONU
+   ========================================================================== */
+
+let selectedOtoparkCompaniesList = [];
+let companyMgmtLoadedList = []; // Cache for currently loaded companies in modal
+
+// 1. Modal Arayüzü Tetikleyicisi
+async function openCompanyManagementModal() {
+  const select = document.getElementById('company-mgmt-otopark');
+  if (!select) return;
+
+  select.innerHTML = '';
+
+  const OTOPARKS_KEY = 'parkexpert_otoparks';
+  const otoparks = JSON.parse(localStorage.getItem(OTOPARKS_KEY)) || [];
+
+  // Determine current user and role
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
+  const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+  
+  let userOtoparks = [];
+  if (currentAdminUser === 'superadmin') {
+    userOtoparks = otoparks.map(p => p.name);
+  } else {
+    userOtoparks = activeAdminObj.otoparks || [];
+  }
+
+  if (userOtoparks.length === 0) {
+    alert("İşlem yapabileceğiniz yetkili bir otopark bulunmamaktadır.");
+    return;
+  }
+
+  // Populate dropdown
+  userOtoparks.forEach(parkName => {
+    const opt = document.createElement('option');
+    opt.value = parkName;
+    opt.textContent = parkName;
+    select.appendChild(opt);
+  });
+
+  // Switch to default tab
+  switchCompanyMgmtSubTab('bulk-add');
+
+  // Trigger load of first otopark
+  loadOtoparkCompanies();
+
+  openModal('modal-company-management');
+}
+
+// 2. Tab Değiştirme
+function switchCompanyMgmtSubTab(tabName) {
+  // Toggle panels
+  document.querySelectorAll('.company-mgmt-sub-panel').forEach(p => p.style.display = 'none');
+  const activePanel = document.getElementById(`sub-panel-${tabName}`);
+  if (activePanel) activePanel.style.display = 'block';
+
+  // Toggle tab buttons styles
+  const tabs = ['bulk-add', 'single-add', 'company-list'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tab-btn-${t}`);
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('active');
+        btn.style.color = 'var(--color-primary)';
+        btn.style.borderBottom = '2px solid var(--color-primary)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--color-text-muted)';
+        btn.style.borderBottom = '2px solid transparent';
+      }
+    }
+  });
+
+  // Clear inputs
+  const singleInput = document.getElementById('company-mgmt-single-name');
+  if (singleInput) singleInput.value = '';
+  const searchInput = document.getElementById('company-mgmt-search');
+  if (searchInput) searchInput.value = '';
+
+  filterCompanyMgmtList();
+}
+
+// 3. Firma Listesini Çekme (Admin)
+async function loadOtoparkCompanies() {
+  const otoparkSelect = document.getElementById('company-mgmt-otopark');
+  const listBody = document.getElementById('company-mgmt-list-body');
+  const countSpan = document.getElementById('company-mgmt-count');
+  const warningMsg = document.getElementById('company-mgmt-delete-warning');
+
+  if (!otoparkSelect || !listBody) return;
+
+  const otoparkName = otoparkSelect.value;
+  if (!otoparkName) {
+    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">Lütfen otopark seçin.</td></tr>`;
+    if (countSpan) countSpan.textContent = '0';
+    return;
+  }
+
+  listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">Yükleniyor...</td></tr>`;
+
+  try {
+    const res = await fetch(`/api/companies?otopark=${encodeURIComponent(otoparkName)}`);
+    if (!res.ok) throw new Error("API hatası");
+
+    companyMgmtLoadedList = await res.json();
+    if (countSpan) countSpan.textContent = companyMgmtLoadedList.length;
+
+    // Render list
+    renderCompanyMgmtList(companyMgmtLoadedList);
+
+    // Show warning if user is not superadmin
+    if (currentAdminUser === 'superadmin') {
+      if (warningMsg) warningMsg.style.display = 'none';
+    } else {
+      if (warningMsg) warningMsg.style.display = 'block';
+    }
+  } catch (err) {
+    console.error("Error loading companies in modal:", err);
+    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: #ef4444;">Firmalar yüklenemedi. Lütfen tekrar deneyin.</td></tr>`;
+  }
+}
+
+// 4. Firma Listesini DOM'a Yazma
+function renderCompanyMgmtList(list) {
+  const listBody = document.getElementById('company-mgmt-list-body');
+  if (!listBody) return;
+
+  if (list.length === 0) {
+    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">Kayıtlı firma bulunamadı.</td></tr>`;
+    return;
+  }
+
+  const isSuperadmin = currentAdminUser === 'superadmin';
+
+  listBody.innerHTML = list.map(c => {
+    const deleteBtn = isSuperadmin 
+      ? `<button onclick="deleteCompany(${c.id})" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer;">Sil</button>`
+      : `<button disabled class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 700; border-radius: var(--radius-sm); cursor: not-allowed; opacity: 0.6;">Sil</button>`;
+    
+    return `
+      <tr style="border-bottom: 1px solid var(--color-border-light);">
+        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${c.name}</td>
+        <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">@${c.created_by || 'sistem'}</td>
+        <td style="padding: 0.5rem 0.75rem; text-align: right;">${deleteBtn}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// 5. Firma Listesinde Arama Yapma
+function filterCompanyMgmtList() {
+  const searchInput = document.getElementById('company-mgmt-search');
+  if (!searchInput) return;
+
+  const query = searchInput.value.trim().toLocaleUpperCase('tr-TR');
+  if (!query) {
+    renderCompanyMgmtList(companyMgmtLoadedList);
+    return;
+  }
+
+  const filtered = companyMgmtLoadedList.filter(c => 
+    c.name.toLocaleUpperCase('tr-TR').includes(query)
+  );
+  renderCompanyMgmtList(filtered);
+}
+
+// 6. Tekli Firma Kaydetme
+async function submitSingleCompany() {
+  const otoparkSelect = document.getElementById('company-mgmt-otopark');
+  const input = document.getElementById('company-mgmt-single-name');
+  if (!otoparkSelect || !input) return;
+
+  const otoparkName = otoparkSelect.value;
+  const companyName = input.value.trim();
+
+  if (!companyName) {
+    alert("Lütfen firma adını girin.");
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/companies', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        otopark_name: otoparkName,
+        companies: [companyName]
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Firma eklenemedi: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    if (data.count === 0) {
+      alert("Bu firma adı bu otopark için zaten kayıtlı.");
+    } else {
+      showToast('Firma Başarıyla Eklendi', `"${companyName}" başarıyla kaydedildi.`, 'mail');
+    }
+
+    input.value = '';
+    loadOtoparkCompanies();
+    switchCompanyMgmtSubTab('company-list');
+  } catch (err) {
+    console.error("Error submitting single company:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
+// 7. Toplu Firma Kaydetme
+async function submitBulkCompanies() {
+  const otoparkSelect = document.getElementById('company-mgmt-otopark');
+  const textarea = document.getElementById('company-mgmt-bulk-text');
+  if (!otoparkSelect || !textarea) return;
+
+  const otoparkName = otoparkSelect.value;
+  const text = textarea.value;
+
+  const companiesList = text.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+
+  if (companiesList.length === 0) {
+    alert("Lütfen en az bir firma adı girin.");
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/companies', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        otopark_name: otoparkName,
+        companies: companiesList
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Toplu yükleme başarısız: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    alert(`Toplu yükleme tamamlandı! ${data.count} yeni firma başarıyla kaydedildi.`);
+    textarea.value = '';
+    loadOtoparkCompanies();
+    switchCompanyMgmtSubTab('company-list');
+  } catch (err) {
+    console.error("Error submitting bulk companies:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
+// 8. CSV Okuma & Metin Kutusuna Yazma
+function handleCompanyCsvUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csvContent = e.target.result;
+    const lines = csvContent.split(/\r?\n/);
+    const parsedCompanies = [];
+
+    lines.forEach(line => {
+      const cleanLine = line.replace(/"/g, '').trim();
+      const firstColumn = cleanLine.split(',')[0].trim();
+      if (firstColumn) {
+        parsedCompanies.push(firstColumn);
+      }
+    });
+
+    if (parsedCompanies.length > 0) {
+      const textarea = document.getElementById('company-mgmt-bulk-text');
+      if (textarea) {
+        textarea.value = parsedCompanies.join('\n');
+        alert(`${parsedCompanies.length} firma CSV dosyasından okundu. Lütfen inceleyin ve "Toplu Yüklemeyi Başlat" butonuna tıklayın.`);
+      }
+    } else {
+      alert("CSV dosyasından firma ismi okunamadı.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 9. Firma Silme (Superadmin Only)
+async function deleteCompany(id) {
+  if (currentAdminUser !== 'superadmin') {
+    alert("Silme yetkisi sadece Süper Yöneticiye aittir.");
+    return;
+  }
+
+  if (!confirm("Bu firmayı listeden silmek istediğinize emin misiniz? (Önceden yapılmış olan başvurulardaki firma bilgileri etkilenmez)")) {
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/companies?id=${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Firma silinemedi: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    showToast('Firma Silindi', 'Firma listeden başarıyla temizlendi.', 'trash');
+    loadOtoparkCompanies();
+  } catch (err) {
+    console.error("Error deleting company:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
+// 10. Başvuru Formunda Otopark Firmalarını Çekme
+async function loadPublicCompaniesForOtopark(otoparkName) {
+  selectedOtoparkCompaniesList = [];
+  const suggestionsBox = document.getElementById('company-autocomplete-suggestions');
+  if (suggestionsBox) {
+    suggestionsBox.innerHTML = '';
+    suggestionsBox.style.display = 'none';
+  }
+
+  if (!otoparkName) return;
+
+  try {
+    const res = await fetch(`/api/companies?otopark=${encodeURIComponent(otoparkName)}`);
+    if (res.ok) {
+      selectedOtoparkCompaniesList = await res.json();
+      console.log(`Loaded ${selectedOtoparkCompaniesList.length} companies for otopark ${otoparkName}`);
+    }
+  } catch (err) {
+    console.error("Error loading companies for autocomplete:", err);
+  }
+}
+
+// 11. Başvuru Formu Otomatik Öneri Panelini Gösterme
+function showCompanySuggestions(query) {
+  const suggestionsBox = document.getElementById('company-autocomplete-suggestions');
+  if (!suggestionsBox) return;
+
+  if (selectedOtoparkCompaniesList.length === 0) {
+    suggestionsBox.innerHTML = '';
+    suggestionsBox.style.display = 'none';
+    return;
+  }
+
+  const cleanQuery = query.trim().toLocaleUpperCase('tr-TR');
+  const filtered = selectedOtoparkCompaniesList.filter(c => 
+    c.name.toLocaleUpperCase('tr-TR').includes(cleanQuery)
+  );
+
+  if (filtered.length === 0) {
+    suggestionsBox.innerHTML = `
+      <div class="autocomplete-suggestion-item no-results">
+        Sonuç bulunamadı (elle girmeye devam edebilirsiniz)
+      </div>
+    `;
+    suggestionsBox.style.display = 'block';
+    return;
+  }
+
+  suggestionsBox.innerHTML = filtered.map(c => `
+    <div class="autocomplete-suggestion-item" data-value="${c.name.replace(/"/g, '&quot;')}">
+      🏢 ${c.name}
+    </div>
+  `).join('');
+
+  suggestionsBox.style.display = 'block';
+
+  // Bind click handlers to options
+  suggestionsBox.querySelectorAll('.autocomplete-suggestion-item:not(.no-results)').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const selectedValue = item.getAttribute('data-value');
+      const companyInput = document.getElementById('company-name');
+      if (companyInput) {
+        companyInput.value = selectedValue;
+        companyInput.classList.remove('is-invalid');
+        const errEl = document.getElementById('error-company-name');
+        if (errEl) errEl.style.display = 'none';
+      }
+      suggestionsBox.style.display = 'none';
+    });
+  });
+}
+
+// Bind admin panel functions to window
+window.openCompanyManagementModal = openCompanyManagementModal;
+window.switchCompanyMgmtSubTab = switchCompanyMgmtSubTab;
+window.loadOtoparkCompanies = loadOtoparkCompanies;
+window.submitSingleCompany = submitSingleCompany;
+window.submitBulkCompanies = submitBulkCompanies;
+window.handleCompanyCsvUpload = handleCompanyCsvUpload;
+window.deleteCompany = deleteCompany;
+window.filterCompanyMgmtList = filterCompanyMgmtList;
+window.loadPublicCompaniesForOtopark = loadPublicCompaniesForOtopark;
+window.showCompanySuggestions = showCompanySuggestions;
 
 
 
