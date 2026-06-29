@@ -12058,7 +12058,7 @@ function switchCompanyMgmtSubTab(tabName) {
   if (activePanel) activePanel.style.display = 'block';
 
   // Toggle tab buttons styles
-  const tabs = ['bulk-add', 'single-add', 'company-list'];
+  const tabs = ['bulk-add', 'single-add', 'company-list', 'merge-companies'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-btn-${t}`);
     if (btn) {
@@ -12079,6 +12079,10 @@ function switchCompanyMgmtSubTab(tabName) {
   if (singleInput) singleInput.value = '';
   const searchInput = document.getElementById('company-mgmt-search');
   if (searchInput) searchInput.value = '';
+
+  if (tabName === 'merge-companies') {
+    populateMergeCompaniesDropdowns();
+  }
 
   filterCompanyMgmtList();
 }
@@ -12454,6 +12458,105 @@ function toggleCompanyRowDetail(idx) {
   }
 }
 
+// 12. Birleştirme Dropdown'larını Doldurma
+function populateMergeCompaniesDropdowns() {
+  const otoparkSelect = document.getElementById('company-mgmt-otopark');
+  const sourceSelect = document.getElementById('merge-source-company');
+  const targetSelect = document.getElementById('merge-target-company');
+
+  if (!otoparkSelect || !sourceSelect || !targetSelect) return;
+
+  const otoparkName = otoparkSelect.value;
+  if (!otoparkName) {
+    sourceSelect.innerHTML = '<option value="">Önce otopark seçin</option>';
+    targetSelect.innerHTML = '<option value="">Önce otopark seçin</option>';
+    return;
+  }
+
+  // Get distinct company names in applications for this otopark
+  const appCompanyNames = typeof allApplications !== 'undefined'
+    ? [...new Set(allApplications.filter(a => a.parking_location === otoparkName && a.company_name).map(a => a.company_name.trim()))]
+    : [];
+
+  const officialCompanyNames = companyMgmtLoadedList.map(c => c.name.trim());
+
+  // Combine and sort
+  const allCombinedCompanies = [...new Set([...appCompanyNames, ...officialCompanyNames])].sort((a, b) => a.localeCompare(b, 'tr'));
+
+  if (allCombinedCompanies.length === 0) {
+    sourceSelect.innerHTML = '<option value="">Kayıtlı firma bulunamadı</option>';
+    targetSelect.innerHTML = '<option value="">Kayıtlı firma bulunamadı</option>';
+    return;
+  }
+
+  const optionsHtml = allCombinedCompanies.map(name => `<option value="${name.replace(/"/g, '&quot;')}">${name}</option>`).join('');
+
+  sourceSelect.innerHTML = `<option value="">-- Taşınacak (Kaynak) Firmayı Seçin --</option>` + optionsHtml;
+  targetSelect.innerHTML = `<option value="">-- Hedef Resmi Firmayı Seçin --</option>` + optionsHtml;
+}
+
+// 13. Firmaları Birleştirme Talebini Gönderme
+async function submitMergeCompanies() {
+  const otoparkSelect = document.getElementById('company-mgmt-otopark');
+  const sourceSelect = document.getElementById('merge-source-company');
+  const targetSelect = document.getElementById('merge-target-company');
+
+  if (!otoparkSelect || !sourceSelect || !targetSelect) return;
+
+  const otoparkName = otoparkSelect.value;
+  const sourceCompany = sourceSelect.value;
+  const targetCompany = targetSelect.value;
+
+  if (!sourceCompany || !targetCompany) {
+    alert("Lütfen kaynak ve hedef firmaları seçin.");
+    return;
+  }
+
+  if (sourceCompany === targetCompany) {
+    alert("Kaynak ve hedef firma aynı olamaz.");
+    return;
+  }
+
+  const msg = `⚠️ DİKKAT!\n\n"${otoparkName}" otoparkında "${sourceCompany}" adına kayıtlı TÜM araçlar/plakalar toplu bir şekilde "${targetCompany}" firmasına aktarılacaktır.\n\nBu işlemi onaylıyor musunuz?`;
+  if (!confirm(msg)) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/merge_companies', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        otopark_name: otoparkName,
+        source_company: sourceCompany,
+        target_company: targetCompany
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Birleştirme başarısız: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    alert(`Tebrikler! ${data.count} araç başarıyla "${targetCompany}" firmasına aktarıldı. Eski firma listeden temizlendi.`);
+    
+    // Refresh application list from API to update tables & charts
+    if (typeof loadApplications === 'function') {
+      loadApplications();
+    }
+
+    closeModal('modal-company-management');
+  } catch (err) {
+    console.error("Error merging companies:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
 // Bind admin panel functions to window
 window.openCompanyManagementModal = openCompanyManagementModal;
 window.switchCompanyMgmtSubTab = switchCompanyMgmtSubTab;
@@ -12467,6 +12570,8 @@ window.loadPublicCompaniesForOtopark = loadPublicCompaniesForOtopark;
 window.showCompanySuggestions = showCompanySuggestions;
 window.switchCompanyView = switchCompanyView;
 window.toggleCompanyRowDetail = toggleCompanyRowDetail;
+window.populateMergeCompaniesDropdowns = populateMergeCompaniesDropdowns;
+window.submitMergeCompanies = submitMergeCompanies;
 
 
 
