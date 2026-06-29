@@ -186,7 +186,7 @@ export async function onRequest(context) {
       }
 
       // Insert/upsert into companies (ignore duplicates on conflict)
-      const res = await fetch(`${supabaseUrl}/rest/v1/companies`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/companies?on_conflict=otopark_name,name`, {
         method: "POST",
         headers: {
           "apikey": supabaseAnonKey,
