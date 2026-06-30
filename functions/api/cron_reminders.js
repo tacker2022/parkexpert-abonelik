@@ -520,13 +520,14 @@ export async function onRequest(context) {
                 const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
                 
                 if (!allTimeStatsMap[dayStr]) {
-                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime(), apps: [] };
+                  const midnightDate = new Date(year, localMonth, localDay).getTime();
+                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: midnightDate, apps: [] };
                 }
                 allTimeStatsMap[dayStr].count++;
                 allTimeStatsMap[dayStr].apps.push(app);
               });
 
-              const allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => a.rawDate - b.rawDate);
+              const allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => b.rawDate - a.rawDate);
 
               let allTimeStatsHtml = "";
               if (allTimeStats.length > 0) {

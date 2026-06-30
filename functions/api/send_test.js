@@ -285,21 +285,22 @@ export async function onRequest(context) {
           const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
           
           if (!allTimeStatsMap[dayStr]) {
-            allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime(), apps: [] };
+            const midnightDate = new Date(year, localMonth, localDay).getTime();
+            allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: midnightDate, apps: [] };
           }
           allTimeStatsMap[dayStr].count++;
           allTimeStatsMap[dayStr].apps.push(app);
         });
 
-        allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => a.rawDate - b.rawDate);
+        allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => b.rawDate - a.rawDate);
       } else {
-        // Mock All Time stats
+        // Mock All Time stats (sorted newest first)
         allTimeStats = [
-          { label: "12 Haz 2026 Cmt", count: 4 },
-          { label: "15 Haz 2026 Sal", count: 7 },
-          { label: "18 Haz 2026 Cmt", count: 2 },
+          { label: "22 Haz 2026 Çar", count: 5 },
           { label: "20 Haz 2026 Pzt", count: 9 },
-          { label: "22 Haz 2026 Çar", count: 5 }
+          { label: "18 Haz 2026 Cmt", count: 2 },
+          { label: "15 Haz 2026 Sal", count: 7 },
+          { label: "12 Haz 2026 Cmt", count: 4 }
         ];
       }
 
