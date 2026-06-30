@@ -431,21 +431,30 @@ export async function onRequest(context) {
                 }
               }
 
-              // Calculate daily trend counts for the last 7 days
+              // Calculate daily trend counts for the last 7 days (Turkey timezone offset calculation)
               const trendStats = [];
+              const turkishMonths = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
               const daysOfWeek = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+              const trOffset = 3 * 60 * 60 * 1000;
               let maxCount = 0;
+
               for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dayStr = d.toLocaleDateString("tr-TR", tz);
-                const dayLabel = `${d.getDate()} ${d.toLocaleDateString("tr-TR", { month: "short", timeZone: "Europe/Istanbul" })} ${daysOfWeek[d.getDay()]}`;
-                
+                const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+                const trDate = new Date(d.getTime() + trOffset);
+                const localDay = trDate.getUTCDate();
+                const localMonth = trDate.getUTCMonth();
+                const localDayOfWeek = trDate.getUTCDay();
+
+                const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${daysOfWeek[localDayOfWeek]}`;
+                const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${trDate.getUTCFullYear()}`;
+
                 const count = parkApps.filter(app => {
                   if (!app.date_applied) return false;
-                  return new Date(app.date_applied).toLocaleDateString("tr-TR", tz) === dayStr;
+                  const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
+                  const appDayStr = `${String(appTrDate.getUTCDate()).padStart(2, '0')}.${String(appTrDate.getUTCMonth() + 1).padStart(2, '0')}.${appTrDate.getUTCFullYear()}`;
+                  return appDayStr === dayStr;
                 }).length;
-                
+
                 if (count > maxCount) maxCount = count;
                 trendStats.push({ label: dayLabel, count });
               }
@@ -466,18 +475,25 @@ export async function onRequest(context) {
                 `;
               }
 
-              // Trend bar chart html
+              // Trend bar chart html (using standard table structure for 100% email client compatibility)
               let trendHtml = "";
               trendStats.forEach(stat => {
                 const percent = maxCount > 0 ? Math.round((stat.count / maxCount) * 100) : 0;
                 trendHtml += `
-                  <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem;">
-                    <div style="width: 100px; color: #475569; font-weight: 600;">${stat.label}</div>
-                    <div style="flex-grow: 1; background: #e2e8f0; border-radius: 4px; height: 12px; margin: 0 12px; overflow: hidden; position: relative;">
-                      <div style="background: ${stat.count > 0 ? '#0f3ba2' : '#cbd5e1'}; height: 100%; border-radius: 4px; width: ${stat.count > 0 ? Math.max(8, percent) : 0}%;"></div>
-                    </div>
-                    <div style="width: 40px; text-align: right; font-weight: 700; color: #1e293b;">${stat.count}</div>
-                  </div>
+                  <tr>
+                    <td style="width: 120px; color: #475569; font-weight: 600; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.label}</td>
+                    <td style="padding: 8px 0; vertical-align: middle;">
+                      <div style="background-color: #e2e8f0; border-radius: 6px; height: 12px; min-width: 120px; max-width: 320px; overflow: hidden; position: relative; display: block;">
+                        <table style="width: 100%; height: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+                          <tr>
+                            <td style="background-color: ${stat.count > 0 ? '#0f3ba2' : '#cbd5e1'}; width: ${stat.count > 0 ? Math.max(8, percent) : 0}%; height: 12px; border-radius: 6px; border: none; padding: 0;"></td>
+                            <td style="width: ${100 - (stat.count > 0 ? Math.max(8, percent) : 0)}%; height: 12px; border: none; padding: 0;"></td>
+                          </tr>
+                        </table>
+                      </div>
+                    </td>
+                    <td style="width: 80px; text-align: right; font-weight: 700; color: #1e293b; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.count} kayıt</td>
+                  </tr>
                 `;
               });
 
@@ -518,13 +534,15 @@ export async function onRequest(context) {
                 </div>
 
                 <!-- Trend Chart Section -->
-                <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                  <h4 style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.35rem;">
+                <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); font-family: sans-serif;">
+                  <h4 style="margin: 0 0 1.25rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
                     📈 Son 7 Günlük Başvuru Akışı
                   </h4>
-                  <div style="display: flex; flex-direction: column;">
-                    ${trendHtml}
-                  </div>
+                  <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 0.85rem;">
+                    <tbody>
+                      ${trendHtml}
+                    </tbody>
+                  </table>
                 </div>
 
                 <!-- Recent Applications List Section -->
