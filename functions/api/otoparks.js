@@ -123,8 +123,28 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: `Supabase error: ${errText}` }), { status: res.status, headers });
       }
 
-      const data = await res.json();
-      return new Response(JSON.stringify(data), { status: 200, headers });
+      const otoparks = await res.json();
+
+      // Fetch companies to calculate counts per otopark
+      const compRes = await fetch(`${supabaseUrl}/rest/v1/companies?select=otopark_name,rep_name`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+      const companies = compRes.ok ? await compRes.json() : [];
+
+      const enrichedData = otoparks.map(park => {
+        const otoparkCompanies = companies.filter(c => c.otopark_name === park.name);
+        const representativeCount = otoparkCompanies.filter(c => c.rep_name && c.rep_name.trim() !== '').length;
+        return {
+          ...park,
+          company_count: otoparkCompanies.length,
+          representative_count: representativeCount
+        };
+      });
+
+      return new Response(JSON.stringify(enrichedData), { status: 200, headers });
     }
 
     // Authenticate for POST and DELETE (Super Admin Only)

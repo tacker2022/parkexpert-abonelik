@@ -5286,8 +5286,9 @@ function renderOtoparksTable() {
     )];
 
     let authoritiesHtml = '';
+    const hasCompanies = (park.company_count !== undefined ? park.company_count > 0 : otoparkCompanies.length > 0);
     
-    if (managementAdmins.length > 0 || operatorAdmins.length > 0 || companyAdmins.length > 0 || otoparkCompanies.length > 0) {
+    if (managementAdmins.length > 0 || operatorAdmins.length > 0 || companyAdmins.length > 0 || hasCompanies) {
       let managementSectionHtml = '';
       if (managementAdmins.length > 0) {
         managementSectionHtml = `
@@ -5367,14 +5368,14 @@ function renderOtoparksTable() {
       }
 
       let companySectionHtml = '';
-      if (otoparkCompanies.length > 0 || companyAdmins.length > 0) {
+      if (hasCompanies || companyAdmins.length > 0) {
         companySectionHtml = `
           <div style="margin-top: 0.65rem; border-top: 1px dashed rgba(15, 59, 162, 0.1); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-primary-dark); display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
               <i data-lucide="building" style="width: 11px; height: 11px; color: var(--color-primary);"></i> Firma Yetkilileri
             </span>
             <button type="button" onclick="openOtoparkCompaniesModal('${park.name.replace(/'/g, "\\'")}')" style="background: rgba(15, 59, 162, 0.06); border: 1px solid rgba(15, 59, 162, 0.12); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; color: var(--color-primary-dark); font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; transition: all 0.15s ease;">
-              <span>${otoparkCompanies.length} Firma / ${companyAdmins.length} Yetkili</span>
+              <span>${park.company_count !== undefined ? park.company_count : otoparkCompanies.length} Firma / ${(park.representative_count !== undefined ? park.representative_count : 0) + companyAdmins.length} Yetkili</span>
               <i data-lucide="search" style="width: 10px; height: 10px;"></i>
             </button>
           </div>
