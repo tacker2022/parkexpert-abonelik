@@ -9272,6 +9272,22 @@ function parsePrice(priceStr) {
   return isNaN(val) ? 0 : val;
 }
 
+function getApplicationPrice(app, park) {
+  let price = 0;
+  if (app.subscription_type && app.subscription_type.includes('(')) {
+    const match = app.subscription_type.match(/\(([^)]+)\)/);
+    if (match) {
+      price = parsePrice(match[1]);
+    }
+  }
+  if (price === 0) {
+    const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi';
+    const priceStr = (isKurumsal && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
+    price = parsePrice(priceStr);
+  }
+  return price;
+}
+
 function formatCurrencyTR(val) {
   return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(val) + ' TL';
 }
@@ -9300,8 +9316,7 @@ function updateAnalyticsCharts(apps) {
     if (app.status === 'Onaylandı') {
       const park = otoparks.find(p => p.name === app.parking_location) || {};
       const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi';
-      const priceStr = (isKurumsal && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
-      const price = parsePrice(priceStr);
+      const price = getApplicationPrice(app, park);
 
       totalRevenue += price;
       totalApprovedCount++;
@@ -9387,9 +9402,7 @@ function updateAnalyticsCharts(apps) {
         const name = app.parking_location;
 
         const park = otoparks.find(p => p.name === name) || {};
-        const isKurumsal = app.subscription_type && app.subscription_type.includes('Kurumsal') && park.id !== 'birlik-sanayi';
-        const priceStr = (isKurumsal && !park.applyEmployeePriceToCorporate) ? (park.priceExternal || '2400 TL') : (park.priceEmployee || '1200 TL');
-        const price = parsePrice(priceStr);
+        const price = getApplicationPrice(app, park);
 
         if (otoparkRevenues[name] && otoparkRevenues[name][mKey] !== undefined) {
           otoparkRevenues[name][mKey] += price;
