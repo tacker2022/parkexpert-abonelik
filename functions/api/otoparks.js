@@ -167,32 +167,55 @@ export async function onRequest(context) {
         tariffs
       } = payload;
 
-      if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !supportPhone) {
-        return new Response(JSON.stringify({ error: "Lütfen zorunlu alanları doldurun." }), { status: 400, headers });
+      if (!id) {
+        if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !supportPhone) {
+          return new Response(JSON.stringify({ error: "Lütfen zorunlu alanları doldurun." }), { status: 400, headers });
+        }
       }
 
-      const dbPayload = {
-        name,
-        category,
-        company_title: companyTitle,
-        tax_office: taxOffice,
-        tax_number: taxNumber,
-        bank_name: bankName,
-        iban,
-        price_employee: priceEmployee || null,
-        price_external: priceExternal || null,
-        support_phone: supportPhone,
-        is_active: isActive !== false,
-        notification_emails: notificationEmails || null,
-        summary_emails: summaryEmails || null,
-        requires_management_approval: requiresManagementApproval === true,
-        apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true,
-        allow_individual: allowIndividual !== false,
-        tariffs: tariffs || []
-      };
-
-      if (templates !== undefined) {
-        dbPayload.templates = templates;
+      let dbPayload = {};
+      if (id) {
+        // UPDATE: Partial update semantics
+        if (name !== undefined) dbPayload.name = name;
+        if (category !== undefined) dbPayload.category = category;
+        if (companyTitle !== undefined) dbPayload.company_title = companyTitle;
+        if (taxOffice !== undefined) dbPayload.tax_office = taxOffice;
+        if (taxNumber !== undefined) dbPayload.tax_number = taxNumber;
+        if (bankName !== undefined) dbPayload.bank_name = bankName;
+        if (iban !== undefined) dbPayload.iban = iban;
+        if (priceEmployee !== undefined) dbPayload.price_employee = priceEmployee || null;
+        if (priceExternal !== undefined) dbPayload.price_external = priceExternal || null;
+        if (supportPhone !== undefined) dbPayload.support_phone = supportPhone;
+        if (isActive !== undefined) dbPayload.is_active = isActive !== false;
+        if (notificationEmails !== undefined) dbPayload.notification_emails = notificationEmails || null;
+        if (summaryEmails !== undefined) dbPayload.summary_emails = summaryEmails || null;
+        if (requiresManagementApproval !== undefined) dbPayload.requires_management_approval = requiresManagementApproval === true;
+        if (applyEmployeePriceToCorporate !== undefined) dbPayload.apply_employee_price_to_corporate = applyEmployeePriceToCorporate === true;
+        if (allowIndividual !== undefined) dbPayload.allow_individual = allowIndividual !== false;
+        if (tariffs !== undefined) dbPayload.tariffs = tariffs || [];
+        if (templates !== undefined) dbPayload.templates = templates;
+      } else {
+        // CREATE: Enforce default values
+        dbPayload = {
+          name,
+          category,
+          company_title: companyTitle,
+          tax_office: taxOffice,
+          tax_number: taxNumber,
+          bank_name: bankName,
+          iban,
+          price_employee: priceEmployee || null,
+          price_external: priceExternal || null,
+          support_phone: supportPhone,
+          is_active: isActive !== false,
+          notification_emails: notificationEmails || null,
+          summary_emails: summaryEmails || null,
+          requires_management_approval: requiresManagementApproval === true,
+          apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true,
+          allow_individual: allowIndividual !== false,
+          tariffs: tariffs || [],
+          templates: templates || {}
+        };
       }
 
       if (id) {
