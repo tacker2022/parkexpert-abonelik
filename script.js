@@ -3193,7 +3193,6 @@ async function initAdminController() {
 
   // Attach Turkish auto-uppercase listeners for otopark edit modal fields
   const uppercaseOtoparkIds = [
-    'edit-otopark-name',
     'edit-otopark-title',
     'edit-otopark-tax-office',
     'edit-otopark-bank',
