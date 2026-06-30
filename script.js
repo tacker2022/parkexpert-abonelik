@@ -6628,7 +6628,18 @@ function switchAdminTab(tabName) {
   } else if (tabName === 'companies') {
     tabComp.classList.add('active');
     panelComp.style.display = 'block';
-    renderCompaniesTable(filteredApplications);
+    
+    // Always fetch the latest list of registered companies when opening the tab
+    fetch('/api/companies?all=true')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        window.allRegisteredCompanies = data;
+        renderCompaniesTable(filteredApplications);
+      })
+      .catch(err => {
+        console.error("Error loading all companies:", err);
+        renderCompaniesTable(filteredApplications);
+      });
   } else if (tabName === 'otoparks') {
     if (tabOto) tabOto.classList.add('active');
     if (panelOto) panelOto.style.display = 'block';
@@ -6679,13 +6690,45 @@ function renderCompaniesTable(apps) {
   container.innerHTML = '';
   if (tableBody) tableBody.innerHTML = '';
 
+  const locationFilter = document.getElementById('filter-location')?.value || '';
+  const queryFilter = document.getElementById('search-query')?.value?.toLowerCase()?.trim() || '';
+  const companyFilter = document.getElementById('filter-company')?.value || '';
+
   // 1. Group applications by company
   const groups = {};
+
+  // Initialize registered companies that match filters
+  if (window.allRegisteredCompanies && Array.isArray(window.allRegisteredCompanies)) {
+    window.allRegisteredCompanies.forEach(c => {
+      // Check location filter
+      if (locationFilter && c.otopark_name !== locationFilter) return;
+      // Check company filter
+      if (companyFilter && c.name.trim() !== companyFilter && companyFilter !== 'SERBEST ÇALIŞAN') return;
+      // Check query filter
+      if (queryFilter && !c.name.toLowerCase().includes(queryFilter)) return;
+
+      const companyKey = c.name.trim().toUpperCase();
+      if (companyKey) {
+        groups[companyKey] = {
+          name: c.name.trim(),
+          vehicles: 0,
+          records: [],
+          applications: []
+        };
+      }
+    });
+  }
+
   apps.forEach(app => {
     const rawCompany = app.company_name ? app.company_name.trim() : '';
     const companyKey = rawCompany ? rawCompany.toUpperCase() : 'SERBEST ÇALIŞAN';
     
     if (!groups[companyKey]) {
+      // If filtering/searching is active, skip unregistered groups that don't match the query
+      if (queryFilter && !companyKey.toLowerCase().includes(queryFilter) && !app.plate.toLowerCase().includes(queryFilter) && !app.full_name.toLowerCase().includes(queryFilter)) {
+        return;
+      }
+      
       groups[companyKey] = {
         name: rawCompany || 'SERBEST ÇALIŞAN',
         vehicles: 0,

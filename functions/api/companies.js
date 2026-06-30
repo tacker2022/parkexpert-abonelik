@@ -122,12 +122,16 @@ export async function onRequest(context) {
     if (method === "GET") {
       const url = new URL(context.request.url);
       const otopark = url.searchParams.get("otopark");
+      const fetchAll = url.searchParams.get("all") === "true";
 
-      if (!otopark) {
-        return new Response(JSON.stringify({ error: "otopark parametresi zorunludur." }), { status: 400, headers });
+      let queryUrl = `${supabaseUrl}/rest/v1/companies?select=*&order=name.asc`;
+      if (otopark) {
+        queryUrl = `${supabaseUrl}/rest/v1/companies?otopark_name=eq.${encodeURIComponent(otopark)}&select=*&order=name.asc`;
+      } else if (!fetchAll) {
+        return new Response(JSON.stringify({ error: "otopark veya all parametresi zorunludur." }), { status: 400, headers });
       }
 
-      const res = await fetch(`${supabaseUrl}/rest/v1/companies?otopark_name=eq.${encodeURIComponent(otopark)}&select=*&order=name.asc`, {
+      const res = await fetch(queryUrl, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
