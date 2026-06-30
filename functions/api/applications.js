@@ -132,7 +132,9 @@ export async function onRequest(context) {
     if (method === "GET") {
       let queryUrl = `${supabaseUrl}/rest/v1/applications?select=*&order=created_at.desc`;
 
-      if (user.role !== "superadmin") {
+      if (user.role === "company") {
+        queryUrl = `${supabaseUrl}/rest/v1/applications?parking_location=eq.${encodeURIComponent(user.otopark_name)}&company_name=eq.${encodeURIComponent(user.company_name)}&select=*&order=created_at.desc`;
+      } else if (user.role !== "superadmin") {
         const allowedOtoparks = user.otoparks || [];
         if (allowedOtoparks.length === 0) {
           return new Response(JSON.stringify([]), { status: 200, headers });
@@ -189,7 +191,14 @@ export async function onRequest(context) {
       const appLocation = oldApp.parking_location;
 
       // Access verification
-      if (user.role !== "superadmin" && !user.otoparks.includes(appLocation)) {
+      if (user.role === "company") {
+        if (oldApp.company_name !== user.company_name || oldApp.parking_location !== user.otopark_name) {
+          return new Response(JSON.stringify({ error: "Bu başvuruyu güncelleme yetkiniz yok!" }), { status: 403, headers });
+        }
+        if (status !== "İptal Edildi") {
+          return new Response(JSON.stringify({ error: "Firma yetkilileri sadece kendi başvurularını iptal edebilir!" }), { status: 403, headers });
+        }
+      } else if (user.role !== "superadmin" && !user.otoparks.includes(appLocation)) {
         return new Response(JSON.stringify({ error: "Bu otoparkın verisini güncelleme yetkiniz yok!" }), { status: 403, headers });
       }
 

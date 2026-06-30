@@ -12,6 +12,55 @@ function maskName(name) {
   }).filter(Boolean).join(" ");
 }
 
+// Helper for safe base64 decoding (supports Unicode)
+function base64Decode(base64) {
+  const binString = atob(base64);
+  const bytes = new Uint8Array(binString.length);
+  for (let i = 0; i < binString.length; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+// Helper to verify JWT token using HMAC-SHA256
+async function verifyToken(token, secret, clientIp, supabaseUrl, supabaseAnonKey) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 2) return null;
+    const payloadStr = base64Decode(parts[0]);
+    const signatureHex = parts[1];
+
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(payloadStr)
+    );
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const reSignatureHex = signatureArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+    if (signatureHex === reSignatureHex) {
+      const payload = JSON.parse(payloadStr);
+      if (payload.exp && payload.exp < Date.now()) {
+        return null; // Expired
+      }
+      return payload;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 export async function onRequest(context) {
   const origin = context.request.headers.get("Origin") || "";
   const allowOrigin = (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:") || origin === "https://parkexpertabonelik.net")
@@ -53,11 +102,13 @@ export async function onRequest(context) {
     const email = formData.get("email");
     const phone = formData.get("phone");
     const plateNumber = formData.get("plate_number");
-    const parkingLocation = formData.get("parking_location");
-    const companyName = formData.get("company_name") || null;
+    
+    let parkingLocation = formData.get("parking_location");
+    let companyName = formData.get("company_name") || null;
+    let subscriptionType = formData.get("subscription_type");
+
     const taxOffice = formData.get("tax_office") || null;
     const taxNumber = formData.get("tax_number") || null;
-    const subscriptionType = formData.get("subscription_type");
     
     // Additional fields
     const tcNo = formData.get("tc_no") || null;
@@ -67,32 +118,71 @@ export async function onRequest(context) {
     const notes = formData.get("notes") || null;
     const dateApplied = formData.get("date_applied") || new Date().toISOString();
 
+    // Authenticate if JWT token exists in header
+    let user = null;
+    const authHeader = context.request.headers.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const jwtSecret = context.env.JWT_SECRET;
+      const clientIp = context.request.headers.get("CF-Connecting-IP") || "";
+      user = await verifyToken(token, jwtSecret, clientIp, supabaseUrl, supabaseAnonKey);
+    }
+
+    if (user && user.role === "company") {
+      // Force token context values
+      parkingLocation = user.otopark_name;
+      companyName = user.company_name;
+
+      const isFreeQuota = formData.get("is_free_quota") === "true";
+      if (isFreeQuota) {
+        // Query active approved registrations under this company for quota check
+        const countUrl = `${supabaseUrl}/rest/v1/applications?parking_location=eq.${encodeURIComponent(user.otopark_name)}&company_name=eq.${encodeURIComponent(user.company_name)}&subscription_type=eq.${encodeURIComponent("Kurumsal (Ücretsiz)")}&status=eq.Onaylandı&select=id`;
+        const countRes = await fetch(countUrl, {
+          headers: {
+            "apikey": supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`
+          }
+        });
+        if (countRes.ok) {
+          const rows = await countRes.json();
+          if (rows.length >= user.quota_limit) {
+            return new Response(JSON.stringify({ error: `Seçilen ücretsiz hak kontenjanınız (Limit: ${user.quota_limit}) dolmuştur. Lütfen bu aracı ücretli abonelik olarak ekleyin.` }), { status: 400, headers });
+          }
+        }
+        subscriptionType = "Kurumsal (Ücretsiz)";
+      } else {
+        subscriptionType = "Kurumsal (Ücretli)";
+      }
+    }
+
     if (!appId || !fullName || !email || !phone || !plateNumber || !parkingLocation || !subscriptionType) {
       return new Response(JSON.stringify({ error: "Missing required text fields" }), { status: 400, headers });
     }
 
-    // Verify Cloudflare Turnstile token
-    const turnstileResponse = formData.get("cf-turnstile-response");
-    if (!turnstileResponse) {
-      return new Response(JSON.stringify({ error: "Güvenlik doğrulama kodu bulunamadı." }), { status: 400, headers });
-    }
+    // Only verify Turnstile for public anonymous submissions (not company representative logged-in portal)
+    if (!user || user.role !== "company") {
+      const turnstileResponse = formData.get("cf-turnstile-response");
+      if (!turnstileResponse) {
+        return new Response(JSON.stringify({ error: "Güvenlik doğrulama kodu bulunamadı." }), { status: 400, headers });
+      }
 
-    const turnstileSecret = context.env.TURNSTILE_SECRET || "1x00000000000000000000000000000000";
-    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        secret: turnstileSecret,
-        response: turnstileResponse,
-        remoteip: context.request.headers.get("CF-Connecting-IP") || ""
-      })
-    });
+      const turnstileSecret = context.env.TURNSTILE_SECRET || "1x00000000000000000000000000000000";
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          secret: turnstileSecret,
+          response: turnstileResponse,
+          remoteip: context.request.headers.get("CF-Connecting-IP") || ""
+        })
+      });
 
-    const verifyData = await verifyRes.json();
-    if (!verifyData.success) {
-      return new Response(JSON.stringify({ error: "Güvenlik doğrulaması (Turnstile) başarısız oldu! Lütfen sayfayı yenileyip tekrar deneyin." }), { status: 400, headers });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        return new Response(JSON.stringify({ error: "Güvenlik doğrulaması (Turnstile) başarısız oldu! Lütfen sayfayı yenileyip tekrar deneyin." }), { status: 400, headers });
+      }
     }
 
     // Helper function to upload file to R2
@@ -123,14 +213,21 @@ export async function onRequest(context) {
     const sirkulerUrl = await uploadToR2(sirkulerFile, "sirkuler");
     const calismaUrl = await uploadToR2(calismaFile, "calisma");
 
-    if (!ruhsatUrl || !kimlikUrl || !dekontUrl) {
-      return new Response(JSON.stringify({ error: "Missing required files (ruhsat, kimlik or dekont)" }), { status: 400, headers });
+    // For corporate free registrations, only Ruhsat is strictly required. Otherwise, Ruhsat, Kimlik, and Dekont are required.
+    if (subscriptionType === "Kurumsal (Ücretsiz)") {
+      if (!ruhsatUrl) {
+        return new Response(JSON.stringify({ error: "Lütfen aracın Ruhsat belgesini yükleyin." }), { status: 400, headers });
+      }
+    } else {
+      if (!ruhsatUrl || !kimlikUrl || !dekontUrl) {
+        return new Response(JSON.stringify({ error: "Zorunlu belgeler eksik (Ruhsat, Kimlik veya Dekont)." }), { status: 400, headers });
+      }
     }
 
     // Check if otopark requires management approval
     let managementApprovalStatus = "İzin Verildi";
     try {
-      const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parkingLocation)}&select=requires_management_approval`, {
+      const otoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parkingLocation)}&select=requires_management_approval,allow_individual`, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`
@@ -138,8 +235,17 @@ export async function onRequest(context) {
       });
       if (otoparkRes.ok) {
         const parks = await otoparkRes.json();
-        if (parks.length > 0 && parks[0].requires_management_approval === true) {
-          managementApprovalStatus = "Beklemede";
+        if (parks.length > 0) {
+          const park = parks[0];
+          if (park.requires_management_approval === true) {
+            managementApprovalStatus = "Beklemede";
+          }
+          if (park.allow_individual === false && (!user || user.role !== "company")) {
+            const subType = subscriptionType.toLowerCase();
+            if (subType.includes("bireysel") || subType.includes("nihai")) {
+              return new Response(JSON.stringify({ error: "Bu otopark için bireysel üyelik başvurusu kabul edilmemektedir." }), { status: 400, headers });
+            }
+          }
         }
       }
     } catch (e) {

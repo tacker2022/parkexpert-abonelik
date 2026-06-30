@@ -117,6 +117,12 @@
                 <span>Analiz & İstatistik</span>
               </a>
             </li>
+            <li class="sidebar-item" id="sidebar-tab-company-portal" style="display: none;">
+              <a href="javascript:void(0)" onclick="switchAdminTab('company-portal')">
+                <i data-lucide="building-2" style="width: 16px; height: 16px;"></i>
+                <span>Firma Yetki Paneli</span>
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -1623,6 +1629,75 @@
           </div>
         </div>
 
+        <!-- ==========================================================================
+             PANEL: B2B COMPANY PORTAL
+             ========================================================================== -->
+        <div class="admin-panel" id="panel-company-portal" style="display: none;">
+          <!-- Welcoming title with quota progress card -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+            <div>
+              <h1 class="admin-panel-title" id="company-portal-title">Firma Araç Listesi</h1>
+              <p class="admin-panel-subtitle" id="company-portal-subtitle">Şirket araçların zincirini ve personel plakalarınızı bu panelden yönetebilirsiniz.</p>
+            </div>
+            
+            <!-- Quota status progress card -->
+            <div style="background: #ffffff; border: 1px solid var(--color-border-light); padding: 1rem 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 1rem; min-width: 250px;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(37, 99, 235, 0.08); display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;">
+                <i data-lucide="building-2" style="width: 24px; height: 24px;"></i>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Kullanılan Kontenjan</div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 1.15rem; font-weight: 800; color: var(--color-primary-dark); margin-bottom: 0.35rem;">
+                  <span id="company-portal-quota-used">0</span>
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-muted);">/ <span id="company-portal-quota-total">0</span> Araç</span>
+                </div>
+                <!-- Progress bar -->
+                <div style="width: 100%; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden;">
+                  <div id="company-portal-quota-bar" style="width: 0%; height: 100%; background: var(--color-primary); border-radius: 3px; transition: width var(--transition-normal);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Control bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+              <input type="text" id="company-portal-search" placeholder="Plaka veya sürücü ara..." oninput="filterCompanyPortalVehicles()" style="max-width: 320px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; outline: none; height: 38px; box-sizing: border-box; width: 100%;">
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn btn-primary" onclick="openCompanyPortalAddModal()" style="min-height: 38px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.25rem;">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                <span>Yeni Plaka Ekle</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Vehicles Table -->
+          <div class="table-container" style="background: #ffffff; border: 1px solid var(--color-border-light); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); overflow-x: auto;">
+            <table class="admin-table" style="font-size: 0.85rem; min-width: 900px;">
+              <thead>
+                <tr>
+                  <th style="padding: 1rem 1.5rem; width: 120px;">Plaka</th>
+                  <th style="padding: 1rem 1.5rem; width: 180px;">Sürücü Ad Soyad</th>
+                  <th style="padding: 1rem 1.5rem; width: 140px;">Telefon</th>
+                  <th style="padding: 1rem 1.5rem; width: 140px;">Abonelik Tipi</th>
+                  <th style="padding: 1rem 1.5rem; width: 140px;">Onay Durumu</th>
+                  <th style="padding: 1rem 1.5rem; width: 140px;">Geçerlilik Tarihi</th>
+                  <th style="padding: 1rem 1.5rem; text-align: right; width: 100px;">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="company-portal-table-body">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+                    Araçlar yükleniyor...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </main>
 
     </div>
@@ -2161,6 +2236,81 @@
       </div>
       <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: flex-end; padding: 1rem 1.5rem; display: flex;">
         <button class="btn btn-secondary" onclick="closeModal('modal-company-management')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; background: transparent; border: 1px solid var(--color-border-light); color: var(--color-text-dark); cursor: pointer; border-radius: var(--radius-sm);">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: B2B Company Portal Add Vehicle -->
+  <div class="modal" id="modal-company-portal-add" style="display: none;">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Yeni Plaka Ekle</h3>
+        <button class="btn-close" onclick="closeModal('modal-company-portal-add')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <form id="company-portal-add-form" onsubmit="submitCompanyPortalVehicle(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Araç Plakası <span style="color: red;">*</span></label>
+              <input type="text" id="company-portal-add-plate" required style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="Örn: 34ABC123">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Sürücü Ad Soyad <span style="color: red;">*</span></label>
+              <input type="text" id="company-portal-add-fullname" required style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="Sürücü adı soyadı">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Telefon Numarası <span style="color: red;">*</span></label>
+              <input type="tel" id="company-portal-add-phone" required style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="05xxxxxxxxx">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">E-Posta Adresi <span style="color: red;">*</span></label>
+              <input type="email" id="company-portal-add-email" required style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="eposta@firma.com">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">T.C. Kimlik No</label>
+              <input type="text" id="company-portal-add-tcn" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="T.C. Kimlik No">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Araç Marka Model</label>
+              <input type="text" id="company-portal-add-model" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.55rem; border-radius: var(--radius-sm); outline: none;" placeholder="Örn: Volkswagen Golf">
+            </div>
+          </div>
+
+          <!-- Quota Choice Radio Buttons -->
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.5rem; display: block;">Ücret Tipi <span style="color: red;">*</span></label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--color-text-dark); cursor: pointer;">
+                <input type="radio" name="company-portal-add-quota-type" id="company-portal-add-type-free" value="true" checked style="cursor: pointer;">
+                <span id="company-portal-add-free-label">Ücretsiz Kontenjan Kullan (Kalan Kontenjan: X)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--color-text-dark); cursor: pointer;">
+                <input type="radio" name="company-portal-add-quota-type" id="company-portal-add-type-paid" value="false" style="cursor: pointer;">
+                <span>Ücretli Abonelik Olarak Tanımla</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Document Upload -->
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Ruhsat Belgesi (Zorunlu) <span style="color: red;">*</span></label>
+            <input type="file" id="company-portal-add-ruhsat" required accept="image/*,application/pdf" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.85rem; background: #ffffff;">
+            <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.25rem;">Aracın plakasını ve ruhsat sahibini doğrulayabilmemiz için ruhsat ön/arka yüzünün fotoğrafını yükleyin.</p>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--color-border-light); padding-top: 1rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-company-portal-add')" style="padding: 0.5rem 1rem; font-size: 0.85rem; min-height: 38px; border: 1px solid var(--color-border-light); background: transparent; color: var(--color-text-dark); border-radius: var(--radius-sm); cursor: pointer;">İtal</button>
+            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; border: none; background: var(--color-primary); color: white; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <span id="company-portal-submit-text">Başvuruyu Gönder</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

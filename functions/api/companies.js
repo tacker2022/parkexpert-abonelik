@@ -1,4 +1,7 @@
 import { logAudit } from "./audit_helper.js";
+import { sendSMS } from "./sms_helper.js";
+import { sendWhatsApp } from "./whatsapp_helper.js";
+import { sendEmail } from "./email_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -8,6 +11,14 @@ function base64Decode(base64) {
     bytes[i] = binString.charCodeAt(i);
   }
   return new TextDecoder().decode(bytes);
+}
+
+async function hashPassword(password, salt = "parkexpert-salt-key-98765") {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 // Helper to verify JWT token using HMAC-SHA256
@@ -217,6 +228,120 @@ export async function onRequest(context) {
       }
 
       return new Response(JSON.stringify({ success: true, count: inserted.length }), { status: 200, headers });
+    }
+
+    // ----------------------------------------------------
+    // PATCH: Update company credentials and quota
+    // ----------------------------------------------------
+    if (method === "PATCH") {
+      const payload = await context.request.json();
+      const { id, username, password, quota_limit, m2_area, rep_name, rep_phone, rep_email, send_sms } = payload;
+      
+      if (!id) {
+        return new Response(JSON.stringify({ error: "Güncellenecek firma ID'si belirtilmelidir." }), { status: 400, headers });
+      }
+
+      // Fetch company details to verify otopark access
+      const fetchRes = await fetch(`${supabaseUrl}/rest/v1/companies?id=eq.${id}&select=*`, {
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
+        }
+      });
+
+      if (!fetchRes.ok) {
+        return new Response(JSON.stringify({ error: "Firma bulunamadı." }), { status: 404, headers });
+      }
+
+      const rows = await fetchRes.json();
+      if (rows.length === 0) {
+        return new Response(JSON.stringify({ error: "Firma bulunamadı." }), { status: 404, headers });
+      }
+
+      const company = rows[0];
+
+      // Check access: only superadmin or admins of this otopark
+      if (user.role !== "superadmin" && (!user.otoparks || !user.otoparks.includes(company.otopark_name))) {
+        return new Response(JSON.stringify({ error: "Bu otoparktaki firmayı güncelleme yetkiniz bulunmamaktadır." }), { status: 403, headers });
+      }
+
+      const updatePayload = {};
+      if (username !== undefined) updatePayload.username = username ? username.trim().toLowerCase() : null;
+      if (quota_limit !== undefined) updatePayload.quota_limit = parseInt(quota_limit) || 0;
+      if (m2_area !== undefined) updatePayload.m2_area = parseInt(m2_area) || 0;
+      if (rep_name !== undefined) updatePayload.rep_name = rep_name ? rep_name.trim() : null;
+      if (rep_phone !== undefined) updatePayload.rep_phone = rep_phone ? rep_phone.trim() : null;
+      if (rep_email !== undefined) updatePayload.rep_email = rep_email ? rep_email.trim() : null;
+      
+      if (password) {
+        const salt = context.env.PASSWORD_SALT;
+        updatePayload.password = await hashPassword(password, salt);
+      }
+
+      const updateRes = await fetch(`${supabaseUrl}/rest/v1/companies?id=eq.${id}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(updatePayload)
+      });
+
+      if (!updateRes.ok) {
+        const errText = await updateRes.text();
+        return new Response(JSON.stringify({ error: `Supabase update error: ${errText}` }), { status: updateRes.status, headers });
+      }
+
+      // Send SMS/WhatsApp/Email credentials notification if requested
+      const targetPhone = rep_phone || company.rep_phone;
+      if (send_sms && targetPhone) {
+        const cleanPhone = targetPhone.replace(/\D/g, "");
+        if (cleanPhone) {
+          const targetName = rep_name || company.rep_name || "Firma Yetkilisi";
+          const targetUser = username || company.username || "Tanımlanmadı";
+          const passMsg = password ? password : "(Değiştirilmedi, mevcut şifreniz geçerlidir)";
+          const messageText = `Merhaba ${targetName},\n\n${company.otopark_name} bünyesindeki "${company.name}" firması için Kurumsal Temsilci Paneli giriş bilgileriniz tanımlanmıştır.\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${targetUser}\n🔑 Şifre: ${passMsg}\n\nBu bilgilerle giriş yaparak şirket araçlarınızı ve personellerinizi kendiniz tanımlayabilirsiniz.`;
+
+          // Send SMS
+          try {
+            await sendSMS(context.env, cleanPhone, messageText);
+          } catch (e) {
+            console.error("Credentials SMS send error:", e);
+          }
+
+          // Send WhatsApp
+          try {
+            await sendWhatsApp(context.env, cleanPhone, messageText);
+          } catch (e) {
+            console.error("Credentials WhatsApp send error:", e);
+          }
+
+          // Send Email
+          const targetEmail = rep_email || company.rep_email;
+          if (targetEmail) {
+            try {
+              await sendEmail(context.env, targetEmail, `Kurumsal Panel Giriş Bilgileri - ${company.name}`, messageText);
+            } catch (e) {
+              console.error("Credentials Email send error:", e);
+            }
+          }
+        }
+      }
+
+      // Log action in audit logs
+      try {
+        await logAudit(
+          user,
+          clientIp,
+          "Firma Güncelleme",
+          `Firma: ${company.name} (${company.otopark_name}) yetki ve kota bilgileri güncellendi.`
+        );
+      } catch (e) {
+        console.error("Audit log error:", e);
+      }
+
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers });
     }
 
     // ----------------------------------------------------

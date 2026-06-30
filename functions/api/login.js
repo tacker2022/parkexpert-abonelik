@@ -257,7 +257,7 @@ export async function onRequest(context) {
             }
           }
 
-           if (passwordMatches) {
+          if (passwordMatches) {
             userObj = {
               id: admin.id,
               name: admin.name,
@@ -282,6 +282,36 @@ export async function onRequest(context) {
                 });
               } catch (e) {
                 console.error("Failed to migrate plain-text password:", e);
+              }
+            }
+          }
+        } else {
+          // If not admin, check companies table for company representative login credentials
+          const compRes = await fetch(`${supabaseUrl}/rest/v1/companies?username=eq.${encodeURIComponent(username.toLowerCase())}&select=*`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          
+          if (compRes.ok) {
+            const comps = await compRes.json();
+            if (comps.length > 0) {
+              const comp = comps[0];
+              const salt = context.env.PASSWORD_SALT;
+              const inputHash = await hashPassword(password, salt);
+              
+              if (comp.password === inputHash) {
+                userObj = {
+                  id: `comp_${comp.id}`,
+                  name: comp.name,
+                  username: comp.username,
+                  role: "company",
+                  company_name: comp.name,
+                  otopark_name: comp.otopark_name,
+                  quota_limit: comp.quota_limit || 0,
+                  otoparks: [comp.otopark_name]
+                };
               }
             }
           }
@@ -349,8 +379,8 @@ export async function onRequest(context) {
       ? context.env.SUPERADMIN_EMAIL
       : userObj.email;
 
-    // Force 2FA only if enabled AND we have an email address to send the code to
-    if (twoFactorEnabled && targetEmail) {
+    // Force 2FA only if enabled AND we have an email address to send the code to AND user is not company representative
+    if (userObj.role !== "company" && twoFactorEnabled && targetEmail) {
       const otpCode = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -473,7 +503,7 @@ export async function onRequest(context) {
       role: userObj.role,
       actionType: "LOGIN",
       targetId: jti,
-      details: "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
+      details: userObj.role === "company" ? "Firma yetkilisi sisteme giriş yaptı." : "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
       ipAddress: clientIp
     });
     

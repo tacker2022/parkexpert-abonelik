@@ -15,6 +15,7 @@ function isYonetimRole(role) {
 function getDynamicRoleLabel(role, adminOtoparks) {
   if (role === 'superadmin') return 'Süper Admin';
   if (role === 'admin') return 'ParkExpert Operatörü';
+  if (role === 'company') return 'Firma Temsilcisi';
   if (!isYonetimRole(role)) return role;
   
   if (!adminOtoparks || adminOtoparks.length === 0) {
@@ -936,7 +937,31 @@ function initWizardController() {
     }
     // Reload when otopark changes
     otoparkSelect.addEventListener('change', () => {
-      loadPublicCompaniesForOtopark(otoparkSelect.value);
+      const selectedName = otoparkSelect.value;
+      loadPublicCompaniesForOtopark(selectedName);
+
+      const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+      const park = otoparks.find(p => p.name === selectedName);
+      
+      const radioBireyselLabel = document.getElementById('billing-corp-type-bireysel')?.closest('.radio-container');
+      const radioBireysel = document.getElementById('billing-corp-type-bireysel');
+      const radioSermaye = document.getElementById('billing-corp-type-sermaye');
+
+      if (park && park.allow_individual === false) {
+        if (radioBireyselLabel) {
+          radioBireyselLabel.style.display = 'none';
+        }
+        if (radioBireysel && radioBireysel.checked) {
+          if (radioSermaye) {
+            radioSermaye.checked = true;
+            handleBillingCorpTypeChange();
+          }
+        }
+      } else {
+        if (radioBireyselLabel) {
+          radioBireyselLabel.style.display = 'flex';
+        }
+      }
     });
   }
 
@@ -6194,16 +6219,23 @@ function switchAdminTab(tabName) {
   const activeAdminObj = admins.find(a => String(a.id) === String(currentAdminUser)) || loggedInUser;
   const activeRole = currentAdminUser === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
-  if (isYonetimRole(activeRole) && tabName !== 'applications' && tabName !== 'expirations' && tabName !== 'companies') {
-    alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
-    switchAdminTab('applications');
-    return;
-  }
+  if (activeRole === 'company') {
+    if (tabName !== 'company-portal') {
+      switchAdminTab('company-portal');
+      return;
+    }
+  } else {
+    if (isYonetimRole(activeRole) && tabName !== 'applications' && tabName !== 'expirations' && tabName !== 'companies') {
+      alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
+      switchAdminTab('applications');
+      return;
+    }
 
-  if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs' || tabName === 'backups') && currentAdminUser !== 'superadmin') {
-    alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
-    switchAdminTab('applications');
-    return;
+    if ((tabName === 'otoparks' || tabName === 'admins' || tabName === 'settings' || tabName === 'sms-reports' || tabName === 'bulk-sms' || tabName === 'audit-logs' || tabName === 'backups' || tabName === 'company-portal') && currentAdminUser !== 'superadmin') {
+      alert("Bu sekmeye erişim yetkiniz bulunmamaktadır.");
+      switchAdminTab('applications');
+      return;
+    }
   }
   currentAdminTab = tabName;
 
@@ -6236,6 +6268,7 @@ function switchAdminTab(tabName) {
   const panelSmsReports = document.getElementById('panel-sms-reports');
   const panelBulk = document.getElementById('panel-bulk-sms');
   const panelAuditLogs = document.getElementById('panel-audit-logs');
+  const panelCompanyPortal = document.getElementById('panel-company-portal');
 
   if (!tabApp || !tabComp || !panelApp || !panelComp) return;
 
@@ -6250,6 +6283,8 @@ function switchAdminTab(tabName) {
   if (tabSmsReports) tabSmsReports.classList.remove('active');
   if (tabBulk) tabBulk.classList.remove('active');
   if (tabAuditLogs) tabAuditLogs.classList.remove('active');
+  const tabCompPortal = document.getElementById('sidebar-tab-company-portal');
+  if (tabCompPortal) tabCompPortal.classList.remove('active');
 
   // Hide panels
   panelApp.style.display = 'none';
@@ -6262,12 +6297,17 @@ function switchAdminTab(tabName) {
   if (panelSmsReports) panelSmsReports.style.display = 'none';
   if (panelBulk) panelBulk.style.display = 'none';
   if (panelAuditLogs) panelAuditLogs.style.display = 'none';
+  if (panelCompanyPortal) panelCompanyPortal.style.display = 'none';
   const panelBackups = document.getElementById('panel-backups');
   if (panelBackups) panelBackups.style.display = 'none';
 
   if (tabName === 'applications') {
     tabApp.classList.add('active');
     panelApp.style.display = 'block';
+  } else if (tabName === 'company-portal') {
+    if (tabCompPortal) tabCompPortal.classList.add('active');
+    if (panelCompanyPortal) panelCompanyPortal.style.display = 'block';
+    loadCompanyPortalVehicles();
   } else if (tabName === 'expirations') {
     if (tabExp) tabExp.classList.add('active');
     if (panelExp) panelExp.style.display = 'block';
@@ -7026,6 +7066,8 @@ function handleUserRoleChange() {
 
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'block';
+    
+    if (document.getElementById('sidebar-tab-company-portal')) document.getElementById('sidebar-tab-company-portal').style.display = 'none';
 
     // Hide Management & Operator Welcome Banners
     const welcomeBanner = document.getElementById('yonetim-welcome-banner');
@@ -7136,6 +7178,7 @@ function handleUserRoleChange() {
       if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'none';
+      if (document.getElementById('sidebar-tab-company-portal')) document.getElementById('sidebar-tab-company-portal').style.display = 'none';
       if (tabOto) tabOto.style.display = 'none';
       if (tabAdm) tabAdm.style.display = 'none';
       if (tabSet) tabSet.style.display = 'none';
@@ -7213,11 +7256,54 @@ function handleUserRoleChange() {
       if (currentAdminTab !== 'applications' && currentAdminTab !== 'expirations' && currentAdminTab !== 'companies') {
         switchAdminTab('applications');
       }
+    } else if (userRole === 'company') {
+      // B2B Company Portal Role
+      if (document.getElementById('sidebar-tab-applications')) document.getElementById('sidebar-tab-applications').style.display = 'none';
+      if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'none';
+      if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'none';
+      if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'none';
+      if (document.getElementById('sidebar-tab-company-portal')) document.getElementById('sidebar-tab-company-portal').style.display = 'inline-flex';
+
+      if (tabOto) tabOto.style.display = 'none';
+      if (tabAdm) tabAdm.style.display = 'none';
+      if (tabSet) tabSet.style.display = 'none';
+      if (tabSmsReports) tabSmsReports.style.display = 'none';
+      if (tabBulk) tabBulk.style.display = 'none';
+      if (tabAuditLogs) tabAuditLogs.style.display = 'none';
+      if (dangerZone) dangerZone.style.display = 'none';
+
+      // Hide Management & Operator Welcome Banners
+      const welcomeBanner = document.getElementById('yonetim-welcome-banner');
+      if (welcomeBanner) welcomeBanner.style.display = 'none';
+      const operatorBanner = document.getElementById('operator-welcome-banner');
+      if (operatorBanner) operatorBanner.style.display = 'none';
+
+      // Hide standard header title
+      const headerTitle = document.querySelector('.admin-header-title');
+      if (headerTitle) headerTitle.style.display = 'none';
+
+      // Hide test notification button
+      const testNotificationBtn = document.getElementById('btn-test-notification');
+      if (testNotificationBtn) testNotificationBtn.style.display = 'none';
+
+      // Hide location filter group
+      const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
+      if (locationFilterGroup) locationFilterGroup.style.display = 'none';
+
+      // Hide expirations location filter group
+      const expiryLocationFilterGroup = document.getElementById('expiry-filter-location')?.closest('.filter-group');
+      if (expiryLocationFilterGroup) expiryLocationFilterGroup.style.display = 'none';
+
+      if (currentAdminTab !== 'company-portal') {
+        switchAdminTab('company-portal');
+      }
     } else {
-      // Standard admin representative
+      // Standard admin representative (Operator)
       if (document.getElementById('sidebar-tab-expirations')) document.getElementById('sidebar-tab-expirations').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-companies')) document.getElementById('sidebar-tab-companies').style.display = 'inline-flex';
       if (document.getElementById('sidebar-tab-analytics')) document.getElementById('sidebar-tab-analytics').style.display = 'inline-flex';
+      if (document.getElementById('sidebar-tab-company-portal')) document.getElementById('sidebar-tab-company-portal').style.display = 'none';
+      
       if (tabOto) tabOto.style.display = 'none';
       if (tabAdm) tabAdm.style.display = 'none';
       if (tabSet) tabSet.style.display = 'none';
@@ -7279,7 +7365,7 @@ function handleUserRoleChange() {
       const expiryLocationFilterGroup = document.getElementById('expiry-filter-location')?.closest('.filter-group');
       if (expiryLocationFilterGroup) expiryLocationFilterGroup.style.display = 'flex';
   
-      if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs' || currentAdminTab === 'backups') {
+      if (currentAdminTab === 'otoparks' || currentAdminTab === 'admins' || currentAdminTab === 'settings' || currentAdminTab === 'sms-reports' || currentAdminTab === 'bulk-sms' || currentAdminTab === 'audit-logs' || currentAdminTab === 'backups' || currentAdminTab === 'company-portal') {
         switchAdminTab('applications');
       }
     }
@@ -12158,11 +12244,60 @@ function renderCompanyMgmtList(list) {
       ? `<button onclick="deleteCompany(${c.id})" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer;">Sil</button>`
       : `<button disabled class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 700; border-radius: var(--radius-sm); cursor: not-allowed; opacity: 0.6;">Sil</button>`;
     
+    const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; margin-right: 0.25rem;">Ayarlar</button>`;
+
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
         <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${c.name}</td>
         <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">@${c.created_by || 'sistem'}</td>
-        <td style="padding: 0.5rem 0.75rem; text-align: right;">${deleteBtn}</td>
+        <td style="padding: 0.5rem 0.75rem; text-align: right; white-space: nowrap;">${settingsBtn}${deleteBtn}</td>
+      </tr>
+      <tr id="company-mgmt-edit-row-${c.id}" class="company-mgmt-edit-row" style="display: none; background: #fafafa; border-bottom: 1px solid var(--color-border-light);">
+        <td colspan="3" style="padding: 0.75rem 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">m² Alanı</label>
+              <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Kota Limiti</label>
+              <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
+              <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Temsilci Ad Soyad" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
+              <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci E-Posta</label>
+              <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="temsilci@firma.com" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
+              <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+            <div>
+              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
+              <input type="password" id="company-edit-password-${c.id}" placeholder="Değiştirmek istemiyorsanız boş bırakın" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            </div>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="company-edit-sendsms-${c.id}" checked style="width: 16px; height: 16px; cursor: pointer;">
+            <label for="company-edit-sendsms-${c.id}" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-dark); cursor: pointer; user-select: none;">
+              🔑 Giriş bilgilerini SMS, WhatsApp ve E-Posta ile temsilciye otomatik gönder.
+            </label>
+          </div>
+          <div style="text-align: right;">
+            <button onclick="saveCompanyCredentials(${c.id})" class="btn btn-primary" style="padding: 0.35rem 1rem; font-size: 0.75rem; min-height: 28px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-sm); cursor: pointer;">Kaydet</button>
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
@@ -12597,6 +12732,345 @@ async function submitMergeCompanies() {
   }
 }
 
+// Toggles the inline edit panel for a company row
+function toggleCompanyEditRow(id) {
+  const row = document.getElementById(`company-mgmt-edit-row-${id}`);
+  if (row) {
+    if (row.style.display === 'none') {
+      document.querySelectorAll('.company-mgmt-edit-row').forEach(r => r.style.display = 'none');
+      row.style.display = 'table-row';
+    } else {
+      row.style.display = 'none';
+    }
+  }
+}
+
+// Suggests quota from m2 area based on contract rules
+function suggestQuotaFromM2(id) {
+  const m2Input = document.getElementById(`company-edit-m2-${id}`);
+  const quotaInput = document.getElementById(`company-edit-quota-${id}`);
+  if (m2Input && quotaInput) {
+    const m2 = parseInt(m2Input.value) || 0;
+    let quota = 0;
+    if (m2 >= 50 && m2 < 200) quota = 1;
+    else if (m2 >= 200 && m2 < 300) quota = 2;
+    else if (m2 >= 300) quota = Math.floor(m2 / 100);
+    
+    quotaInput.value = quota;
+  }
+}
+
+// Submits the PATCH request to save company parameters (m2, quota, login credentials)
+async function saveCompanyCredentials(id) {
+  const usernameVal = document.getElementById(`company-edit-username-${id}`)?.value.trim();
+  const passwordVal = document.getElementById(`company-edit-password-${id}`)?.value;
+  const quotaLimitVal = document.getElementById(`company-edit-quota-${id}`)?.value;
+  const m2AreaVal = document.getElementById(`company-edit-m2-${id}`)?.value;
+  const repNameVal = document.getElementById(`company-edit-repname-${id}`)?.value.trim();
+  const repPhoneVal = document.getElementById(`company-edit-repphone-${id}`)?.value.trim();
+  const repEmailVal = document.getElementById(`company-edit-repemail-${id}`)?.value.trim();
+  const sendSmsVal = document.getElementById(`company-edit-sendsms-${id}`)?.checked;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/companies', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: id,
+        username: usernameVal || null,
+        password: passwordVal || null,
+        quota_limit: quotaLimitVal ? parseInt(quotaLimitVal) : 0,
+        m2_area: m2AreaVal ? parseInt(m2AreaVal) : 0,
+        rep_name: repNameVal || null,
+        rep_phone: repPhoneVal || null,
+        rep_email: repEmailVal || null,
+        send_sms: !!sendSmsVal
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Güncelleme başarısız: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    showToast('Başarılı', 'Firma yetki ve kota bilgileri güncellendi.', 'check');
+    loadOtoparkCompanies();
+  } catch (err) {
+    console.error("Error updating company settings:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
+// ==========================================================================
+// B2B COMPANY PORTAL DASHBOARD FUNCTIONS
+// ==========================================================================
+let companyPortalVehicles = [];
+
+async function loadCompanyPortalVehicles() {
+  const token = localStorage.getItem('parkexpert_token');
+  const userJson = localStorage.getItem('parkexpert_user');
+  if (!token || !userJson) return;
+
+  const user = JSON.parse(userJson);
+  const tableBody = document.getElementById('company-portal-table-body');
+  if (!tableBody) return;
+
+  try {
+    const res = await fetch('/api/applications', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 600;">Araç listesi yüklenemedi.</td></tr>`;
+      return;
+    }
+
+    const data = await res.json();
+    companyPortalVehicles = data;
+
+    // Calculate quota usage from approved free applications
+    const activeFreeVehicles = data.filter(app => app.status === 'Onaylandı' && app.subscription_type === 'Kurumsal (Ücretsiz)');
+    const usedQuota = activeFreeVehicles.length;
+    const totalQuota = user.quota_limit || 0;
+
+    const quotaUsedEl = document.getElementById('company-portal-quota-used');
+    const quotaTotalEl = document.getElementById('company-portal-quota-total');
+    const quotaBarEl = document.getElementById('company-portal-quota-bar');
+
+    if (quotaUsedEl) quotaUsedEl.textContent = usedQuota;
+    if (quotaTotalEl) quotaTotalEl.textContent = totalQuota;
+    if (quotaBarEl) {
+      const pct = totalQuota > 0 ? Math.min(100, Math.round((usedQuota / totalQuota) * 100)) : 0;
+      quotaBarEl.style.width = `${pct}%`;
+      if (pct >= 100) {
+        quotaBarEl.style.background = '#ef4444';
+      } else if (pct >= 80) {
+        quotaBarEl.style.background = '#f59e0b';
+      } else {
+        quotaBarEl.style.background = 'var(--color-primary)';
+      }
+    }
+
+    renderCompanyPortalVehicles(data);
+  } catch (err) {
+    console.error("Error loading B2B vehicles:", err);
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 600;">Bağlantı hatası.</td></tr>`;
+  }
+}
+
+function renderCompanyPortalVehicles(list) {
+  const tableBody = document.getElementById('company-portal-table-body');
+  if (!tableBody) return;
+
+  if (list.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted);">Henüz kayıtlı şirket aracı bulunmamaktadır. Sağ üstteki butondan yeni araç ekleyebilirsiniz.</td></tr>`;
+    return;
+  }
+
+  tableBody.innerHTML = list.map(app => {
+    let expiryStr = '-';
+    if (app.subscription_expires_at) {
+      const d = new Date(app.subscription_expires_at);
+      expiryStr = d.toLocaleDateString('tr-TR');
+    }
+
+    let statusClass = 'status-pending';
+    if (app.status === 'Onaylandı') statusClass = 'status-approved';
+    else if (app.status === 'Reddedildi') statusClass = 'status-rejected';
+    else if (app.status === 'İptal Edildi') statusClass = 'status-cancelled';
+
+    let actionBtn = '-';
+    if (app.status === 'Beklemede' || app.status === 'Yeni' || app.status === 'Onaylandı') {
+      actionBtn = `<button onclick="cancelCompanyPortalVehicle('${app.id}', '${app.plate_number}')" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #ef4444; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.05); cursor: pointer; border-radius: var(--radius-sm); font-weight: 700; min-height: 28px;">İptal Et</button>`;
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid var(--color-border-light);">
+        <td style="padding: 1rem 1.5rem; font-weight: 700; color: var(--color-primary-dark); font-size: 0.9rem;">
+          <span style="background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.15); padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); text-transform: uppercase;">
+            ${app.plate_number}
+          </span>
+        </td>
+        <td style="padding: 1rem 1.5rem; font-weight: 600;">${app.full_name}</td>
+        <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">${app.phone}</td>
+        <td style="padding: 1rem 1.5rem;">
+          <span class="badge-role ${app.subscription_type === 'Kurumsal (Ücretsiz)' ? 'badge-role-yonetim-general' : 'badge-role-operator'}" style="font-size: 0.75rem; font-weight: 700;">
+            ${app.subscription_type}
+          </span>
+        </td>
+        <td style="padding: 1rem 1.5rem;">
+          <span class="status-badge ${statusClass}" style="font-size: 0.75rem; font-weight: 700;">
+            ${app.status}
+          </span>
+        </td>
+        <td style="padding: 1rem 1.5rem; font-weight: 600; color: var(--color-text-dark);">${expiryStr}</td>
+        <td style="padding: 1rem 1.5rem; text-align: right;">${actionBtn}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterCompanyPortalVehicles() {
+  const q = document.getElementById('company-portal-search')?.value.trim().toLocaleUpperCase('tr-TR');
+  if (!q) {
+    renderCompanyPortalVehicles(companyPortalVehicles);
+    return;
+  }
+  const filtered = companyPortalVehicles.filter(app => 
+    app.plate_number.toLocaleUpperCase('tr-TR').includes(q) ||
+    app.full_name.toLocaleUpperCase('tr-TR').includes(q)
+  );
+  renderCompanyPortalVehicles(filtered);
+}
+
+function openCompanyPortalAddModal() {
+  const user = JSON.parse(localStorage.getItem('parkexpert_user') || '{}');
+  
+  const activeFreeVehicles = companyPortalVehicles.filter(app => app.status === 'Onaylandı' && app.subscription_type === 'Kurumsal (Ücretsiz)');
+  const used = activeFreeVehicles.length;
+  const total = user.quota_limit || 0;
+  const remaining = Math.max(0, total - used);
+
+  const freeLabel = document.getElementById('company-portal-add-free-label');
+  const freeRadio = document.getElementById('company-portal-add-type-free');
+  const paidRadio = document.getElementById('company-portal-add-type-paid');
+
+  if (freeLabel) {
+    freeLabel.textContent = `Ücretsiz Kontenjan Kullan (Kalan Kontenjan: ${remaining} Araç)`;
+  }
+
+  if (remaining <= 0) {
+    if (freeRadio) {
+      freeRadio.disabled = true;
+      freeRadio.checked = false;
+    }
+    if (paidRadio) {
+      paidRadio.checked = true;
+    }
+    if (freeLabel) {
+      freeLabel.style.color = '#94a3b8';
+      freeLabel.style.textDecoration = 'line-through';
+    }
+  } else {
+    if (freeRadio) {
+      freeRadio.disabled = false;
+      freeRadio.checked = true;
+    }
+    if (freeLabel) {
+      freeLabel.style.color = 'var(--color-text-dark)';
+      freeLabel.style.textDecoration = 'none';
+    }
+  }
+
+  const form = document.getElementById('company-portal-add-form');
+  if (form) form.reset();
+
+  openModal('modal-company-portal-add');
+}
+
+async function submitCompanyPortalVehicle(event) {
+  event.preventDefault();
+
+  const plate = document.getElementById('company-portal-add-plate')?.value.trim();
+  const fullname = document.getElementById('company-portal-add-fullname')?.value.trim();
+  const phone = document.getElementById('company-portal-add-phone')?.value.trim();
+  const email = document.getElementById('company-portal-add-email')?.value.trim();
+  const tcn = document.getElementById('company-portal-add-tcn')?.value.trim();
+  const model = document.getElementById('company-portal-add-model')?.value.trim();
+  const isFree = document.getElementById('company-portal-add-type-free')?.checked;
+  const ruhsatFile = document.getElementById('company-portal-add-ruhsat')?.files[0];
+
+  if (!plate || !fullname || !phone || !email || !ruhsatFile) {
+    alert("Lütfen zorunlu alanları doldurun ve ruhsat belgesini seçin.");
+    return;
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  const submitBtn = document.getElementById('company-portal-submit-text');
+  if (submitBtn) submitBtn.textContent = 'Gönderiliyor...';
+
+  try {
+    const formData = new FormData();
+    formData.append('id', crypto.randomUUID());
+    formData.append('full_name', fullname);
+    formData.append('email', email);
+    formData.append('phone', phone);
+    formData.append('plate_number', plate);
+    formData.append('tc_no', tcn);
+    formData.append('car_model', model);
+    formData.append('is_free_quota', String(isFree));
+    formData.append('subscription_type', isFree ? 'Kurumsal (Ücretsiz)' : 'Kurumsal (Ücretli)');
+    formData.append('ruhsat', ruhsatFile);
+
+    const res = await fetch('/api/apply', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Hata: ${data.error || 'İşlem gerçekleştirilemedi.'}`);
+      return;
+    }
+
+    showToast('Başarılı', 'Araç kayıt başvurusu oluşturuldu. Yönetim onayından sonra aktifleşecektir.', 'check');
+    closeModal('modal-company-portal-add');
+    loadCompanyPortalVehicles();
+  } catch (err) {
+    console.error("Error submitting B2B vehicle application:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  } finally {
+    if (submitBtn) submitBtn.textContent = 'Başvuruyu Gönder';
+  }
+}
+
+async function cancelCompanyPortalVehicle(appId, plate) {
+  if (!confirm(`"${plate}" plakalı aracın abonelik kaydını iptal etmek istediğinizden emin misiniz?`)) return;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/applications`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: appId,
+        status: 'İptal Edildi'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`İptal hatası: ${data.error || 'İşlem gerçekleştirilemedi.'}`);
+      return;
+    }
+
+    showToast('Başarılı', 'Abonelik kaydı iptal edildi.', 'check');
+    loadCompanyPortalVehicles();
+  } catch (err) {
+    console.error("Error cancelling subscription:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
 // Bind admin panel functions to window
 window.openCompanyManagementModal = openCompanyManagementModal;
 window.switchCompanyMgmtSubTab = switchCompanyMgmtSubTab;
@@ -12612,6 +13086,15 @@ window.switchCompanyView = switchCompanyView;
 window.toggleCompanyRowDetail = toggleCompanyRowDetail;
 window.populateMergeCompaniesDropdowns = populateMergeCompaniesDropdowns;
 window.submitMergeCompanies = submitMergeCompanies;
+window.toggleCompanyEditRow = toggleCompanyEditRow;
+window.suggestQuotaFromM2 = suggestQuotaFromM2;
+window.saveCompanyCredentials = saveCompanyCredentials;
+window.loadCompanyPortalVehicles = loadCompanyPortalVehicles;
+window.renderCompanyPortalVehicles = renderCompanyPortalVehicles;
+window.filterCompanyPortalVehicles = filterCompanyPortalVehicles;
+window.openCompanyPortalAddModal = openCompanyPortalAddModal;
+window.submitCompanyPortalVehicle = submitCompanyPortalVehicle;
+window.cancelCompanyPortalVehicle = cancelCompanyPortalVehicle;
 
 
 
