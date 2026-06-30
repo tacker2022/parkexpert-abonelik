@@ -6868,7 +6868,7 @@ function editSubscriptionExpiry(appId) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-function changeApplicationCompany(appId) {
+async function changeApplicationCompany(appId) {
   const app = allApplications.find(a => a.id === appId);
   if (!app) return;
 
@@ -6884,46 +6884,63 @@ function changeApplicationCompany(appId) {
   appIdInput.value = appId;
   typeInput.value = 'company';
 
-  // Get unique companies from allApplications
-  const companiesSet = new Set(allApplications.map(a => a.company_name ? a.company_name.trim() : '').filter(Boolean));
-  const companiesList = Array.from(companiesSet).sort((a, b) => a.localeCompare(b, 'tr'));
-
-  // Build select options
-  let optionsHtml = `<option value="SERBEST ÇALIŞAN" ${(!app.company_name || app.company_name === 'SERBEST ÇALIŞAN') ? 'selected' : ''}>SERBEST ÇALIŞAN (Şirketsiz)</option>`;
-  companiesList.forEach(comp => {
-    if (comp !== 'SERBEST ÇALIŞAN') {
-      optionsHtml += `<option value="${comp}" ${(app.company_name && app.company_name.trim() === comp) ? 'selected' : ''}>${comp}</option>`;
-    }
-  });
-  optionsHtml += `<option value="__NEW__">[ + Yeni Firma Oluştur ve Aktar ]</option>`;
-
-  contentEl.innerHTML = `
-    <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
-      <label for="edit-company-select" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Mevcut Firmaya Aktar</label>
-      <select id="edit-company-select" onchange="toggleNewCompanyField()" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
-        ${optionsHtml}
-      </select>
-    </div>
-
-    <div class="filter-group" id="group-new-company-field" style="margin-bottom: 1rem; display: none; flex-direction: column; gap: 0.375rem;">
-      <label for="edit-company-new-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Firma / Kurum Adı</label>
-      <input type="text" id="edit-company-new-input" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-weight: 700; color: var(--color-text-dark); box-sizing: border-box;">
-      <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; margin-bottom: 0;">Yeni oluşturulacak firma otomatik büyük harfle kaydedilir.</p>
-    </div>
-  `;
-
-  const editCompanyNewInput = document.getElementById('edit-company-new-input');
-  if (editCompanyNewInput) {
-    editCompanyNewInput.addEventListener('input', (e) => {
-      const start = e.target.selectionStart;
-      const end = e.target.selectionEnd;
-      e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
-      e.target.setSelectionRange(start, end);
-    });
-  }
-
+  contentEl.innerHTML = `<div style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">Firmalar yükleniyor...</div>`;
   modal.classList.add('active');
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  try {
+    const res = await fetch(`/api/companies?otopark=${encodeURIComponent(app.parking_location)}`);
+    if (!res.ok) throw new Error("Firmalar alınamadı.");
+    const registeredCompanies = await res.json();
+    
+    // Merge with existing companies in active applications (fallback safety)
+    const appsCompanies = allApplications
+      .filter(a => a.parking_location === app.parking_location && a.company_name)
+      .map(a => a.company_name.trim());
+      
+    const dbCompanies = registeredCompanies.map(c => c.name.trim());
+    
+    const mergedSet = new Set([...dbCompanies, ...appsCompanies]);
+    const sortedCompanies = Array.from(mergedSet).sort((a, b) => a.localeCompare(b, 'tr'));
+
+    let optionsHtml = `<option value="SERBEST ÇALIŞAN" ${(!app.company_name || app.company_name === 'SERBEST ÇALIŞAN') ? 'selected' : ''}>SERBEST ÇALIŞAN (Şirketsiz)</option>`;
+    sortedCompanies.forEach(comp => {
+      if (comp !== 'SERBEST ÇALIŞAN') {
+        optionsHtml += `<option value="${comp}" ${(app.company_name && app.company_name.trim() === comp) ? 'selected' : ''}>${comp}</option>`;
+      }
+    });
+    optionsHtml += `<option value="__NEW__">[ + Yeni Firma Oluştur ve Aktar ]</option>`;
+
+    contentEl.innerHTML = `
+      <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
+        <label for="edit-company-select" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Mevcut Firmaya Aktar</label>
+        <select id="edit-company-select" onchange="toggleNewCompanyField()" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+          ${optionsHtml}
+        </select>
+      </div>
+
+      <div class="filter-group" id="group-new-company-field" style="margin-bottom: 1rem; display: none; flex-direction: column; gap: 0.375rem;">
+        <label for="edit-company-new-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Firma / Kurum Adı</label>
+        <input type="text" id="edit-company-new-input" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-weight: 700; color: var(--color-text-dark); box-sizing: border-box;">
+        <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; margin-bottom: 0;">Yeni oluşturulacak firma otomatik büyük harfle kaydedilir.</p>
+      </div>
+    `;
+
+    const editCompanyNewInput = document.getElementById('edit-company-new-input');
+    if (editCompanyNewInput) {
+      editCompanyNewInput.addEventListener('input', (e) => {
+        const start = e.target.selectionStart;
+        const end = e.target.selectionEnd;
+        e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
+        e.target.setSelectionRange(start, end);
+      });
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  } catch (err) {
+    console.error("Error loading companies for transfer dropdown:", err);
+    contentEl.innerHTML = `<div style="padding: 1rem; color: var(--color-danger); text-align: center;">Firmalar yüklenirken hata oluştu: ${err.message}</div>`;
+  }
 }
 
 function changeApplicationLocation(appId) {
