@@ -12244,54 +12244,66 @@ function renderCompanyMgmtList(list) {
 
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
-        <td style="padding: 0.5rem 0.75rem; font-weight: 600;">${c.name}</td>
-        <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">@${c.created_by || 'sistem'}</td>
-        <td style="padding: 0.5rem 0.75rem; text-align: right; white-space: nowrap;">${settingsBtn}${deleteBtn}</td>
+        <td style="padding: 0.85rem 1rem; font-weight: 600; font-size: 0.9rem; color: var(--color-text-dark);">${c.name}</td>
+        <td style="padding: 0.85rem 1rem; color: var(--color-text-muted); font-size: 0.85rem;">@${c.created_by || 'sistem'}</td>
+        <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">${settingsBtn}${deleteBtn}</td>
       </tr>
-      <tr id="company-mgmt-edit-row-${c.id}" class="company-mgmt-edit-row" style="display: none; background: #fafafa; border-bottom: 1px solid var(--color-border-light);">
-        <td colspan="3" style="padding: 0.75rem 1rem;">
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">m² Alanı</label>
-              <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+      <tr id="company-mgmt-edit-row-${c.id}" class="company-mgmt-edit-row" style="display: none; background: #f8fafc; border-bottom: 2px solid var(--color-border-light);">
+        <td colspan="3" style="padding: 1.25rem;">
+          <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 12px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03); text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="edit-3" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+                <span>"${c.name}" Yetki & Giriş Bilgileri</span>
+              </h4>
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 6px;">ID: #${c.id}</span>
             </div>
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Kota Limiti</label>
-              <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+            
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">m² Alanı</label>
+                <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Kota Limiti</label>
+                <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+              </div>
+              <div style="grid-column: span 2;">
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
+                <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Adı Soyadı" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+              </div>
             </div>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
-              <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Temsilci Ad Soyad" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
+                <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci E-Posta</label>
+                <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
+                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
+                <input type="password" id="company-edit-password-${c.id}" placeholder="Boşsa değişmez" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+              </div>
             </div>
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
-              <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--color-border-light); padding-top: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="company-edit-sendsms-${c.id}" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="company-edit-sendsms-${c.id}" style="font-size: 0.825rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; user-select: none;">
+                  🔑 Giriş bilgilerini SMS, WhatsApp ve E-Posta ile temsilciye otomatik gönder.
+                </label>
+              </div>
+              <button onclick="saveCompanyCredentials(${c.id})" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 36px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i> Kaydet ve Gönder
+              </button>
             </div>
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci E-Posta</label>
-              <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="temsilci@firma.com" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
-              <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
-            </div>
-            <div>
-              <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
-              <input type="password" id="company-edit-password-${c.id}" placeholder="Değiştirmek istemiyorsanız boş bırakın" style="width: 100%; border: 1px solid var(--color-border-light); padding: 0.4rem; border-radius: var(--radius-sm); font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #ffffff;">
-            </div>
-          </div>
-          <div style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-            <input type="checkbox" id="company-edit-sendsms-${c.id}" checked style="width: 16px; height: 16px; cursor: pointer;">
-            <label for="company-edit-sendsms-${c.id}" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-dark); cursor: pointer; user-select: none;">
-              🔑 Giriş bilgilerini SMS, WhatsApp ve E-Posta ile temsilciye otomatik gönder.
-            </label>
-          </div>
-          <div style="text-align: right;">
-            <button onclick="saveCompanyCredentials(${c.id})" class="btn btn-primary" style="padding: 0.35rem 1rem; font-size: 0.75rem; min-height: 28px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-sm); cursor: pointer;">Kaydet</button>
           </div>
         </td>
       </tr>
