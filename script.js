@@ -5178,16 +5178,16 @@ function renderOtoparksTable() {
     let individualHtml = '';
     if (allowIndividual) {
       individualHtml = `
-        <div class="otopark-card__pre-approve otopark-card__pre-approve--active" onclick="toggleOtoparkIndividual('${park.id}')" title="Bireysel abonelik alımını kapatmak için tıklayın" style="cursor: pointer; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); color: #10b981; margin-top: 0.5rem;">
+        <div class="otopark-card__pre-approve" onclick="toggleOtoparkIndividual('${park.id}')" title="Bireysel abonelik alımını kapatmak için tıklayın" style="cursor: pointer; background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); color: #10b981; margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); box-sizing: border-box; width: 100%; transition: all 0.2s ease;">
           <span class="pre-approve-title"><i data-lucide="user-check" style="width: 12px; height: 12px;"></i> Bireysel Başvuru</span>
-          <span class="pre-approve-badge" style="background: #10b981;">AÇIK</span>
+          <span class="pre-approve-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.15rem 0.45rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.15); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;">AÇIK</span>
         </div>
       `;
     } else {
       individualHtml = `
-        <div class="otopark-card__pre-approve otopark-card__pre-approve--passive" onclick="toggleOtoparkIndividual('${park.id}')" title="Bireysel abonelik alımını açmak için tıklayın" style="cursor: pointer; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; margin-top: 0.5rem;">
+        <div class="otopark-card__pre-approve" onclick="toggleOtoparkIndividual('${park.id}')" title="Bireysel abonelik alımını açmak için tıklayın" style="cursor: pointer; background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); color: #ef4444; margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); box-sizing: border-box; width: 100%; transition: all 0.2s ease;">
           <span class="pre-approve-title"><i data-lucide="user-x" style="width: 12px; height: 12px;"></i> Bireysel Başvuru</span>
-          <span class="pre-approve-badge" style="background: #ef4444;">KAPALI</span>
+          <span class="pre-approve-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 0.15rem 0.45rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.15); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;">KAPALI</span>
         </div>
       `;
     }
