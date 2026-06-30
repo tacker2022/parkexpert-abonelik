@@ -95,7 +95,7 @@ export async function onRequest(context) {
 
   const headers = {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
