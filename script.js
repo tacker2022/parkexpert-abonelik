@@ -6110,6 +6110,12 @@ async function saveOtoparkConfig(event) {
     }
   });
 
+  // Validation: To activate subscription receipt, there must be at least one tariff
+  if ((statusVal === 'active' || allowIndividualVal) && tariffs.length === 0) {
+    alert("Abonelik alımını aktif etmek için önce abonelik tarifelerini giriniz veya abonelik tarifesi yoksa 0 TL olarak tarife girişi yapınız.");
+    return;
+  }
+
   // Fallback compatibility
   const priceEmployeeVal = tariffs.length > 0 ? tariffs[0].price : '0';
   const priceExternalVal = tariffs.length > 1 ? tariffs[1].price : priceEmployeeVal;
@@ -6244,6 +6250,28 @@ async function toggleOtoparkStatus(otoparkId) {
   if (!park) return;
 
   const currentStatus = park.isActive !== false;
+
+  // Validation: To activate subscription receipt, there must be at least one tariff
+  if (!currentStatus) {
+    let tariffsList = park.tariffs;
+    if (!tariffsList || !Array.isArray(tariffsList) || tariffsList.length === 0) {
+      tariffsList = [];
+      const empPrice = (park.priceEmployee || '').trim().replace(/\s+/g, '');
+      const extPrice = (park.priceExternal || '').trim().replace(/\s+/g, '');
+
+      if (empPrice && empPrice !== '' && empPrice !== '0' && empPrice !== '0TL' && empPrice !== '0₺') {
+        tariffsList.push({ name: 'Personel', price: park.priceEmployee });
+      }
+      if (extPrice && extPrice !== '' && extPrice !== '0' && extPrice !== '0TL' && extPrice !== '0₺') {
+        tariffsList.push({ name: 'Dış', price: park.priceExternal });
+      }
+    }
+
+    if (tariffsList.length === 0) {
+      alert("Abonelik alımını aktif etmek için önce abonelik tarifelerini giriniz veya abonelik tarifesi yoksa 0 TL olarak tarife girişi yapınız.");
+      return;
+    }
+  }
   
   const payload = {
     id: park.id,
@@ -6360,6 +6388,28 @@ async function toggleOtoparkIndividual(otoparkId) {
   if (!park) return;
 
   const currentIndividual = park.allowIndividual !== false && park.allow_individual !== false;
+
+  // Validation: To activate subscription receipt, there must be at least one tariff
+  if (!currentIndividual) {
+    let tariffsList = park.tariffs;
+    if (!tariffsList || !Array.isArray(tariffsList) || tariffsList.length === 0) {
+      tariffsList = [];
+      const empPrice = (park.priceEmployee || '').trim().replace(/\s+/g, '');
+      const extPrice = (park.priceExternal || '').trim().replace(/\s+/g, '');
+
+      if (empPrice && empPrice !== '' && empPrice !== '0' && empPrice !== '0TL' && empPrice !== '0₺') {
+        tariffsList.push({ name: 'Personel', price: park.priceEmployee });
+      }
+      if (extPrice && extPrice !== '' && extPrice !== '0' && extPrice !== '0TL' && extPrice !== '0₺') {
+        tariffsList.push({ name: 'Dış', price: park.priceExternal });
+      }
+    }
+
+    if (tariffsList.length === 0) {
+      alert("Abonelik alımını aktif etmek için önce abonelik tarifelerini giriniz veya abonelik tarifesi yoksa 0 TL olarak tarife girişi yapınız.");
+      return;
+    }
+  }
   
   const payload = {
     id: park.id,
