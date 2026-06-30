@@ -499,6 +499,49 @@ export async function onRequest(context) {
                 `;
               }
 
+              // Calculate all-time daily registration stats grouped by day (Turkey timezone offset calculation)
+              const allTimeStatsMap = {};
+              parkApps.forEach(app => {
+                if (!app.date_applied) return;
+                const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
+                const localDay = appTrDate.getUTCDate();
+                const localMonth = appTrDate.getUTCMonth();
+                const year = appTrDate.getUTCFullYear();
+                const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${year}`;
+                const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
+                
+                if (!allTimeStatsMap[dayStr]) {
+                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime() };
+                }
+                allTimeStatsMap[dayStr].count++;
+              });
+
+              const allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => a.rawDate - b.rawDate);
+
+              let allTimeStatsHtml = "";
+              if (allTimeStats.length > 0) {
+                allTimeStatsHtml = `
+                  <!-- All Time Daily Distribution Section -->
+                  <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); font-family: sans-serif;">
+                    <h4 style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                      📅 Tüm Zamanlar Günlük Başvuru Dağılımı
+                    </h4>
+                    <div style="max-height: 250px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <tbody>
+                          ${allTimeStats.map((stat, idx) => `
+                            <tr style="border-bottom: ${idx < allTimeStats.length - 1 ? '1px solid #f1f5f9' : 'none'};">
+                              <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif;">${stat.label}</td>
+                              <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f3ba2; font-family: sans-serif; white-space: nowrap;">${stat.count} kayıt</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                `;
+              }
+
               const systemHealthHtml = `
                 <!-- System Health & Quick Actions -->
                 <div style="margin-bottom: 2rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; font-family: sans-serif;">
@@ -625,6 +668,8 @@ export async function onRequest(context) {
                 </div>
 
                 ${topCompaniesHtml}
+
+                ${allTimeStatsHtml}
 
                 ${systemHealthHtml}
 
