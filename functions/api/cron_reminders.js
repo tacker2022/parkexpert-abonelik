@@ -384,82 +384,198 @@ export async function onRequest(context) {
     const shouldRunSummaries = runType === "all" || runType === "summaries";
     if (shouldRunSummaries) {
       try {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayIso = yesterday.toISOString();
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-        // Fetch all applications in the last 24 hours
-        const recentAppsRes = await fetch(`${supabaseUrl}/rest/v1/applications?date_applied=gte.${yesterdayIso}&select=*`, {
+        // Fetch all applications (up to 5000, ordered by date_applied) to calculate metrics
+        const allAppsRes = await fetch(`${supabaseUrl}/rest/v1/applications?select=id,status,parking_location,date_applied,subscription_expires_at,full_name,plate_number,subscription_type&order=date_applied.desc&limit=5000`, {
           headers: {
             "apikey": supabaseAnonKey,
             "Authorization": `Bearer ${supabaseAnonKey}`
           }
         });
 
-        if (recentAppsRes.ok) {
-          const recentApps = await recentAppsRes.json();
+        if (allAppsRes.ok) {
+          const allApps = await allAppsRes.json();
           let summariesSent = 0;
           let summariesTotalApps = 0;
+          const tz = { timeZone: "Europe/Istanbul" };
           
           for (const park of otoparks) {
             if (park.summary_emails) {
-              const parkApps = recentApps.filter(app => app.parking_location === park.name);
-              if (parkApps.length > 0) {
-                // Construct HTML Summary
-                let rowsHtml = "";
-                for (const app of parkApps) {
-                  const dateStr = app.date_applied ? new Date(app.date_applied).toLocaleDateString("tr-TR") : "-";
-                  rowsHtml += `
-                    <tr>
-                      <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">${app.id}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd;">${maskName(app.full_name)}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-transform: uppercase;">${app.plate_number || ""}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd;">${app.subscription_type || ""}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd;">${dateStr}</td>
-                      <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: ${app.status === 'Onaylandı' ? '#047857' : (app.status === 'Reddedildi' ? '#b91c1c' : '#b45309')}">${app.status}</td>
-                    </tr>
-                  `;
+              const parkApps = allApps.filter(app => app.parking_location === park.name);
+              const recentApps = parkApps.filter(app => app.date_applied && new Date(app.date_applied) >= yesterday);
+              const totalApps = parkApps.length;
+
+              // Calculate average approval duration for applications approved in the last 24 hours
+              const approvedRecent = parkApps.filter(app => {
+                if (app.status !== 'Onaylandı' || !app.subscription_expires_at || !app.date_applied) return false;
+                const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
+                return approvedTime >= yesterday.getTime();
+              });
+
+              let avgApprovalTimeText = "—";
+              if (approvedRecent.length > 0) {
+                const totalMs = approvedRecent.reduce((sum, app) => {
+                  const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
+                  const appliedTime = new Date(app.date_applied).getTime();
+                  return sum + Math.max(0, approvedTime - appliedTime);
+                }, 0);
+                const avgMs = totalMs / approvedRecent.length;
+                const avgMinutes = Math.round(avgMs / (60 * 1000));
+                if (avgMinutes < 60) {
+                  avgApprovalTimeText = `${avgMinutes} dakika`;
+                } else {
+                  const hours = Math.floor(avgMinutes / 60);
+                  const minutes = avgMinutes % 60;
+                  avgApprovalTimeText = minutes > 0 ? `${hours} saat ${minutes} dk` : `${hours} saat`;
                 }
-
-                const htmlContent = `
-                  <h3 style="color: #0f3ba2; margin-top: 0;">📊 Günlük Başvuru Özet Raporu</h3>
-                  <p><strong>Otopark Konumu:</strong> ${park.name}</p>
-                  <p>Son 24 saat içerisinde alınan toplam başvuru sayısı: <strong>${parkApps.length}</strong></p>
-                  
-                  <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem;">
-                    <thead>
-                      <tr style="background: #f1f5f9; text-align: left; font-weight: bold;">
-                        <th style="padding: 8px; border: 1px solid #ddd;">Takip No</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Müşteri</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Plaka</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Abonelik Tipi</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Tarih</th>
-                        <th style="padding: 8px; border: 1px solid #ddd;">Durum</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${rowsHtml}
-                    </tbody>
-                  </table>
-                  <p style="margin-top: 1.5rem; font-size: 0.8rem; color: #64748b;">Detaylı inceleme ve onay işlemleri için lütfen <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; font-weight: 600; text-decoration: none;">Yönetici Paneli</a>'ne giriş yapınız.</p>
-                `;
-
-                await sendEmail({
-                  to: park.summary_emails,
-                  subject: `📊 Günlük Başvuru Raporu - ${park.name}`,
-                  html: htmlContent,
-                  env: context.env
-                });
-                
-                summariesSent++;
-                summariesTotalApps += parkApps.length;
               }
+
+              // Calculate daily trend counts for the last 7 days
+              const trendStats = [];
+              const daysOfWeek = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+              let maxCount = 0;
+              for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dayStr = d.toLocaleDateString("tr-TR", tz);
+                const dayLabel = `${d.getDate()} ${d.toLocaleDateString("tr-TR", { month: "short", timeZone: "Europe/Istanbul" })} ${daysOfWeek[d.getDay()]}`;
+                
+                const count = parkApps.filter(app => {
+                  if (!app.date_applied) return false;
+                  return new Date(app.date_applied).toLocaleDateString("tr-TR", tz) === dayStr;
+                }).length;
+                
+                if (count > maxCount) maxCount = count;
+                trendStats.push({ label: dayLabel, count });
+              }
+              if (maxCount === 0) maxCount = 1;
+
+              // Construct HTML Summary
+              let rowsHtml = "";
+              for (const app of recentApps) {
+                const dateStr = app.date_applied ? new Date(app.date_applied).toLocaleDateString("tr-TR", tz) : "-";
+                rowsHtml += `
+                  <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 8px; font-family: monospace; font-size: 0.8rem; color: #0f3ba2; font-weight: 600;">${app.id}</td>
+                    <td style="padding: 10px 8px; color: #334155;">${maskName(app.full_name)}</td>
+                    <td style="padding: 10px 8px; font-weight: 700; color: #1e293b; text-transform: uppercase;">${app.plate_number || ""}</td>
+                    <td style="padding: 10px 8px; color: #64748b;">${app.subscription_type || "Bireysel"}</td>
+                    <td style="padding: 10px 8px; font-weight: bold; color: ${app.status === 'Onaylandı' ? '#059669' : (app.status === 'Reddedildi' ? '#dc2626' : '#d97706')};">${app.status}</td>
+                  </tr>
+                `;
+              }
+
+              // Trend bar chart html
+              let trendHtml = "";
+              trendStats.forEach(stat => {
+                const percent = maxCount > 0 ? Math.round((stat.count / maxCount) * 100) : 0;
+                trendHtml += `
+                  <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem;">
+                    <div style="width: 100px; color: #475569; font-weight: 600;">${stat.label}</div>
+                    <div style="flex-grow: 1; background: #e2e8f0; border-radius: 4px; height: 12px; margin: 0 12px; overflow: hidden; position: relative;">
+                      <div style="background: ${stat.count > 0 ? '#0f3ba2' : '#cbd5e1'}; height: 100%; border-radius: 4px; width: ${stat.count > 0 ? Math.max(8, percent) : 0}%;"></div>
+                    </div>
+                    <div style="width: 40px; text-align: right; font-weight: 700; color: #1e293b;">${stat.count}</div>
+                  </div>
+                `;
+              });
+
+              const htmlContent = `
+                <h3 style="color: #0f3ba2; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                  📊 Günlük Başvuru Özet Raporu
+                </h3>
+                
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; border-left: 4px solid #0f3ba2; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0;">
+                  <span style="font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Otopark Konumu</span>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: #0f3ba2; margin-top: 0.15rem;">${park.name}</div>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div style="margin-bottom: 2rem; width: 100%; display: table; border-collapse: separate; border-spacing: 8px 0;">
+                  <div style="display: table-row;">
+                    <!-- Card 1: Son 24 Saat -->
+                    <div style="display: table-cell; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                      <div style="font-size: 0.7rem; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">⚡ SON 24 SAAT</div>
+                      <div style="font-size: 1.8rem; font-weight: 800; color: #d97706; line-height: 1.1;">${recentApps.length}</div>
+                      <div style="font-size: 0.65rem; color: #b45309; font-weight: 600; margin-top: 0.25rem;">Yeni Başvuru</div>
+                    </div>
+                    
+                    <!-- Card 2: Toplam Başvuru -->
+                    <div style="display: table-cell; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                      <div style="font-size: 0.7rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">📊 TÜM ZAMANLAR</div>
+                      <div style="font-size: 1.8rem; font-weight: 800; color: #2563eb; line-height: 1.1;">${totalApps}</div>
+                      <div style="font-size: 0.65rem; color: #1d4ed8; font-weight: 600; margin-top: 0.25rem;">Toplam Başvuru</div>
+                    </div>
+                    
+                    <!-- Card 3: Ort. Onay Süresi -->
+                    <div style="display: table-cell; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                      <div style="font-size: 0.7rem; font-weight: 800; color: #be185d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">⏱️ ORT. ONAY SÜRESİ</div>
+                      <div style="font-size: 1.1rem; font-weight: 800; color: #db2777; line-height: 1.1; padding: 0.4rem 0;">${avgApprovalTimeText}</div>
+                      <div style="font-size: 0.65rem; color: #be185d; font-weight: 600; margin-top: 0.1rem;">Son 24 Saat</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Trend Chart Section -->
+                <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                  <h4 style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.35rem;">
+                    📈 Son 7 Günlük Başvuru Akışı
+                  </h4>
+                  <div style="display: flex; flex-direction: column;">
+                    ${trendHtml}
+                  </div>
+                </div>
+
+                <!-- Recent Applications List Section -->
+                <div style="margin-bottom: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                  <h4 style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em;">
+                    📋 Son 24 Saatte Alınan Başvurular
+                  </h4>
+                  
+                  ${recentApps.length > 0 ? `
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+                      <thead>
+                        <tr style="border-bottom: 2px solid #cbd5e1; color: #475569; font-weight: 700;">
+                          <th style="padding: 8px 4px;">Takip No</th>
+                          <th style="padding: 8px 4px;">Müşteri</th>
+                          <th style="padding: 8px 4px;">Plaka</th>
+                          <th style="padding: 8px 4px;">Abonelik</th>
+                          <th style="padding: 8px 4px;">Durum</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${rowsHtml}
+                      </tbody>
+                    </table>
+                  ` : `
+                    <div style="text-align: center; padding: 1.5rem 1rem; color: #64748b; font-style: italic; font-size: 0.85rem;">
+                      Son 24 saat içinde yeni başvuru kaydı bulunmamaktadır.
+                    </div>
+                  `}
+                </div>
+
+                <p style="margin-top: 2rem; font-size: 0.8rem; color: #64748b; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
+                  Detaylı inceleme ve başvuru onay işlemleri için lütfen 
+                  <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; font-weight: 700; text-decoration: none;">Yönetici Paneli</a>'ne giriş yapınız.
+                </p>
+              `;
+
+              await sendEmail({
+                to: park.summary_emails,
+                subject: `📊 Günlük Başvuru Raporu - ${park.name}`,
+                html: htmlContent,
+                env: context.env
+              });
+              
+              summariesSent++;
+              summariesTotalApps += recentApps.length;
             }
           }
           
           executionResults.push({
             type: "summaries",
-            message: `Daily summaries processed: sent ${summariesSent} reports (containing total ${summariesTotalApps} applications).`
+            message: `Daily summaries processed: sent ${summariesSent} reports (containing total ${summariesTotalApps} recent applications).`
           });
         }
       } catch (summaryErr) {
