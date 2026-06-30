@@ -5364,8 +5364,15 @@ function renderOtoparksTable() {
     let tariffsList = park.tariffs;
     if (!tariffsList || !Array.isArray(tariffsList) || tariffsList.length === 0) {
       tariffsList = [];
-      if (park.priceEmployee) tariffsList.push({ name: 'Personel', price: park.priceEmployee });
-      if (park.priceExternal) tariffsList.push({ name: 'Dış', price: park.priceExternal });
+      const empPrice = (park.priceEmployee || '').trim().replace(/\s+/g, '');
+      const extPrice = (park.priceExternal || '').trim().replace(/\s+/g, '');
+
+      if (empPrice && empPrice !== '0' && empPrice !== '0TL' && empPrice !== '0₺') {
+        tariffsList.push({ name: 'Personel', price: park.priceEmployee });
+      }
+      if (extPrice && extPrice !== '0' && extPrice !== '0TL' && extPrice !== '0₺') {
+        tariffsList.push({ name: 'Dış', price: park.priceExternal });
+      }
     }
 
     if (tariffsList.length > 0) {
@@ -5375,7 +5382,7 @@ function renderOtoparksTable() {
         return `<span style="font-weight: 700; color: var(--color-text-dark);">${shortName}: <span style="color: var(--color-primary); font-weight: 800;">${priceStr}</span></span>`;
       }).join(' <span style="color: #cbd5e1; font-weight: normal;">|</span> ');
     } else {
-      pricingHtml = `<span style="color: var(--color-text-muted); font-style: italic;">Tarife Eklenmemiş</span>`;
+      pricingHtml = `<span style="color: #ef4444; font-style: italic; font-weight: 700; font-size: 0.775rem;">Abonelik Tarifesi Girilmemiş (Aboneliğe Kapalı)</span>`;
     }
 
     const card = document.createElement('div');
