@@ -7193,8 +7193,7 @@ async function deleteCurrentApplication() {
       await loadApplications();
       applyFilters();
 
-      const drawer = document.getElementById('drawer-overlay');
-      if (drawer) drawer.classList.remove('active');
+      closeDrawer();
 
       showToast("Başarılı", "Başvuru başarıyla silindi.", "trash");
     } catch (err) {
