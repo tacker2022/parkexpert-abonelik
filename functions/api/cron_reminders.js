@@ -663,7 +663,13 @@ export async function onRequest(context) {
               });
 
               const htmlContent = `
-                <h3 style="color: #0f3ba2; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                 <!-- Auto Trigger Notification Banner -->
+                 <div style="border: 2px solid #059669; padding: 12px; margin-bottom: 20px; background-color: #f0fdf4; border-radius: 8px; text-align: center; font-family: sans-serif;">
+                   <strong style="color: #059669; font-size: 0.95rem;">🤖 GÜNLÜK OTOMATİK RAPOR</strong><br>
+                   <span style="font-size: 0.8rem; color: #64748b;">Bu e-posta sistem tarafından her gün otomatik olarak oluşturulup gönderilmektedir.</span>
+                 </div>
+
+                 <h3 style="color: #0f3ba2; margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                   📊 Günlük Başvuru Özet Raporu
                 </h3>
                 
