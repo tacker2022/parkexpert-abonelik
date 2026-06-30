@@ -3922,7 +3922,14 @@ function openDrawer(appId) {
         <span class="detail-value">${app.subscription_type}</span>
 
         <span class="detail-label">Seçilen Konum:</span>
-        <span class="detail-value">${app.parking_location}</span>
+        <span class="detail-value" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span>${app.parking_location}</span>
+          ${currentAdminUser === 'superadmin' ? `
+            <button onclick="changeApplicationLocation('${app.id}')" class="btn-edit-inline" title="Otopark Konumunu Değiştir" style="background: none; border: none; cursor: pointer; color: var(--color-primary); display: inline-flex; align-items: center;">
+              <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+            </button>
+          ` : ''}
+        </span>
 
         <span class="detail-label">Başvuru Tarihi:</span>
         <span class="detail-value">${formatDateTR(app.created_at || app.date_applied)}</span>
@@ -6919,6 +6926,45 @@ function changeApplicationCompany(appId) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function changeApplicationLocation(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const modal = document.getElementById('modal-quick-edit');
+  const titleEl = document.getElementById('quick-edit-title');
+  const contentEl = document.getElementById('quick-edit-content');
+  const appIdInput = document.getElementById('quick-edit-app-id');
+  const typeInput = document.getElementById('quick-edit-type');
+
+  if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  if (titleEl) titleEl.textContent = "Otopark Konumunu Düzenle";
+  appIdInput.value = appId;
+  typeInput.value = 'location';
+
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+  
+  let optionsHtml = '';
+  otoparks.forEach(park => {
+    const isSelected = park.name === app.parking_location ? 'selected' : '';
+    optionsHtml += `<option value="${park.name}" ${isSelected}>${park.name}</option>`;
+  });
+
+  contentEl.innerHTML = `
+    <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
+      <label for="edit-location-select" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Otopark / Konum Seçin</label>
+      <select id="edit-location-select" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--color-text-dark); background-color: #ffffff; box-sizing: border-box;">
+        ${optionsHtml}
+      </select>
+    </div>
+  `;
+
+  modal.classList.add('active');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window.changeApplicationLocation = changeApplicationLocation;
+
 function toggleNewCompanyField() {
   const select = document.getElementById('edit-company-select');
   const groupNew = document.getElementById('group-new-company-field');
@@ -6978,6 +7024,10 @@ async function saveQuickEdit(event) {
       d.setHours(23, 59, 59, 999);
       updatePayload.subscription_expires_at = d.toISOString();
     }
+  } else if (type === 'location') {
+    inputVal = document.getElementById('edit-location-select').value;
+    if (!inputVal) return;
+    updatePayload.parking_location = inputVal;
   }
 
   try {
@@ -7003,6 +7053,8 @@ async function saveQuickEdit(event) {
       allApplications[appIndex].company_name = targetCompany;
     } else if (type === 'expiry') {
       allApplications[appIndex].subscription_expires_at = updatePayload.subscription_expires_at;
+    } else if (type === 'location') {
+      allApplications[appIndex].parking_location = inputVal;
     }
 
     // Close modal

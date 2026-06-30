@@ -164,8 +164,8 @@ export async function onRequest(context) {
     // PATCH: Update application status (Approved / Rejected)
     // ----------------------------------------------------
     if (method === "PATCH") {
-       const requestData = await context.request.json();
-      const { id, status, plate_number, company_name, subscription_expires_at, management_approval } = requestData;
+      const requestData = await context.request.json();
+      const { id, status, plate_number, company_name, subscription_expires_at, management_approval, parking_location } = requestData;
       if (!id) {
         return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers });
       }
@@ -281,6 +281,12 @@ export async function onRequest(context) {
           } else if (management_approval === "Reddedildi") {
             updateBody.status = "Reddedildi";
           }
+        }
+        if (parking_location !== undefined) {
+          if (user.role !== "superadmin") {
+            return new Response(JSON.stringify({ error: "Otopark konumunu sadece Süper Yönetici değiştirebilir!" }), { status: 403, headers });
+          }
+          updateBody.parking_location = parking_location;
         }
       }
 
