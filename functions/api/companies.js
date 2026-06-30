@@ -315,28 +315,31 @@ export async function onRequest(context) {
           const passMsg = password ? password : "(Değiştirilmedi, mevcut şifreniz geçerlidir)";
           const messageText = `Merhaba ${targetName},\n\n${company.otopark_name} bünyesindeki "${company.name}" firması için Kurumsal Temsilci Paneli giriş bilgileriniz tanımlanmıştır.\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${targetUser}\n🔑 Şifre: ${passMsg}\n\nBu bilgilerle giriş yaparak şirket araçlarınızı ve personellerinizi kendiniz tanımlayabilirsiniz.`;
 
-          // Send SMS
-          try {
-            await sendSMS(context.env, cleanPhone, messageText);
-          } catch (e) {
-            console.error("Credentials SMS send error:", e);
-          }
-
-          // Send WhatsApp
-          try {
-            await sendWhatsApp(context.env, cleanPhone, messageText);
-          } catch (e) {
-            console.error("Credentials WhatsApp send error:", e);
-          }
-
-          // Send Email
+          // Send notifications in parallel to prevent client-side timeouts
+          const notifications = [];
+          
+          notifications.push(
+            sendSMS(context.env, cleanPhone, messageText)
+              .catch(e => console.error("Credentials SMS send error:", e))
+          );
+          
+          notifications.push(
+            sendWhatsApp(context.env, cleanPhone, messageText)
+              .catch(e => console.error("Credentials WhatsApp send error:", e))
+          );
+          
           const targetEmail = rep_email || company.rep_email;
           if (targetEmail) {
-            try {
-              await sendEmail(context.env, targetEmail, `Kurumsal Panel Giriş Bilgileri - ${company.name}`, messageText);
-            } catch (e) {
-              console.error("Credentials Email send error:", e);
-            }
+            notifications.push(
+              sendEmail(context.env, targetEmail, `Kurumsal Panel Giriş Bilgileri - ${company.name}`, messageText)
+                .catch(e => console.error("Credentials Email send error:", e))
+            );
+          }
+
+          if (context.waitUntil) {
+            context.waitUntil(Promise.all(notifications));
+          } else {
+            await Promise.all(notifications);
           }
         }
       }
