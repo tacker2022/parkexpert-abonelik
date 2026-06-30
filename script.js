@@ -3166,7 +3166,6 @@ async function initAdminController() {
   }
 
   if (overlay) overlay.style.display = 'none';
-  if (adminLayout) adminLayout.style.display = 'flex';
 
   // Start active session countdown timer
   startSessionCountdown();
@@ -7741,6 +7740,9 @@ function handleUserRoleChange() {
   loadApplications();
   populateLocationFilter();
   applyFilters();
+
+  const adminLayout = document.querySelector('.admin-layout');
+  if (adminLayout) adminLayout.style.display = 'flex';
 }
 
 function toggleOperatorStatusDropdown(event) {
