@@ -36,10 +36,20 @@ export async function onRequest(context) {
     });
     const applications = appsRes.ok ? await appsRes.json() : { error: await appsRes.text() };
 
+    // Fetch last 30 audit logs
+    const auditRes = await fetch(`${supabaseUrl}/rest/v1/audit_logs?select=*&order=created_at.desc&limit=30`, {
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": `Bearer ${supabaseAnonKey}`
+      }
+    });
+    const auditLogs = auditRes.ok ? await auditRes.json() : { error: await auditRes.text() };
+
     return new Response(JSON.stringify({
       success: true,
       otoparks,
-      applications
+      applications,
+      auditLogs
     }), { status: 200, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message, stack: err.stack }), { status: 500, headers });
