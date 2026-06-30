@@ -319,19 +319,24 @@ export async function onRequest(context) {
           const notifications = [];
           
           notifications.push(
-            sendSMS(context.env, cleanPhone, messageText)
+            sendSMS(cleanPhone, messageText, context.env)
               .catch(e => console.error("Credentials SMS send error:", e))
           );
           
           notifications.push(
-            sendWhatsApp(context.env, cleanPhone, messageText)
+            sendWhatsApp(cleanPhone, messageText, context.env)
               .catch(e => console.error("Credentials WhatsApp send error:", e))
           );
           
           const targetEmail = rep_email || company.rep_email;
           if (targetEmail) {
             notifications.push(
-              sendEmail(context.env, targetEmail, `Kurumsal Panel Giriş Bilgileri - ${company.name}`, messageText)
+              sendEmail({
+                to: targetEmail,
+                subject: `Kurumsal Panel Giriş Bilgileri - ${company.name}`,
+                html: messageText.replace(/\n/g, "<br>"),
+                env: context.env
+              })
                 .catch(e => console.error("Credentials Email send error:", e))
             );
           }
