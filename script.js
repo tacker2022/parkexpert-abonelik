@@ -5435,7 +5435,15 @@ function renderOtoparksTable() {
         return `<span style="font-weight: 700; color: var(--color-text-dark);">${shortName}: <span style="color: var(--color-primary); font-weight: 800;">${priceStr}</span></span>`;
       }).join(' <span style="color: #cbd5e1; font-weight: normal;">|</span> ');
     } else {
-      pricingHtml = `<span style="color: #ef4444; font-style: italic; font-weight: 700; font-size: 0.775rem;">Abonelik Tarifesi Girilmemiş (Aboneliğe Kapalı)</span>`;
+      pricingHtml = `
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="color: #ef4444; font-style: italic; font-weight: 700; font-size: 0.775rem;">Aboneliğe Kapalı (Tarife Yok)</span>
+          <button type="button" onclick="editOtopark('${park.id}')" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.675rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; transition: all 0.15s ease; outline: none; line-height: 1;" onmouseover="this.style.background='rgba(239, 68, 68, 0.15)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'" title="Tarife tanımlamak için tıklayın">
+            <i data-lucide="plus" style="width: 10px; height: 10px;"></i>
+            <span>Tarife Ekle</span>
+          </button>
+        </div>
+      `;
     }
 
     const card = document.createElement('div');
