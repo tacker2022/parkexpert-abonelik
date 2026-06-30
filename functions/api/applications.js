@@ -287,6 +287,35 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ error: "Otopark konumunu sadece Süper Yönetici değiştirebilir!" }), { status: 403, headers });
           }
           updateBody.parking_location = parking_location;
+
+          // Fetch new otopark config to check requires_management_approval
+          let newRequiresManagement = false;
+          try {
+            const newOtoparkRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?name=eq.${encodeURIComponent(parking_location)}&select=requires_management_approval`, {
+              headers: {
+                "apikey": supabaseAnonKey,
+                "Authorization": `Bearer ${supabaseAnonKey}`
+              }
+            });
+            if (newOtoparkRes.ok) {
+              const newOtoparksArr = await newOtoparkRes.json();
+              if (newOtoparksArr.length > 0) {
+                newRequiresManagement = newOtoparksArr[0].requires_management_approval === true;
+              }
+            }
+          } catch (e) {
+            console.error("Error checking requires_management_approval for new parking location:", e);
+          }
+
+          if (newRequiresManagement) {
+            updateBody.management_approval = "Beklemede";
+            updateBody.status = "Beklemede";
+            updateBody.subscription_expires_at = null;
+          } else {
+            updateBody.management_approval = "İzin Verildi";
+            updateBody.status = "Beklemede";
+            updateBody.subscription_expires_at = null;
+          }
         }
       }
 
