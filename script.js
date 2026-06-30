@@ -12789,7 +12789,19 @@ function renderCompanyMgmtList(list) {
 
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
-        <td style="padding: 0.85rem 1rem; font-weight: 600; font-size: 0.9rem; color: var(--color-text-dark);">${c.name}</td>
+        <td style="padding: 0.85rem 1rem; font-weight: 600; font-size: 0.9rem; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span>${c.name}</span>
+          ${(() => {
+            const activeVehicles = (typeof allApplications !== 'undefined' ? allApplications : []).filter(app => 
+              app.parking_location === c.otopark_name && 
+              app.company_name && 
+              app.company_name.trim().toUpperCase() === c.name.trim().toUpperCase()
+            ).length;
+            return activeVehicles > 0 
+              ? `<span style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.725rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> ${activeVehicles} Araç</span>`
+              : `<span style="background: rgba(148, 163, 184, 0.08); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.15); font-size: 0.725rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> 0 Araç</span>`;
+          })()}
+        </td>
         <td style="padding: 0.85rem 1rem; color: var(--color-text-muted); font-size: 0.85rem;">@${c.created_by || 'sistem'}</td>
         <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">${settingsBtn}${deleteBtn}</td>
       </tr>
