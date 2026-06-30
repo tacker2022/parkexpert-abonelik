@@ -1284,10 +1284,16 @@ function showToastNotification(title, message, iconName) {
     
     if (toastIcon) {
       if (iconName === 'check' || !iconName) {
-        toastIcon.innerHTML = `<img src="assets/logo_square.png?v=3" style="width: 24px; height: 24px; object-fit: contain;">`;
+        toastIcon.style.background = 'transparent';
+        toastIcon.style.borderRadius = '0';
+        toastIcon.innerHTML = `<img src="assets/logo_square.png?v=3" style="width: 36px; height: 36px; object-fit: contain;">`;
       } else if (iconName.startsWith('/') || iconName.startsWith('assets/')) {
-        toastIcon.innerHTML = `<img src="${iconName}?v=3" style="width: 24px; height: 24px; object-fit: contain;">`;
+        toastIcon.style.background = 'transparent';
+        toastIcon.style.borderRadius = '0';
+        toastIcon.innerHTML = `<img src="${iconName}?v=3" style="width: 36px; height: 36px; object-fit: contain;">`;
       } else {
+        toastIcon.style.background = '';
+        toastIcon.style.borderRadius = '';
         let iconColor = 'var(--color-primary)';
         if (['alert-circle', 'alert-triangle', 'shield-alert', 'trash'].includes(iconName)) {
           iconColor = '#ef4444'; // Red for errors/deletions/warnings
