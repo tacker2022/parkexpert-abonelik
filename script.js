@@ -5278,11 +5278,18 @@ function renderOtoparksTable() {
     const assignedAdmins = admins.filter(admin => admin.otoparks && admin.otoparks.includes(park.name));
 
     const managementAdmins = assignedAdmins.filter(admin => isYonetimRole(admin.role));
-    const operatorAdmins = assignedAdmins.filter(admin => !isYonetimRole(admin.role));
+    const operatorAdmins = assignedAdmins.filter(admin => (admin.role || 'admin') === 'admin');
+    const companyAdmins = assignedAdmins.filter(admin => admin.role === 'company');
+
+    // Get unique active companies from allApplications for this otopark
+    const otoparkCompanies = [...new Set(allApplications
+      .filter(a => a.parking_location === park.name && a.company_name && a.company_name.trim() !== '' && a.company_name.trim() !== 'SERBEST ÇALIŞAN')
+      .map(a => a.company_name.trim())
+    )];
 
     let authoritiesHtml = '';
     
-    if (assignedAdmins.length > 0) {
+    if (managementAdmins.length > 0 || operatorAdmins.length > 0 || companyAdmins.length > 0 || otoparkCompanies.length > 0) {
       let managementSectionHtml = '';
       if (managementAdmins.length > 0) {
         managementSectionHtml = `
@@ -5340,7 +5347,7 @@ function renderOtoparksTable() {
                     </div>
                     <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
                       <span style="font-size: 0.725rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">${admin.name}</span>
-                      <span style="font-size: 0.6rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;">@${admin.username}</span>
+                      <span style="font-size: 0.65rem; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;">@${admin.username}</span>
                     </div>
                   </div>
                 `;
@@ -5361,18 +5368,34 @@ function renderOtoparksTable() {
         `;
       }
 
+      let companySectionHtml = '';
+      if (otoparkCompanies.length > 0 || companyAdmins.length > 0) {
+        companySectionHtml = `
+          <div style="margin-top: 0.65rem; border-top: 1px dashed rgba(15, 59, 162, 0.1); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: var(--color-primary-dark); display: inline-flex; align-items: center; gap: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i data-lucide="building" style="width: 11px; height: 11px; color: var(--color-primary);"></i> Firma Yetkilileri
+            </span>
+            <button type="button" onclick="openOtoparkCompaniesModal('${park.name.replace(/'/g, "\\'")}')" style="background: rgba(15, 59, 162, 0.06); border: 1px solid rgba(15, 59, 162, 0.12); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; color: var(--color-primary-dark); font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; transition: all 0.15s ease;">
+              <span>${otoparkCompanies.length} Firma / ${companyAdmins.length} Yetkili</span>
+              <i data-lucide="search" style="width: 10px; height: 10px;"></i>
+            </button>
+          </div>
+        `;
+      }
+
       authoritiesHtml = `
         <div class="otopark-card__field otopark-card__field--full" style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(15, 59, 162, 0.02); border: 1px solid rgba(15, 59, 162, 0.06); border-radius: var(--radius-md); padding: 0.65rem 0.75rem; margin-top: 0.25rem; grid-column: 1 / -1;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-primary-dark); display: inline-flex; align-items: center; gap: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em;">
               <i data-lucide="users" style="width: 12px; height: 12px; color: var(--color-primary);"></i> Atanan Yetkililer
             </span>
-            <span style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 600;">(${assignedAdmins.length} yetkili)</span>
+            <span style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 600;">(${managementAdmins.length + operatorAdmins.length} yetkili)</span>
           </div>
-          <div style="display: flex; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.75rem; width: 100%;">
             ${managementSectionHtml}
             ${operatorSectionHtml}
           </div>
+          ${companySectionHtml}
         </div>
       `;
     } else {
@@ -13610,6 +13633,173 @@ function deleteOtoparkTariffRow(rowId) {
 
 window.addOtoparkTariffRow = addOtoparkTariffRow;
 window.deleteOtoparkTariffRow = deleteOtoparkTariffRow;
+
+// Otopark B2B Company & Representatives Modal Logic
+async function openOtoparkCompaniesModal(otoparkName) {
+  const modal = document.getElementById('modal-otopark-companies');
+  const titleEl = document.getElementById('otopark-companies-modal-title');
+  const tbody = document.getElementById('otopark-companies-table-body');
+  const searchInput = document.getElementById('otopark-companies-search');
+  
+  if (!modal || !tbody) return;
+  
+  if (searchInput) searchInput.value = '';
+  
+  titleEl.textContent = `${otoparkName} - Firma Temsilcileri`;
+  tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Yükleniyor...</td></tr>`;
+  
+  openModal('modal-otopark-companies');
+  
+  // Save current otopark name globally for filtering
+  window.currentOtoparkCompaniesName = otoparkName;
+  window.currentOtoparkCompaniesList = [];
+  
+  try {
+    const res = await fetch(`/api/companies?otopark=${encodeURIComponent(otoparkName)}`);
+    if (!res.ok) throw new Error("Firmalar yüklenemedi");
+    const companies = await res.json();
+    
+    // Get admins with role === 'company' for this otopark
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const companyAdmins = admins.filter(a => a.role === 'company' && a.otoparks && a.otoparks.includes(otoparkName));
+    
+    // Build a map of company name -> list of representatives
+    const companyRepsMap = {};
+    
+    // First, add the primary rep from the company row
+    companies.forEach(c => {
+      const companyNameClean = c.name.trim();
+      if (!companyRepsMap[companyNameClean]) {
+        companyRepsMap[companyNameClean] = [];
+      }
+      if (c.rep_name) {
+        companyRepsMap[companyNameClean].push({
+          name: c.rep_name,
+          phone: c.rep_phone || '-',
+          email: c.rep_email || '-',
+          username: c.username || '-',
+          isPrimary: true
+        });
+      }
+    });
+    
+    // Next, add other company admins matching this otopark and their company name
+    companyAdmins.forEach(a => {
+      if (a.company_name) {
+        const companyNameClean = a.company_name.trim();
+        if (!companyRepsMap[companyNameClean]) {
+          companyRepsMap[companyNameClean] = [];
+        }
+        // Avoid duplicate if primary is the same username
+        const exists = companyRepsMap[companyNameClean].some(r => r.username === a.username);
+        if (!exists) {
+          companyRepsMap[companyNameClean].push({
+            name: a.name,
+            phone: a.phone || '-',
+            email: a.email || '-',
+            username: a.username || '-',
+            isPrimary: false
+          });
+        }
+      }
+    });
+    
+    // Also include any companies that have no representative listed yet
+    companies.forEach(c => {
+      const companyNameClean = c.name.trim();
+      if (companyRepsMap[companyNameClean].length === 0) {
+        companyRepsMap[companyNameClean].push({
+          name: null,
+          phone: null,
+          email: null,
+          username: null,
+          isPrimary: false
+        });
+      }
+    });
+    
+    // Convert to list for filtering
+    window.currentOtoparkCompaniesList = Object.keys(companyRepsMap).map(compName => ({
+      companyName: compName,
+      reps: companyRepsMap[compName]
+    }));
+    
+    // Render the table
+    renderOtoparkCompaniesList();
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 700;">Hata: ${err.message}</td></tr>`;
+  }
+}
+
+function renderOtoparkCompaniesList() {
+  const tbody = document.getElementById('otopark-companies-table-body');
+  const searchInput = document.getElementById('otopark-companies-search');
+  if (!tbody) return;
+  
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  
+  // Filter the list
+  const filtered = window.currentOtoparkCompaniesList.filter(item => {
+    const nameMatch = item.companyName.toLowerCase().includes(query);
+    const repMatch = item.reps.some(r => r.name && r.name.toLowerCase().includes(query));
+    const userMatch = item.reps.some(r => r.username && r.username.toLowerCase().includes(query));
+    return nameMatch || repMatch || userMatch;
+  });
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--color-text-muted); text-align: center;">Arama kriterlerine uygun firma bulunamadı.</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = filtered.map(item => {
+    let repsHtml = '';
+    const activeReps = item.reps.filter(r => r.name);
+    
+    if (activeReps.length > 0) {
+      repsHtml = activeReps.map(r => `
+        <div style="display: flex; flex-direction: column; gap: 0.2rem; background: #f8fafc; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-weight: 700; color: var(--color-text-dark);">${r.name}</span>
+            ${r.isPrimary ? '<span style="background: rgba(37, 99, 235, 0.1); color: var(--color-primary); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.6rem; font-weight: 800;">Ana Temsilci</span>' : ''}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+            <span>👤 Kullanıcı: <strong style="color: var(--color-text-dark);">${r.username}</strong></span>
+            <span>📞 Tel: <strong style="color: var(--color-text-dark);">${r.phone}</strong></span>
+            <span style="grid-column: span 2;">✉️ E-posta: <strong style="color: var(--color-text-dark);">${r.email}</strong></span>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      repsHtml = `<span style="color: var(--color-text-muted); font-style: italic;">Henüz tanımlı temsilci bulunmuyor</span>`;
+    }
+    
+    return `
+      <tr style="border-bottom: 1px solid var(--color-border-light); vertical-align: top;">
+        <td style="padding: 1rem; font-weight: 700; color: var(--color-text-dark); text-transform: uppercase;">
+          <div style="display: center; align-items: center; gap: 0.4rem;">
+            <i data-lucide="building" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+            <span>${item.companyName}</span>
+          </div>
+        </td>
+        <td style="padding: 1rem;">
+          ${repsHtml}
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+function filterOtoparkCompaniesList() {
+  renderOtoparkCompaniesList();
+}
+
+window.openOtoparkCompaniesModal = openOtoparkCompaniesModal;
+window.filterOtoparkCompaniesList = filterOtoparkCompaniesList;
 
 
 
