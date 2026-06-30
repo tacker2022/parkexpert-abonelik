@@ -2129,6 +2129,10 @@ function updatePaymentPanel() {
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${tariffOptionsHtml}
           </div>
+          <div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.775rem; color: #1e3a8a; line-height: 1.4; font-weight: 500; display: flex; align-items: flex-start; gap: 0.4rem; text-align: left;">
+            <i data-lucide="info" style="width: 16px; height: 16px; color: #3b82f6; flex-shrink: 0; margin-top: 0.05rem;"></i>
+            <span><strong>Önemli Bilgilendirme:</strong> Seçtiğiniz abonelik tarifesinin doğruluğu (çalışan/personel durumunuz vb.) operatörlerimiz tarafından ruhsat ve beyan ettiğiniz bilgiler doğrultusunda kontrol edilecektir. Yanıltıcı veya hatalı tarife seçimi tespit edilmesi durumunda başvurunuz <strong>onaylanmayacak</strong> ve abonelik işleminiz iptal edilecektir.</span>
+          </div>
         </div>
       </div>
       <div class="payment-warning-text">
