@@ -544,7 +544,7 @@ export async function onRequest(context) {
                             const avgTimeText = getAvgApprovalTime(stat.apps);
                             return `
                               <tr style="border-bottom: ${idx < allTimeStats.length - 1 ? '1px solid #f1f5f9' : 'none'};">
-                                <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif;">${stat.label}</td>
+                                <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif; white-space: nowrap;">${stat.label}</td>
                                 <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f3ba2; font-family: sans-serif; white-space: nowrap;">
                                   ${stat.count} kayıt ${avgTimeText ? `<span style="font-size: 0.75rem; color: #64748b; font-weight: 500; margin-left: 4px;">(Ort: ${avgTimeText})</span>` : ""}
                                 </td>
@@ -619,9 +619,9 @@ export async function onRequest(context) {
                 const percent = maxCount > 0 ? Math.round((stat.count / maxCount) * 100) : 0;
                 trendHtml += `
                   <tr>
-                    <td class="trend-date" style="width: 120px; color: #475569; font-weight: 600; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.label}</td>
+                    <td class="trend-date" style="width: 120px; color: #475569; font-weight: 600; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle; white-space: nowrap;">${stat.label}</td>
                     <td style="padding: 8px 0; vertical-align: middle;">
-                      <div style="background-color: #e2e8f0; border-radius: 6px; height: 12px; min-width: 120px; max-width: 320px; overflow: hidden; position: relative; display: block;">
+                      <div class="trend-bar-container" style="background-color: #e2e8f0; border-radius: 6px; height: 12px; min-width: 120px; max-width: 320px; overflow: hidden; position: relative; display: block;">
                         <table style="width: 100%; height: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
                           <tr>
                             <td style="background-color: ${stat.count > 0 ? '#0f3ba2' : '#cbd5e1'}; width: ${stat.count > 0 ? Math.max(8, percent) : 0}%; height: 12px; border-radius: 6px; border: none; padding: 0;"></td>

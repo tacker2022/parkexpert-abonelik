@@ -55,10 +55,15 @@ export async function sendEmail({ to, subject, html, env }) {
     .trend-date {
       width: 90px !important;
       font-size: 0.78rem !important;
+      white-space: nowrap !important;
     }
     .trend-count {
       width: 105px !important;
       font-size: 0.78rem !important;
+      white-space: nowrap !important;
+    }
+    .trend-bar-container {
+      min-width: 50px !important;
     }
   }
 </style>
