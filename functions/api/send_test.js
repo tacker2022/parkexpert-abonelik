@@ -291,8 +291,18 @@ export async function onRequest(context) {
           const endTr = new Date(Date.now() + trOffset);
           const endMidnight = new Date(endTr.getUTCFullYear(), endTr.getUTCMonth(), endTr.getUTCDate());
           
+          // Cutoff for last 7 days (today and 6 days prior)
+          const sevenDaysAgoMidnight = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
+          const cutoffTr = new Date(sevenDaysAgoMidnight.getTime() + trOffset);
+          const cutoffMidnight = new Date(cutoffTr.getUTCFullYear(), cutoffTr.getUTCMonth(), cutoffTr.getUTCDate()).getTime();
+
           let current = new Date(startMidnight);
           while (current <= endMidnight) {
+            if (current.getTime() >= cutoffMidnight) {
+              current.setDate(current.getDate() + 1);
+              continue;
+            }
+
             const localDay = current.getDate();
             const localMonth = current.getMonth();
             const year = current.getFullYear();
