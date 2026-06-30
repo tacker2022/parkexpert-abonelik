@@ -87,6 +87,7 @@ export async function onRequest(context) {
       }
 
       let recentApps = [];
+      let parkApps = [];
       let totalApps = 0;
       let avgApprovalTimeText = "—";
       let trendStats = [];
@@ -110,7 +111,7 @@ export async function onRequest(context) {
         }
 
         const allApps = await allAppsRes.json();
-        const parkApps = allApps.filter(app => app.parking_location === selectedParkingLocation);
+        parkApps = allApps.filter(app => app.parking_location === selectedParkingLocation);
         recentApps = parkApps.filter(app => app.date_applied && new Date(app.date_applied) >= yesterday);
         totalApps = parkApps.length;
 
