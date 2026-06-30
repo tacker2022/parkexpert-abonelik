@@ -2054,27 +2054,38 @@ function updatePaymentPanel() {
   let tariffs = park.tariffs;
   if (!tariffs || !Array.isArray(tariffs) || tariffs.length === 0) {
     tariffs = [];
-    if (park.priceEmployee) {
+    const empPrice = (park.priceEmployee || '').trim().replace(/\s+/g, '');
+    const extPrice = (park.priceExternal || '').trim().replace(/\s+/g, '');
+
+    if (empPrice && empPrice !== '0' && empPrice !== '0TL' && empPrice !== '0₺') {
       tariffs.push({ name: 'Personel Tarifesi', price: park.priceEmployee });
     }
-    if (park.priceExternal) {
+    if (extPrice && extPrice !== '0' && extPrice !== '0TL' && extPrice !== '0₺') {
       tariffs.push({ name: 'Dış Abonelik Tarifesi', price: park.priceExternal });
     }
   }
 
   let tariffOptionsHtml = '';
-  tariffs.forEach((t, idx) => {
-    const isChecked = idx === 0 ? 'checked' : '';
-    tariffOptionsHtml += `
-      <label class="tariff-radio-label" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box;">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <input type="radio" name="selected-tariff-radio" value="${t.name} (${t.price})" ${isChecked} style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary);">
-          <span style="font-size: 0.875rem; font-weight: 800; color: var(--color-text-dark);">${t.name}</span>
-        </div>
-        <span style="font-size: 0.95rem; font-weight: 800; color: var(--color-primary);">${t.price}</span>
-      </label>
+  if (tariffs.length === 0) {
+    tariffOptionsHtml = `
+      <div style="padding: 1rem; border: 1px dashed #ef4444; background: rgba(239, 68, 68, 0.04); border-radius: var(--radius-md); text-align: center; color: #ef4444; font-size: 0.85rem; font-weight: 700; width: 100%; box-sizing: border-box;">
+        Bu otopark için aktif abonelik alımı yapılmamaktadır.
+      </div>
     `;
-  });
+  } else {
+    tariffs.forEach((t, idx) => {
+      const isChecked = idx === 0 ? 'checked' : '';
+      tariffOptionsHtml += `
+        <label class="tariff-radio-label" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <input type="radio" name="selected-tariff-radio" value="${t.name} (${t.price})" ${isChecked} style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary);">
+            <span style="font-size: 0.875rem; font-weight: 800; color: var(--color-text-dark);">${t.name}</span>
+          </div>
+          <span style="font-size: 0.95rem; font-weight: 800; color: var(--color-primary);">${t.price}</span>
+        </label>
+      `;
+    });
+  }
 
   panel.innerHTML = `
     <div class="payment-info-card">
@@ -5987,10 +5998,13 @@ function editOtopark(otoparkId) {
   let tariffs = park.tariffs;
   if (!tariffs || !Array.isArray(tariffs) || tariffs.length === 0) {
     tariffs = [];
-    if (park.priceEmployee) {
+    const empPrice = (park.priceEmployee || '').trim().replace(/\s+/g, '');
+    const extPrice = (park.priceExternal || '').trim().replace(/\s+/g, '');
+    
+    if (empPrice && empPrice !== '0' && empPrice !== '0TL' && empPrice !== '0₺') {
       tariffs.push({ name: 'Personel', price: park.priceEmployee });
     }
-    if (park.priceExternal) {
+    if (extPrice && extPrice !== '0' && extPrice !== '0TL' && extPrice !== '0₺') {
       tariffs.push({ name: 'Dış Abonelik', price: park.priceExternal });
     }
   }
@@ -11422,7 +11436,7 @@ function renderAuditLogsTable(logs) {
     return;
   }
 
-  logs.forEach(log => {
+  logs.forEach((log, idx) => {
     const tr = document.createElement('tr');
 
     // Format Date
@@ -11522,7 +11536,7 @@ function renderAuditLogsTable(logs) {
       <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
         <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
       </td>
-      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; cursor: help;" title="${maskAuditDetails(log.details || '').replace(/"/g, '&quot;')}">${maskAuditDetails(log.details || '')}</td>
+      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; cursor: pointer; transition: color 0.15s ease;" onclick="viewAuditLogDetails(${idx})" title="Detayları görmek için tıklayın">${maskAuditDetails(log.details || '')}</td>
       <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
     `;
 
@@ -11533,6 +11547,118 @@ function renderAuditLogsTable(logs) {
 // Bind loadAuditLogs to window so inline onclick handlers in admin.html can call it
 window.loadAuditLogs = loadAuditLogs;
 window.filterAuditLogs = filterAuditLogs;
+
+function viewAuditLogDetails(idx) {
+  const log = allAuditLogs[idx];
+  if (!log) return;
+
+  // Format Date
+  let dateFormatted = '-';
+  if (log.created_at) {
+    try {
+      const d = new Date(log.created_at);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        dateFormatted = `${day}.${month}.${year} ${hours}:${minutes}`;
+      }
+    } catch (e) {
+      dateFormatted = log.created_at;
+    }
+  }
+
+  // Populate elements
+  const dateEl = document.getElementById('audit-details-date');
+  const adminEl = document.getElementById('audit-details-admin');
+  const actionEl = document.getElementById('audit-details-action');
+  const ipEl = document.getElementById('audit-details-ip');
+  const contentEl = document.getElementById('audit-details-content');
+
+  // Action Translation mapping
+  let actionLabel = log.action_type;
+  let actionColor = '#475569';
+  switch (log.action_type) {
+    case 'approve_app':
+      actionLabel = 'Başvuru Onaylandı ✅';
+      actionColor = '#059669';
+      break;
+    case 'reject_app':
+      actionLabel = 'Başvuru Reddedildi ❌';
+      actionColor = '#dc2626';
+      break;
+    case 'management_approve':
+      actionLabel = 'Yönetim İzni Verildi 🟢';
+      actionColor = '#16a34a';
+      break;
+    case 'management_reject':
+      actionLabel = 'Yönetim Reddedildi 🔴';
+      actionColor = '#e53e3e';
+      break;
+    case 'extend_subscription':
+      actionLabel = 'Abonelik Süresi Uzatıldı ⏳';
+      actionColor = '#d97706';
+      break;
+    case 'edit_application':
+      actionLabel = 'Başvuru Düzenlendi ✏️';
+      actionColor = '#0d9488';
+      break;
+    case 'update_settings':
+      actionLabel = 'Sistem Ayarları Değişti ⚙️';
+      actionColor = '#7c3aed';
+      break;
+    case 'create_otopark':
+      actionLabel = 'Yeni Otopark Eklendi ➕';
+      actionColor = '#2563eb';
+      break;
+    case 'update_otopark':
+      actionLabel = 'Otopark Güncellendi 🔄';
+      actionColor = '#16a34a';
+      break;
+    case 'delete_otopark':
+      actionLabel = 'Otopark Silindi 🗑️';
+      actionColor = '#e53e3e';
+      break;
+    case 'create_admin':
+      actionLabel = 'Yeni Yönetici Eklendi 👤';
+      actionColor = '#2563eb';
+      break;
+    case 'update_admin':
+      actionLabel = 'Yönetici Güncellendi 👤';
+      actionColor = '#16a34a';
+      break;
+    case 'delete_admin':
+      actionLabel = 'Yönetici Silindi 🗑️';
+      actionColor = '#e53e3e';
+      break;
+  }
+
+  if (dateEl) dateEl.textContent = dateFormatted;
+  if (adminEl) adminEl.textContent = `${log.admin_username} (${getDynamicRoleLabel(log.admin_role, null)})`;
+  if (actionEl) {
+    actionEl.textContent = actionLabel;
+    actionEl.style.color = actionColor;
+  }
+  if (ipEl) ipEl.textContent = log.ip_address || '-';
+
+  // Format Content beautifully
+  let detailsText = log.details || '';
+  try {
+    if (detailsText.trim().startsWith('{') || detailsText.trim().startsWith('[')) {
+      const obj = JSON.parse(detailsText);
+      detailsText = JSON.stringify(obj, null, 2);
+    }
+  } catch (e) {
+    // Fail-safe
+  }
+  if (contentEl) contentEl.textContent = maskAuditDetails(detailsText);
+
+  openModal('modal-audit-log-details');
+}
+
+window.viewAuditLogDetails = viewAuditLogDetails;
 
 async function downloadAuditLogsCSV() {
   const token = localStorage.getItem('parkexpert_token');

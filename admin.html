@@ -2491,6 +2491,53 @@
     </div>
   </div>
 
+  <!-- Modal: Audit Log Details -->
+  <div class="modal" id="modal-audit-log-details" style="display: none;">
+    <div class="modal-content" style="max-width: 650px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+      <div class="modal-header" style="background: rgba(15, 59, 162, 0.03); border-bottom: 1px solid var(--color-border-light); padding: 1.25rem 1.5rem;">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; color: var(--color-primary-dark); font-weight: 800;">
+          <i data-lucide="scroll" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
+          <span>İşlem Denetim Detayı</span>
+        </h3>
+        <button class="btn-close" onclick="closeModal('modal-audit-log-details')" style="font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer; border: none; background: none; outline: none;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+        
+        <!-- Log metadata card -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: #f8fafc; border: 1px solid var(--color-border-light); padding: 1rem; border-radius: var(--radius-md);">
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">İşlem Tarihi</span>
+            <span id="audit-details-date" style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-dark);">-</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">İşlem Yapan Yönetici</span>
+            <span id="audit-details-admin" style="font-size: 0.85rem; font-weight: 800; color: var(--color-text-dark);">-</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">İşlem Türü</span>
+            <div id="audit-details-action" style="font-size: 0.85rem; font-weight: 600;">-</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">IP Adresi</span>
+            <span id="audit-details-ip" style="font-size: 0.85rem; font-family: monospace; color: var(--color-text-dark);">-</span>
+          </div>
+        </div>
+
+        <!-- Log details content -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Detaylı Açıklama & Değişiklikler</span>
+          <div id="audit-details-content" style="background: #1e293b; color: #f8fafc; font-family: monospace; padding: 1rem; border-radius: var(--radius-md); font-size: 0.825rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; border: 1px solid #0f172a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+            -
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid var(--color-border-light); padding: 1rem 1.5rem; display: flex; justify-content: flex-end; background: rgba(15, 59, 162, 0.01);">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-audit-log-details')" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 38px; border: 1px solid var(--color-border-light); background: var(--color-primary); color: var(--color-primary-dark); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-notification" id="email-toast">
     <div class="toast-icon">
