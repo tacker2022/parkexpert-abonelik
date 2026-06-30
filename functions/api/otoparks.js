@@ -162,7 +162,8 @@ export async function onRequest(context) {
         notificationEmails,
         summaryEmails,
         requiresManagementApproval,
-        applyEmployeePriceToCorporate
+        applyEmployeePriceToCorporate,
+        allowIndividual
       } = payload;
 
       if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
@@ -184,7 +185,8 @@ export async function onRequest(context) {
         notification_emails: notificationEmails || null,
         summary_emails: summaryEmails || null,
         requires_management_approval: requiresManagementApproval === true,
-        apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true
+        apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true,
+        allow_individual: allowIndividual !== false
       };
 
       if (templates !== undefined) {
