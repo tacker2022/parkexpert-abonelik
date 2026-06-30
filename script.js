@@ -652,6 +652,9 @@ async function populateOtoparkSelection() {
         if (p.allow_individual !== undefined) {
           p.allowIndividual = p.allow_individual;
         }
+        if (p.tariffs !== undefined) {
+          p.tariffs = p.tariffs;
+        }
       });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     } else {
@@ -2048,9 +2051,30 @@ function updatePaymentPanel() {
     return;
   }
 
-  // Pre-formatted pricing
-  const employeePrice = park.priceEmployee || 'Belirtilmedi';
-  const externalPrice = park.priceExternal || 'Belirtilmedi';
+  let tariffs = park.tariffs;
+  if (!tariffs || !Array.isArray(tariffs) || tariffs.length === 0) {
+    tariffs = [];
+    if (park.priceEmployee) {
+      tariffs.push({ name: 'Personel Tarifesi', price: park.priceEmployee });
+    }
+    if (park.priceExternal) {
+      tariffs.push({ name: 'Dış Abonelik Tarifesi', price: park.priceExternal });
+    }
+  }
+
+  let tariffOptionsHtml = '';
+  tariffs.forEach((t, idx) => {
+    const isChecked = idx === 0 ? 'checked' : '';
+    tariffOptionsHtml += `
+      <label class="tariff-radio-label" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <input type="radio" name="selected-tariff-radio" value="${t.name} (${t.price})" ${isChecked} style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary);">
+          <span style="font-size: 0.875rem; font-weight: 800; color: var(--color-text-dark);">${t.name}</span>
+        </div>
+        <span style="font-size: 0.95rem; font-weight: 800; color: var(--color-primary);">${t.price}</span>
+      </label>
+    `;
+  });
 
   panel.innerHTML = `
     <div class="payment-info-card">
@@ -2090,14 +2114,20 @@ function updatePaymentPanel() {
         </div>
 
         <div class="payment-section">
-          <div class="payment-section-title">Tarife & İletişim</div>
+          <div class="payment-section-title">Destek & İletişim</div>
           <div class="payment-detail-row">
-            <span class="payment-detail-label">Fiyat Bilgisi (Aylık / Araç Başı):</span>
-            <span class="payment-detail-value">Personel: ${employeePrice} | Dış Abonelik: ${externalPrice}</span>
-          </div>
-          <div class="payment-detail-row" style="margin-top: 0.5rem;">
             <span class="payment-detail-label">Abonelik Destek Hattı:</span>
-            <span class="payment-detail-value" style="color: var(--color-primary);">${park.supportPhone || '0501 618 34 82'}</span>
+            <span class="payment-detail-value" style="color: var(--color-primary); font-weight: 700;">${park.supportPhone || '0501 618 34 82'}</span>
+          </div>
+        </div>
+
+        <div class="payment-section" style="grid-column: 1 / -1; margin-top: 0.5rem; border-top: 1px dashed var(--color-border-light); padding-top: 1rem;">
+          <div class="payment-section-title" style="margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="check-square" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+            <span>Lütfen Ödediğiniz Abonelik Tarifesini Seçin:</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${tariffOptionsHtml}
           </div>
         </div>
       </div>
@@ -2107,6 +2137,8 @@ function updatePaymentPanel() {
       </div>
     </div>
   `;
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -2222,14 +2254,8 @@ async function handleFormSubmit() {
     is_custom: isCustom
   };
 
-  let appSubtype = 'Bireysel';
-  if (isBireyselSubmit) {
-    appSubtype = isCustom ? 'Bireysel (Şahıs Faturası)' : 'Bireysel';
-  } else if (isSahisSubmit) {
-    appSubtype = 'Kurumsal (Şahıs Şirketi)';
-  } else {
-    appSubtype = 'Kurumsal (LTD. / A.Ş.)';
-  }
+  const selectedTariffRadio = document.querySelector('input[name="selected-tariff-radio"]:checked');
+  const appSubtype = selectedTariffRadio ? selectedTariffRadio.value : 'Bireysel';
 
   // Show loader overlay
   showSubmitLoader();
@@ -5933,8 +5959,24 @@ function editOtopark(otoparkId) {
   document.getElementById('edit-otopark-tax-number').value = park.taxNumber || '';
   document.getElementById('edit-otopark-bank').value = park.bankName || '';
   document.getElementById('edit-otopark-iban').value = park.iban || '';
-  document.getElementById('edit-otopark-price-emp').value = park.priceEmployee || '';
-  document.getElementById('edit-otopark-price-ext').value = park.priceExternal || '';
+  const tariffsContainer = document.getElementById('edit-otopark-tariffs-container');
+  if (tariffsContainer) tariffsContainer.innerHTML = '';
+
+  let tariffs = park.tariffs;
+  if (!tariffs || !Array.isArray(tariffs) || tariffs.length === 0) {
+    tariffs = [];
+    if (park.priceEmployee) {
+      tariffs.push({ name: 'Personel', price: park.priceEmployee });
+    }
+    if (park.priceExternal) {
+      tariffs.push({ name: 'Dış Abonelik', price: park.priceExternal });
+    }
+  }
+
+  tariffs.forEach(t => {
+    addOtoparkTariffRow(t.name, t.price);
+  });
+
   document.getElementById('edit-otopark-support').value = park.supportPhone || '';
   document.getElementById('edit-otopark-status').value = park.isActive !== false ? 'active' : 'inactive';
   document.getElementById('edit-otopark-req-approval').checked = park.requiresManagementApproval === true;
@@ -5969,6 +6011,7 @@ async function loadOtoparks() {
           if (p.requires_management_approval !== undefined) p.requiresManagementApproval = p.requires_management_approval;
           if (p.apply_employee_price_to_corporate !== undefined) p.applyEmployeePriceToCorporate = p.apply_employee_price_to_corporate;
           if (p.allow_individual !== undefined) p.allowIndividual = p.allow_individual;
+          if (p.tariffs !== undefined) p.tariffs = p.tariffs;
         });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     }
@@ -5994,8 +6037,6 @@ async function saveOtoparkConfig(event) {
   const taxNumberVal = document.getElementById('edit-otopark-tax-number').value.trim();
   const bankNameVal = document.getElementById('edit-otopark-bank').value.trim().toLocaleUpperCase('tr-TR');
   const ibanVal = document.getElementById('edit-otopark-iban').value.trim().toUpperCase();
-  const priceEmployeeVal = document.getElementById('edit-otopark-price-emp').value.trim().toLocaleUpperCase('tr-TR');
-  const priceExternalVal = document.getElementById('edit-otopark-price-ext').value.trim().toLocaleUpperCase('tr-TR');
   const supportPhoneVal = document.getElementById('edit-otopark-support').value.trim();
   const statusVal = document.getElementById('edit-otopark-status').value;
   const notificationEmailsVal = document.getElementById('edit-otopark-notif-emails').value.trim();
@@ -6003,6 +6044,25 @@ async function saveOtoparkConfig(event) {
   const requiresManagementApprovalVal = document.getElementById('edit-otopark-req-approval').checked;
   const applyEmployeePriceToCorporateVal = document.getElementById('edit-otopark-apply-emp-price-to-corp').checked;
   const allowIndividualVal = document.getElementById('edit-otopark-allow-individual').checked;
+
+  // Serialize tariffs
+  const tariffs = [];
+  const tariffRows = document.querySelectorAll('#edit-otopark-tariffs-container > div');
+  tariffRows.forEach(row => {
+    const nameInput = row.querySelector('.tariff-name-input');
+    const priceInput = row.querySelector('.tariff-price-input');
+    if (nameInput && priceInput) {
+      const name = nameInput.value.trim();
+      const price = priceInput.value.trim();
+      if (name && price) {
+        tariffs.push({ name, price });
+      }
+    }
+  });
+
+  // Fallback compatibility
+  const priceEmployeeVal = tariffs.length > 0 ? tariffs[0].price : '0';
+  const priceExternalVal = tariffs.length > 1 ? tariffs[1].price : priceEmployeeVal;
 
   const OTOPARKS_KEY = 'parkexpert_otoparks';
   let existingTemplates = undefined;
@@ -6032,7 +6092,8 @@ async function saveOtoparkConfig(event) {
     summaryEmails: summaryEmailsVal,
     requiresManagementApproval: requiresManagementApprovalVal,
     applyEmployeePriceToCorporate: applyEmployeePriceToCorporateVal,
-    allowIndividual: allowIndividualVal
+    allowIndividual: allowIndividualVal,
+    tariffs: tariffs
   };
 
   try {
@@ -13201,6 +13262,38 @@ window.filterCompanyPortalVehicles = filterCompanyPortalVehicles;
 window.openCompanyPortalAddModal = openCompanyPortalAddModal;
 window.submitCompanyPortalVehicle = submitCompanyPortalVehicle;
 window.cancelCompanyPortalVehicle = cancelCompanyPortalVehicle;
+
+function addOtoparkTariffRow(name = '', price = '') {
+  const container = document.getElementById('edit-otopark-tariffs-container');
+  if (!container) return;
+
+  const rowId = 'tariff-row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+  const row = document.createElement('div');
+  row.id = rowId;
+  row.style.display = 'flex';
+  row.style.alignItems = 'center';
+  row.style.gap = '0.5rem';
+  row.style.width = '100%';
+
+  row.innerHTML = `
+    <input type="text" placeholder="Tarife Adı (Örn: Personel)" class="tariff-name-input" value="${name}" style="flex: 2; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; height: 36px; box-sizing: border-box; outline: none; background: #ffffff;">
+    <input type="text" placeholder="Fiyatı (Örn: 1300 TL)" class="tariff-price-input" value="${price}" style="flex: 1.2; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; height: 36px; box-sizing: border-box; outline: none; background: #ffffff;">
+    <button type="button" onclick="deleteOtoparkTariffRow('${rowId}')" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); color: #ef4444; border-radius: 6px; cursor: pointer; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Tarifeyi Sil">
+      <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+    </button>
+  `;
+
+  container.appendChild(row);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function deleteOtoparkTariffRow(rowId) {
+  const row = document.getElementById(rowId);
+  if (row) row.remove();
+}
+
+window.addOtoparkTariffRow = addOtoparkTariffRow;
+window.deleteOtoparkTariffRow = deleteOtoparkTariffRow;
 
 
 

@@ -163,10 +163,11 @@ export async function onRequest(context) {
         summaryEmails,
         requiresManagementApproval,
         applyEmployeePriceToCorporate,
-        allowIndividual
+        allowIndividual,
+        tariffs
       } = payload;
 
-      if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !priceEmployee || !priceExternal || !supportPhone) {
+      if (!name || !category || !companyTitle || !taxOffice || !taxNumber || !bankName || !iban || !supportPhone) {
         return new Response(JSON.stringify({ error: "Lütfen zorunlu alanları doldurun." }), { status: 400, headers });
       }
 
@@ -178,15 +179,16 @@ export async function onRequest(context) {
         tax_number: taxNumber,
         bank_name: bankName,
         iban,
-        price_employee: priceEmployee,
-        price_external: priceExternal,
+        price_employee: priceEmployee || null,
+        price_external: priceExternal || null,
         support_phone: supportPhone,
         is_active: isActive !== false,
         notification_emails: notificationEmails || null,
         summary_emails: summaryEmails || null,
         requires_management_approval: requiresManagementApproval === true,
         apply_employee_price_to_corporate: applyEmployeePriceToCorporate === true,
-        allow_individual: allowIndividual !== false
+        allow_individual: allowIndividual !== false,
+        tariffs: tariffs || []
       };
 
       if (templates !== undefined) {

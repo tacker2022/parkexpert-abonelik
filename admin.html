@@ -1839,15 +1839,25 @@
               </div>
             </div>
 
-            <!-- Pricing & Support Grid -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div class="form-group">
-                <label for="edit-otopark-price-emp" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Personel Fiyatı <span style="color:red;">*</span></label>
-                <input type="text" id="edit-otopark-price-emp" required placeholder="1875 TL" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+            <!-- Pricing & Support Grid (Hidden, Fallback) -->
+            <div style="display: none;">
+              <input type="text" id="edit-otopark-price-emp" value="0">
+              <input type="text" id="edit-otopark-price-ext" value="0">
+            </div>
+
+            <!-- Dynamic Tariffs Manager -->
+            <div class="form-group" style="background: rgba(15, 59, 162, 0.02); border: 1px solid var(--color-border-light); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <label style="font-weight: 800; font-size: 0.85rem; color: var(--color-primary-dark); margin: 0; display: inline-flex; align-items: center; gap: 0.35rem;">
+                  <i data-lucide="tags" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+                  <span>Abonelik Tarifeleri ve Ücretleri</span>
+                </label>
+                <button type="button" onclick="addOtoparkTariffRow()" class="btn" style="min-height: 28px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; background: var(--color-primary); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem;">
+                  <i data-lucide="plus" style="width: 12px; height: 12px;"></i> Tarife Ekle
+                </button>
               </div>
-              <div class="form-group">
-                <label for="edit-otopark-price-ext" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.25rem; display: block;">Harici Fiyat <span style="color:red;">*</span></label>
-                <input type="text" id="edit-otopark-price-ext" required placeholder="3750 TL" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%;">
+              <div id="edit-otopark-tariffs-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Dynamically populated tariff rows -->
               </div>
             </div>
 

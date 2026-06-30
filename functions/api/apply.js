@@ -360,9 +360,24 @@ export async function onRequest(context) {
           const iban = park.iban || "TR23 0001 5001 5800 7302 9104 88";
           const companyTitle = park.company_title || "PARKEXPERT";
           const isBirlikSanayi = park.id === "birlik-sanayi";
-          const price = (subscriptionType.includes("Kurumsal") && !isBirlikSanayi && !park.apply_employee_price_to_corporate) 
-            ? (park.price_external || "2400 TL") 
-            : (park.price_employee || "1200 TL");
+          let price = "1200 TL";
+          if (park.tariffs && Array.isArray(park.tariffs) && park.tariffs.length > 0) {
+            const matchingTariff = park.tariffs.find(t => subscriptionType.startsWith(t.name));
+            if (matchingTariff) {
+              price = matchingTariff.price;
+            } else {
+              const match = subscriptionType.match(/\(([^)]+)\)/);
+              if (match) {
+                price = match[1];
+              } else {
+                price = park.tariffs[0].price;
+              }
+            }
+          } else {
+            price = (subscriptionType.includes("Kurumsal") && !isBirlikSanayi && !park.apply_employee_price_to_corporate) 
+              ? (park.price_external || "2400 TL") 
+              : (park.price_employee || "1200 TL");
+          }
           const supportPhone = park.support_phone || "0216 504 47 22";
 
           const templateVars = {
