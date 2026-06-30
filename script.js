@@ -931,15 +931,7 @@ function initWizardController() {
   // Autocomplete suggestions event handlers
   const otoparkSelect = document.getElementById('otopark-selection');
   if (otoparkSelect) {
-    // Load initial otopark's companies on step load
-    if (otoparkSelect.value) {
-      loadPublicCompaniesForOtopark(otoparkSelect.value);
-    }
-    // Reload when otopark changes
-    otoparkSelect.addEventListener('change', () => {
-      const selectedName = otoparkSelect.value;
-      loadPublicCompaniesForOtopark(selectedName);
-
+    const checkIndividualOption = (selectedName) => {
       const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
       const park = otoparks.find(p => p.name === selectedName);
       
@@ -954,7 +946,9 @@ function initWizardController() {
         if (radioBireysel && radioBireysel.checked) {
           if (radioSermaye) {
             radioSermaye.checked = true;
-            handleBillingCorpTypeChange();
+            if (typeof handleBillingCorpTypeChange === 'function') {
+              handleBillingCorpTypeChange();
+            }
           }
         }
       } else {
@@ -962,6 +956,18 @@ function initWizardController() {
           radioBireyselLabel.style.display = 'flex';
         }
       }
+    };
+
+    // Load initial otopark's companies on step load
+    if (otoparkSelect.value) {
+      loadPublicCompaniesForOtopark(otoparkSelect.value);
+      checkIndividualOption(otoparkSelect.value);
+    }
+    // Reload when otopark changes
+    otoparkSelect.addEventListener('change', () => {
+      const selectedName = otoparkSelect.value;
+      loadPublicCompaniesForOtopark(selectedName);
+      checkIndividualOption(selectedName);
     });
   }
 
