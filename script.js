@@ -649,6 +649,9 @@ async function populateOtoparkSelection() {
         if (p.support_phone !== undefined) {
           p.supportPhone = p.support_phone;
         }
+        if (p.allow_individual !== undefined) {
+          p.allowIndividual = p.allow_individual;
+        }
       });
       localStorage.setItem(OTOPARKS_KEY, JSON.stringify(otoparks));
     } else {
