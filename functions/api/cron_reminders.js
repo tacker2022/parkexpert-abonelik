@@ -506,11 +506,23 @@ export async function onRequest(context) {
                     <tr>
                       <!-- Left: Health -->
                       <td style="width: 50%; vertical-align: top; padding-right: 12px; border-right: 1px solid #e2e8f0;">
-                        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">🟢 SİSTEM SAĞLIK DURUMU</h4>
-                        <div style="line-height: 1.6; color: #475569; font-weight: 600; font-size: 0.8rem;">
-                          <div style="margin-bottom: 4px;">🟢 Plaka Tanıma: <span style="color: #059669; font-weight: 700;">Aktif</span></div>
-                          <div style="margin-bottom: 4px;">🟢 B2B Girişleri: <span style="color: #059669; font-weight: 700;">Aktif</span></div>
-                          <div style="margin-bottom: 4px;">🟢 SMS / E-posta: <span style="color: #059669; font-weight: 700;">Çalışıyor</span></div>
+                        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; font-family: sans-serif;">
+                          <span class="pulse-dot" style="display: inline-block; width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 6px #10b981; vertical-align: middle; margin-right: 6px;"></span>
+                          <span style="vertical-align: middle;">SİSTEM SAĞLIK DURUMU</span>
+                        </h4>
+                        <div style="line-height: 1.6; color: #475569; font-weight: 600; font-size: 0.8rem; font-family: sans-serif;">
+                          <div style="margin-bottom: 6px;">
+                            <span class="pulse-dot" style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 4px #10b981; vertical-align: middle; margin-right: 6px;"></span>
+                            <span style="vertical-align: middle;">Plaka Tanıma: <span style="color: #059669; font-weight: 700;">Aktif</span></span>
+                          </div>
+                          <div style="margin-bottom: 6px;">
+                            <span class="pulse-dot" style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 4px #10b981; vertical-align: middle; margin-right: 6px;"></span>
+                            <span style="vertical-align: middle;">B2B Girişleri: <span style="color: #059669; font-weight: 700;">Aktif</span></span>
+                          </div>
+                          <div style="margin-bottom: 6px;">
+                            <span class="pulse-dot" style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 4px #10b981; vertical-align: middle; margin-right: 6px;"></span>
+                            <span style="vertical-align: middle;">SMS / E-posta: <span style="color: #059669; font-weight: 700;">Çalışıyor</span></span>
+                          </div>
                         </div>
                       </td>
                       <!-- Right: Actions -->

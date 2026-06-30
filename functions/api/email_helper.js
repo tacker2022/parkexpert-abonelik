@@ -6,6 +6,16 @@ export async function sendEmail({ to, subject, html, env }) {
 
   // Premium HTML wrapper template
   const wrappedHtml = `
+<style>
+  @keyframes pulse {
+    0% { opacity: 0.35; }
+    50% { opacity: 1.0; }
+    100% { opacity: 0.35; }
+  }
+  .pulse-dot {
+    animation: pulse 2s infinite ease-in-out;
+  }
+</style>
 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; padding: 2rem; color: #334155; margin: 0; min-height: 100%;">
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; overflow: hidden;">
     <!-- Logo / Header -->
