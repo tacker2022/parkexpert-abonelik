@@ -5349,6 +5349,24 @@ function renderOtoparksTable() {
       `;
     }
 
+    let pricingHtml = '';
+    let tariffsList = park.tariffs;
+    if (!tariffsList || !Array.isArray(tariffsList) || tariffsList.length === 0) {
+      tariffsList = [];
+      if (park.priceEmployee) tariffsList.push({ name: 'Personel', price: park.priceEmployee });
+      if (park.priceExternal) tariffsList.push({ name: 'Dış', price: park.priceExternal });
+    }
+
+    if (tariffsList.length > 0) {
+      pricingHtml = tariffsList.map(t => {
+        const shortName = t.name.replace('Tarifesi', '').trim();
+        const priceStr = String(t.price).includes('TL') || String(t.price).includes('$') || String(t.price).includes('€') || String(t.price).includes('₺') ? t.price : (t.price + ' TL');
+        return `<span style="font-weight: 700; color: var(--color-text-dark);">${shortName}: <span style="color: var(--color-primary); font-weight: 800;">${priceStr}</span></span>`;
+      }).join(' <span style="color: #cbd5e1; font-weight: normal;">|</span> ');
+    } else {
+      pricingHtml = `<span style="color: var(--color-text-muted); font-style: italic;">Tarife Eklenmemiş</span>`;
+    }
+
     const card = document.createElement('div');
     card.className = `otopark-card${cardStatusClass}`;
     card.innerHTML = `
@@ -5363,10 +5381,10 @@ function renderOtoparksTable() {
         </div>
       </div>
       <div class="otopark-card__body">
-        <div class="otopark-card__field">
-          <span class="otopark-card__label">Fiyatlar</span>
-          <span class="otopark-card__value otopark-card__value--price">
-            <span class="otopark-card__price-emp">${park.priceEmployee}</span> · <span class="otopark-card__price-ext">${park.priceExternal}</span>
+        <div class="otopark-card__field otopark-card__field--full" style="grid-column: span 2; border-bottom: 1px dashed rgba(0,0,0,0.04); padding-bottom: 0.5rem; margin-bottom: 0.25rem;">
+          <span class="otopark-card__label" style="text-transform: uppercase; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.25rem; display: block;">Aktif Tarifeler ve Ücretleri</span>
+          <span class="otopark-card__value" style="display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.825rem; line-height: 1.4; align-items: center;">
+            ${pricingHtml}
           </span>
         </div>
         
