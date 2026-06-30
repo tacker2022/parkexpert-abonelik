@@ -267,7 +267,7 @@ export async function onRequest(context) {
         `;
       }
 
-      // Calculate all-time daily registration stats grouped by day
+      // Calculate all-time daily registration stats grouped by day (including days with 0 registrations)
       let allTimeStats = [];
       if (mode === "real") {
         const allTimeStatsMap = {};
@@ -275,30 +275,58 @@ export async function onRequest(context) {
         const turkishMonths = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
         const trOffset = 3 * 60 * 60 * 1000;
         
+        let earliestDate = null;
         parkApps.forEach(app => {
           if (!app.date_applied) return;
-          const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
-          const localDay = appTrDate.getUTCDate();
-          const localMonth = appTrDate.getUTCMonth();
-          const year = appTrDate.getUTCFullYear();
-          const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${year}`;
-          const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
-          
-          if (!allTimeStatsMap[dayStr]) {
-            const midnightDate = new Date(year, localMonth, localDay).getTime();
-            allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: midnightDate, apps: [] };
+          const appDate = new Date(app.date_applied);
+          if (!earliestDate || appDate < earliestDate) {
+            earliestDate = appDate;
           }
-          allTimeStatsMap[dayStr].count++;
-          allTimeStatsMap[dayStr].apps.push(app);
         });
+
+        if (earliestDate) {
+          const startTr = new Date(earliestDate.getTime() + trOffset);
+          const startMidnight = new Date(startTr.getUTCFullYear(), startTr.getUTCMonth(), startTr.getUTCDate());
+          
+          const endTr = new Date(Date.now() + trOffset);
+          const endMidnight = new Date(endTr.getUTCFullYear(), endTr.getUTCMonth(), endTr.getUTCDate());
+          
+          let current = new Date(startMidnight);
+          while (current <= endMidnight) {
+            const localDay = current.getDate();
+            const localMonth = current.getMonth();
+            const year = current.getFullYear();
+            const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${year}`;
+            const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[current.getDay()]}`;
+            
+            const dayApps = parkApps.filter(app => {
+              if (!app.date_applied) return false;
+              const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
+              const appDayStr = `${String(appTrDate.getUTCDate()).padStart(2, '0')}.${String(appTrDate.getUTCMonth() + 1).padStart(2, '0')}.${appTrDate.getUTCFullYear()}`;
+              return appDayStr === dayStr;
+            });
+            
+            allTimeStatsMap[dayStr] = {
+              label: dayLabel,
+              count: dayApps.length,
+              rawDate: current.getTime(),
+              apps: dayApps
+            };
+            
+            current.setDate(current.getDate() + 1);
+          }
+        }
 
         allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => b.rawDate - a.rawDate);
       } else {
-        // Mock All Time stats (sorted newest first)
+        // Mock All Time stats (sorted newest first, with 0 counts)
         allTimeStats = [
           { label: "22 Haz 2026 Çar", count: 5 },
+          { label: "21 Haz 2026 Sal", count: 0 },
           { label: "20 Haz 2026 Pzt", count: 9 },
+          { label: "19 Haz 2026 Paz", count: 0 },
           { label: "18 Haz 2026 Cmt", count: 2 },
+          { label: "17 Haz 2026 Cum", count: 0 },
           { label: "15 Haz 2026 Sal", count: 7 },
           { label: "12 Haz 2026 Cmt", count: 4 }
         ];

@@ -508,24 +508,49 @@ export async function onRequest(context) {
                 `;
               }
 
-              // Calculate all-time daily registration stats grouped by day (Turkey timezone offset calculation)
+              // Calculate all-time daily registration stats grouped by day (including days with 0 registrations)
               const allTimeStatsMap = {};
+              let earliestDate = null;
               parkApps.forEach(app => {
                 if (!app.date_applied) return;
-                const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
-                const localDay = appTrDate.getUTCDate();
-                const localMonth = appTrDate.getUTCMonth();
-                const year = appTrDate.getUTCFullYear();
-                const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${year}`;
-                const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
-                
-                if (!allTimeStatsMap[dayStr]) {
-                  const midnightDate = new Date(year, localMonth, localDay).getTime();
-                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: midnightDate, apps: [] };
+                const appDate = new Date(app.date_applied);
+                if (!earliestDate || appDate < earliestDate) {
+                  earliestDate = appDate;
                 }
-                allTimeStatsMap[dayStr].count++;
-                allTimeStatsMap[dayStr].apps.push(app);
               });
+
+              if (earliestDate) {
+                const startTr = new Date(earliestDate.getTime() + trOffset);
+                const startMidnight = new Date(startTr.getUTCFullYear(), startTr.getUTCMonth(), startTr.getUTCDate());
+                
+                const endTr = new Date(Date.now() + trOffset);
+                const endMidnight = new Date(endTr.getUTCFullYear(), endTr.getUTCMonth(), endTr.getUTCDate());
+                
+                let current = new Date(startMidnight);
+                while (current <= endMidnight) {
+                  const localDay = current.getDate();
+                  const localMonth = current.getMonth();
+                  const year = current.getFullYear();
+                  const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${year}`;
+                  const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[current.getDay()]}`;
+                  
+                  const dayApps = parkApps.filter(app => {
+                    if (!app.date_applied) return false;
+                    const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
+                    const appDayStr = `${String(appTrDate.getUTCDate()).padStart(2, '0')}.${String(appTrDate.getUTCMonth() + 1).padStart(2, '0')}.${appTrDate.getUTCFullYear()}`;
+                    return appDayStr === dayStr;
+                  });
+                  
+                  allTimeStatsMap[dayStr] = {
+                    label: dayLabel,
+                    count: dayApps.length,
+                    rawDate: current.getTime(),
+                    apps: dayApps
+                  };
+                  
+                  current.setDate(current.getDate() + 1);
+                }
+              }
 
               const allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => b.rawDate - a.rawDate);
 
