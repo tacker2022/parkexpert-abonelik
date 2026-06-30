@@ -12930,6 +12930,7 @@ async function submitSingleCompany() {
     if (data.count === 0) {
       alert("Bu firma adı bu otopark için zaten kayıtlı.");
     } else {
+      window.allRegisteredCompanies = null;
       showToast('Firma Başarıyla Eklendi', `"${companyName}" başarıyla kaydedildi.`, 'mail');
     }
 
@@ -12982,6 +12983,7 @@ async function submitBulkCompanies() {
       return;
     }
 
+    window.allRegisteredCompanies = null;
     showToast("Başarılı", `Toplu yükleme tamamlandı! ${data.count} yeni firma başarıyla kaydedildi.`, "check");
     textarea.value = '';
     loadOtoparkCompanies();
@@ -13031,7 +13033,24 @@ async function deleteCompany(id) {
     return;
   }
 
-  if (!confirm("Bu firmayı listeden silmek istediğinize emin misiniz? (Önceden yapılmış olan başvurulardaki firma bilgileri etkilenmez)")) {
+  const companyObj = (typeof companyMgmtLoadedList !== 'undefined' ? companyMgmtLoadedList : []).find(item => item.id === id);
+  let confirmMessage = "Bu firmayı listeden silmek istediğinize emin misiniz?";
+
+  if (companyObj) {
+    const activeVehicles = (typeof allApplications !== 'undefined' ? allApplications : []).filter(app => 
+      app.parking_location === companyObj.otopark_name && 
+      app.company_name && 
+      app.company_name.trim().toUpperCase() === companyObj.name.trim().toUpperCase()
+    ).length;
+
+    if (activeVehicles > 0) {
+      confirmMessage = `⚠️ DİKKAT: Bu firmaya kayıtlı ${activeVehicles} adet aktif araç/abonelik bulunmaktadır!\n\nFirmayı silerseniz bu araçların geçiş onayları devam eder ancak firma yetkilisi B2B portalına giriş yapamaz.\n\nYine de bu firmayı sistemden tamamen silmek istiyor musunuz?`;
+    } else {
+      confirmMessage = `"${companyObj.name}" firmasını listeden silmek istediğinize emin misiniz?`;
+    }
+  }
+
+  if (!confirm(confirmMessage)) {
     return;
   }
 
@@ -13059,6 +13078,7 @@ async function deleteCompany(id) {
       return;
     }
 
+    window.allRegisteredCompanies = null;
     showToast('Firma Silindi', 'Firma listeden başarıyla temizlendi.', 'trash');
     loadOtoparkCompanies();
   } catch (err) {
@@ -13289,6 +13309,7 @@ async function submitMergeCompanies() {
       return;
     }
 
+    window.allRegisteredCompanies = null;
     showToast("Başarılı", `Tebrikler! ${data.count} araç başarıyla "${targetCompany}" firmasına aktarıldı. Eski firma listeden temizlendi.`, "check");
     
     // Refresh application list from API to update tables & charts
@@ -13371,6 +13392,7 @@ async function saveCompanyCredentials(id) {
       return;
     }
 
+    window.allRegisteredCompanies = null;
     showToast('Başarılı', 'Firma yetki ve kota bilgileri güncellendi.', 'check');
     loadOtoparkCompanies();
   } catch (err) {
