@@ -1282,8 +1282,21 @@ function showToastNotification(title, message, iconName) {
     toastTitle.textContent = title;
     toastMsg.textContent = message;
     
-    if (toastIcon && iconName) {
-      toastIcon.innerHTML = `<i data-lucide="${iconName}" style="width: 22px; height: 22px; color: #ef4444;"></i>`;
+    if (toastIcon) {
+      if (iconName === 'check' || !iconName) {
+        toastIcon.innerHTML = `<img src="assets/logo_square.png" style="width: 24px; height: 24px; object-fit: contain;">`;
+      } else if (iconName.startsWith('/') || iconName.startsWith('assets/')) {
+        toastIcon.innerHTML = `<img src="${iconName}" style="width: 24px; height: 24px; object-fit: contain;">`;
+      } else {
+        let iconColor = 'var(--color-primary)';
+        if (['alert-circle', 'alert-triangle', 'shield-alert', 'trash'].includes(iconName)) {
+          iconColor = '#ef4444'; // Red for errors/deletions/warnings
+        }
+        toastIcon.innerHTML = `<i data-lucide="${iconName}" style="width: 22px; height: 22px; color: ${iconColor};"></i>`;
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }
     }
     
     toast.classList.add('active');
