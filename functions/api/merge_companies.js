@@ -180,12 +180,15 @@ export async function onRequest(context) {
 
     // 3. Log to audit helper
     try {
-      await logAudit(
-        user,
-        clientIp,
-        "Firma Birleştirme",
-        `Otopark: ${otopark_name}, Kaynak: "${source_company}" -> Hedef: "${target_company}". Taşınan Araç: ${movedPlatesCount}`
-      );
+      await logAudit({
+        supabaseUrl,
+        supabaseAnonKey,
+        username: user.username,
+        role: user.role,
+        actionType: "Firma Birleştirme",
+        details: `Otopark: ${otopark_name}, Kaynak: "${source_company}" -> Hedef: "${target_company}". Taşınan Araç: ${movedPlatesCount}`,
+        ipAddress: clientIp
+      });
     } catch (e) {
       console.error("Audit log error:", e);
     }

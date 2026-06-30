@@ -228,14 +228,15 @@ export async function onRequest(context) {
       }
 
       // Log audit
-      await logAudit(
+      await logAudit({
         supabaseUrl,
         supabaseAnonKey,
-        user.email,
-        "UPDATE_OTOPARK_CATEGORIES",
-        `Otopark kategorileri güncellendi: ${payload.join(", ")}`,
-        clientIp
-      );
+        username: user.username || user.email,
+        role: user.role,
+        actionType: "UPDATE_OTOPARK_CATEGORIES",
+        details: `Otopark kategorileri güncellendi: ${payload.join(", ")}`,
+        ipAddress: clientIp
+      });
 
       return new Response(JSON.stringify({ success: true, categories: payload }), { status: 200, headers });
     }

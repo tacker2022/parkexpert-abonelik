@@ -213,21 +213,33 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: `Supabase database error: ${errText}` }), { status: res.status, headers });
       }
 
-      const inserted = await res.json();
+      const resText = await res.text();
+      let inserted = [];
+      if (resText.trim()) {
+        try {
+          inserted = JSON.parse(resText);
+        } catch (e) {
+          console.error("Failed to parse inserted rows:", e);
+        }
+      }
 
       // Log action in audit logs
       try {
-        await logAudit(
-          user, 
-          clientIp, 
-          "Firma Toplu Yükleme", 
-          `Otopark: ${otopark_name}, Yüklenen Firma Sayısı: ${dbPayload.length}, Başarılı/Yeni Eklenen: ${inserted.length}`
-        );
+        await logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "Firma Toplu Yükleme",
+          details: `Otopark: ${otopark_name}, Yüklenen Firma Sayısı: ${dbPayload.length}, Başarılı/Yeni Eklenen: ${Array.isArray(inserted) ? inserted.length : 0}`,
+          ipAddress: clientIp
+        });
       } catch (e) {
         console.error("Audit log error:", e);
       }
 
-      return new Response(JSON.stringify({ success: true, count: inserted.length }), { status: 200, headers });
+      const insertedCount = Array.isArray(inserted) ? inserted.length : 0;
+      return new Response(JSON.stringify({ success: true, count: insertedCount }), { status: 200, headers });
     }
 
     // ----------------------------------------------------
@@ -331,12 +343,15 @@ export async function onRequest(context) {
 
       // Log action in audit logs
       try {
-        await logAudit(
-          user,
-          clientIp,
-          "Firma Güncelleme",
-          `Firma: ${company.name} (${company.otopark_name}) yetki ve kota bilgileri güncellendi.`
-        );
+        await logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "Firma Güncelleme",
+          details: `Firma: ${company.name} (${company.otopark_name}) yetki ve kota bilgileri güncellendi.`,
+          ipAddress: clientIp
+        });
       } catch (e) {
         console.error("Audit log error:", e);
       }
@@ -395,12 +410,15 @@ export async function onRequest(context) {
 
       // Log action in audit logs
       try {
-        await logAudit(
-          user,
-          clientIp,
-          "Firma Silme",
-          `Firma: ${companyName || id} (${otoparkName || ''}) sistemden silindi.`
-        );
+        await logAudit({
+          supabaseUrl,
+          supabaseAnonKey,
+          username: user.username,
+          role: user.role,
+          actionType: "Firma Silme",
+          details: `Firma: ${companyName || id} (${otoparkName || ''}) sistemden silindi.`,
+          ipAddress: clientIp
+        });
       } catch (e) {
         console.error("Audit log error:", e);
       }
