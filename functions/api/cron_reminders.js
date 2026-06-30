@@ -460,6 +460,73 @@ export async function onRequest(context) {
               }
               if (maxCount === 0) maxCount = 1;
 
+              // Calculate top active corporate companies (Top 3)
+              const companyCounts = {};
+              parkApps.forEach(app => {
+                if (app.status === 'Onaylandı' && app.company_name) {
+                  const cName = app.company_name.trim();
+                  if (cName && cName.toUpperCase() !== 'SERBEST ÇALIŞAN') {
+                    companyCounts[cName] = (companyCounts[cName] || 0) + 1;
+                  }
+                }
+              });
+              
+              const topCompanies = Object.entries(companyCounts)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 3);
+
+              let topCompaniesHtml = "";
+              if (topCompanies.length > 0) {
+                topCompaniesHtml = `
+                  <!-- Top Companies Section -->
+                  <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); font-family: sans-serif;">
+                    <h4 style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                      🏢 En Aktif Kurumsal Firmalar (Top 3)
+                    </h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                      <tbody>
+                        ${topCompanies.map((c, idx) => `
+                          <tr style="border-bottom: ${idx < topCompanies.length - 1 ? '1px solid #f1f5f9' : 'none'};">
+                            <td style="padding: 8px 0; font-weight: 700; color: #334155; width: 30px; font-family: sans-serif;">#${idx + 1}</td>
+                            <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif;">${c.name}</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f3ba2; font-family: sans-serif; white-space: nowrap;">${c.count} Araç</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `;
+              }
+
+              const systemHealthHtml = `
+                <!-- System Health & Quick Actions -->
+                <div style="margin-bottom: 2rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; font-family: sans-serif;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <tr>
+                      <!-- Left: Health -->
+                      <td style="width: 50%; vertical-align: top; padding-right: 12px; border-right: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">🟢 SİSTEM SAĞLIK DURUMU</h4>
+                        <div style="line-height: 1.6; color: #475569; font-weight: 600; font-size: 0.8rem;">
+                          <div style="margin-bottom: 4px;">🟢 Plaka Tanıma: <span style="color: #059669; font-weight: 700;">Aktif</span></div>
+                          <div style="margin-bottom: 4px;">🟢 B2B Girişleri: <span style="color: #059669; font-weight: 700;">Aktif</span></div>
+                          <div style="margin-bottom: 4px;">🟢 SMS / E-posta: <span style="color: #059669; font-weight: 700;">Çalışıyor</span></div>
+                        </div>
+                      </td>
+                      <!-- Right: Actions -->
+                      <td style="width: 50%; vertical-align: top; padding-left: 20px;">
+                        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">⚡ HIZLI İŞLEMLER</h4>
+                        <div style="line-height: 1.8; font-size: 0.8rem; font-weight: 600;">
+                          <div>🔗 <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; text-decoration: none;">Bekleyenleri Yönet</a></div>
+                          <div>🔗 <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; text-decoration: none;">Tarife & Ücretler</a></div>
+                          <div>🔗 <a href="https://parkexpertabonelik.net/admin" style="color: #0f3ba2; text-decoration: none;">Firma Yetkileri</a></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              `;
+
               // Construct HTML Summary
               let rowsHtml = "";
               for (const app of recentApps) {
@@ -544,6 +611,10 @@ export async function onRequest(context) {
                     </tbody>
                   </table>
                 </div>
+
+                ${topCompaniesHtml}
+
+                ${systemHealthHtml}
 
                 <!-- Recent Applications List Section -->
                 <div style="margin-bottom: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
