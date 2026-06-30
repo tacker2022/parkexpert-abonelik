@@ -151,7 +151,7 @@ export async function onRequest(context) {
         const daysOfWeek = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
         const turkishMonths = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
         const trOffset = 3 * 60 * 60 * 1000;
-        for (let i = 6; i >= 0; i--) {
+        for (let i = 0; i <= 6; i++) {
           const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
           const trDate = new Date(d.getTime() + trOffset);
           const localDay = trDate.getUTCDate();
@@ -196,7 +196,7 @@ export async function onRequest(context) {
         const trOffset = 3 * 60 * 60 * 1000;
         const mockCounts = [2, 5, 3, 8, 4, 6, 3];
         const mockAverages = ["45 dk", "30 dk", "", "1 sa 10 dk", "25 dk", "15 dk", ""];
-        for (let i = 6; i >= 0; i--) {
+        for (let i = 0; i <= 6; i++) {
           const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
           const trDate = new Date(d.getTime() + trOffset);
           const localDay = trDate.getUTCDate();

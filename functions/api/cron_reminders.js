@@ -445,7 +445,7 @@ export async function onRequest(context) {
               const trOffset = 3 * 60 * 60 * 1000;
               let maxCount = 0;
 
-              for (let i = 6; i >= 0; i--) {
+              for (let i = 0; i <= 6; i++) {
                 const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
                 const trDate = new Date(d.getTime() + trOffset);
                 const localDay = trDate.getUTCDate();
