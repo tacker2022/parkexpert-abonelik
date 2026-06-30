@@ -11676,8 +11676,8 @@ function renderAuditLogsTable(logs) {
       <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
         <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
       </td>
-      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${log.otopark_name || ''}">${otoparkText}</td>
-      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${log.company_name || ''}">${companyText}</td>
+      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;" title="${log.otopark_name || ''}">${otoparkText}</td>
+      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;" title="${log.company_name || ''}">${companyText}</td>
       <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; cursor: pointer; transition: color 0.15s ease;" onclick="viewAuditLogDetails(${idx})" title="Detayları görmek için tıklayın">${maskAuditDetails(log.details || '')}</td>
       <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
     `;
