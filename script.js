@@ -6239,7 +6239,7 @@ async function saveOtoparkConfig(event) {
   }
 }
 
-async function sendTestDailySummary(event) {
+async function sendTestDailySummary(event, mode = 'mock') {
   if (event) event.preventDefault();
 
   const emailVal = document.getElementById('edit-otopark-summary-emails').value.trim();
@@ -6250,7 +6250,8 @@ async function sendTestDailySummary(event) {
     return;
   }
 
-  const btn = document.getElementById('btn-test-summary-send');
+  const btnId = mode === 'real' ? 'btn-test-summary-send-real' : 'btn-test-summary-send-mock';
+  const btn = document.getElementById(btnId);
   if (!btn) return;
   
   const originalHTML = btn.innerHTML;
@@ -6266,18 +6267,20 @@ async function sendTestDailySummary(event) {
       body: JSON.stringify({
         type: 'summary',
         email: emailVal,
-        parkingLocation: otoparkName
+        parkingLocation: otoparkName,
+        mode: mode
       })
     });
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || "Rapor testi gönderilirken sunucu hatası oluştu.");
+      throw new Error(err.error || "Rapor gönderilirken sunucu hatası oluştu.");
     }
 
     const data = await res.json();
     if (data.email && data.email.success) {
-      alert(`Daily Summary test e-postası başarıyla gönderildi!\n\nAlıcılar: ${emailVal}\nKonum: ${otoparkName}`);
+      const typeLabel = mode === 'real' ? 'Gerçek Verili Günlük Rapor' : 'Test Özet Raporu (Mock)';
+      alert(`${typeLabel} başarıyla gönderildi!\n\nAlıcılar: ${emailVal}\nKonum: ${otoparkName}`);
     } else {
       throw new Error(data.email?.error || "E-posta gönderimi başarısız oldu.");
     }
