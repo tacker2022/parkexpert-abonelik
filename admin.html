@@ -2120,29 +2120,185 @@
 
   <!-- Firma Yönetim Modalı -->
   <div class="modal-overlay" id="modal-company-management" onclick="closeModalOnOverlay(event)" style="z-index: 1200;">
-    <div class="modal-window" role="dialog" aria-labelledby="company-mgmt-title" aria-modal="true" style="max-width: 650px;">
-      <div class="modal-header" style="border-bottom: 1px solid var(--color-border-light); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-        <h3 class="modal-title" id="company-mgmt-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--color-text-dark);">Kurumsal Firma Listesini Yönet 🏢</h3>
+    <style>
+      #modal-company-management .modal-window {
+        max-width: 680px !important;
+        border-radius: 16px !important;
+        background: #ffffff !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        overflow: hidden;
+      }
+      #modal-company-management .modal-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+        border-bottom: 1px solid var(--color-border-light) !important;
+        padding: 1.25rem 1.5rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+      }
+      #modal-company-management .modal-title {
+        margin: 0 !important;
+        font-size: 1.15rem !important;
+        font-weight: 800 !important;
+        color: var(--color-primary-dark) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+      }
+      #modal-company-management .modal-body {
+        padding: 1.5rem !important;
+        max-height: 520px !important;
+        overflow-y: auto !important;
+      }
+      #modal-company-management .otopark-select-card {
+        background: rgba(37, 99, 235, 0.03) !important;
+        border: 1px dashed rgba(37, 99, 235, 0.2) !important;
+        padding: 1rem !important;
+        border-radius: 12px !important;
+        margin-bottom: 1.25rem !important;
+      }
+      #modal-company-management .tab-segmented-control {
+        display: flex !important;
+        background: #f1f5f9 !important;
+        padding: 0.3rem !important;
+        border-radius: 10px !important;
+        margin-bottom: 1.25rem !important;
+        gap: 0.25rem !important;
+        overflow-x: auto !important;
+      }
+      #modal-company-management .tab-segmented-btn {
+        flex: 1 !important;
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.825rem !important;
+        font-weight: 700 !important;
+        border: none !important;
+        background: transparent !important;
+        color: var(--color-text-muted) !important;
+        cursor: pointer !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+      }
+      #modal-company-management .tab-segmented-btn.active {
+        background: #ffffff !important;
+        color: var(--color-primary-dark) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06) !important;
+      }
+      #modal-company-management .company-search-container {
+        position: relative !important;
+        margin-bottom: 1rem !important;
+      }
+      #modal-company-management .company-search-input {
+        width: 100% !important;
+        border: 1px solid var(--color-border-light) !important;
+        padding: 0.6rem 0.75rem 0.6rem 2.25rem !important;
+        border-radius: 8px !important;
+        font-size: 0.85rem !important;
+        outline: none !important;
+        box-sizing: border-box !important;
+        height: 38px !important;
+        transition: all 0.2s ease !important;
+      }
+      #modal-company-management .company-search-input:focus {
+        border-color: var(--color-primary) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+      }
+      #modal-company-management .company-search-icon {
+        position: absolute !important;
+        left: 0.75rem !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        color: var(--color-text-muted) !important;
+        pointer-events: none !important;
+      }
+      #modal-company-management .company-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 0.85rem !important;
+        text-align: left !important;
+      }
+      #modal-company-management .company-table th {
+        background: #f8fafc !important;
+        color: var(--color-text-muted) !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-size: 0.725rem !important;
+        letter-spacing: 0.05em !important;
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid var(--color-border-light) !important;
+      }
+      #modal-company-management .company-table td {
+        padding: 0.75rem 1rem !important;
+        vertical-align: middle !important;
+      }
+      #modal-company-management .company-table tr:hover {
+        background: #f8fafc !important;
+      }
+      #modal-company-management .company-table tr {
+        border-bottom: 1px solid var(--color-border-light) !important;
+        transition: background 0.2s ease !important;
+      }
+      #modal-company-management .btn-action {
+        padding: 0.35rem 0.75rem !important;
+        min-height: 28px !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.25rem !important;
+      }
+      #modal-company-management .btn-action-edit {
+        background: rgba(37, 99, 235, 0.08) !important;
+        color: var(--color-primary) !important;
+        border: 1px solid rgba(37, 99, 235, 0.15) !important;
+      }
+      #modal-company-management .btn-action-edit:hover {
+        background: var(--color-primary) !important;
+        color: #ffffff !important;
+      }
+      #modal-company-management .btn-action-delete {
+        background: rgba(239, 68, 68, 0.08) !important;
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.15) !important;
+      }
+      #modal-company-management .btn-action-delete:hover:not(:disabled) {
+        background: #ef4444 !important;
+        color: #ffffff !important;
+      }
+    </style>
+
+    <div class="modal-window" role="dialog" aria-labelledby="company-mgmt-title" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title" id="company-mgmt-title">
+          <i data-lucide="building-2" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
+          <span>Kurumsal Firma Listesini Yönet</span>
+        </h3>
         <button class="modal-close" onclick="closeModal('modal-company-management')" aria-label="Kapat" style="font-size: 1.5rem; background: none; border: none; cursor: pointer; color: var(--color-text-muted);">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 1.5rem; max-height: 480px; overflow-y: auto;">
+      <div class="modal-body">
         
         <!-- Otopark Seçimi -->
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-          <label for="company-mgmt-otopark" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">
-            İşlem Yapılacak Otopark / AVM <span style="color:red;">*</span>
+        <div class="otopark-select-card">
+          <label for="company-mgmt-otopark" style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary-dark); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px; color: var(--color-primary);"></i>
+            <span>İşlem Yapılacak Otopark / AVM <span style="color:red;">*</span></span>
           </label>
-          <select id="company-mgmt-otopark" onchange="loadOtoparkCompanies()" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px;">
+          <select id="company-mgmt-otopark" onchange="loadOtoparkCompanies()" style="border: 1.5px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 40px; font-weight: 600;">
             <!-- Dinamik otopark listesi yüklenecek -->
           </select>
         </div>
 
-        <!-- Tab Seçenekleri (Toplu Yapıştır / Tek Tek Ekle / Liste) -->
-        <div style="display: flex; border-bottom: 1px solid var(--color-border-light); margin-bottom: 1.25rem; gap: 0.25rem; overflow-x: auto; white-space: nowrap;">
-          <button type="button" id="tab-btn-bulk-add" class="admin-tab-btn active" onclick="switchCompanyMgmtSubTab('bulk-add')" style="padding: 0.5rem 0.65rem; font-size: 0.85rem; font-weight: 700; background: none; border: none; border-bottom: 2px solid var(--color-primary); cursor: pointer; color: var(--color-primary); white-space: nowrap;">Toplu Yükle (Excel/Text)</button>
-          <button type="button" id="tab-btn-single-add" class="admin-tab-btn" onclick="switchCompanyMgmtSubTab('single-add')" style="padding: 0.5rem 0.65rem; font-size: 0.85rem; font-weight: 700; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--color-text-muted); white-space: nowrap;">Tek Ekle</button>
-          <button type="button" id="tab-btn-company-list" class="admin-tab-btn" onclick="switchCompanyMgmtSubTab('company-list')" style="padding: 0.5rem 0.65rem; font-size: 0.85rem; font-weight: 700; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--color-text-muted); white-space: nowrap;">Mevcut Firmalar (<span id="company-mgmt-count">0</span>)</button>
-          <button type="button" id="tab-btn-merge-companies" class="admin-tab-btn" onclick="switchCompanyMgmtSubTab('merge-companies')" style="padding: 0.5rem 0.65rem; font-size: 0.85rem; font-weight: 700; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap;"><i data-lucide="git-merge" style="width: 14px; height: 14px;"></i> <span>Firmaları Birleştir</span></button>
+        <!-- Tab Seçenekleri (Segmented Control) -->
+        <div class="tab-segmented-control">
+          <button type="button" id="tab-btn-bulk-add" class="tab-segmented-btn active" onclick="switchCompanyMgmtSubTab('bulk-add')">Toplu Yükle (Excel/Text)</button>
+          <button type="button" id="tab-btn-single-add" class="tab-segmented-btn" onclick="switchCompanyMgmtSubTab('single-add')">Tek Ekle</button>
+          <button type="button" id="tab-btn-company-list" class="tab-segmented-btn" onclick="switchCompanyMgmtSubTab('company-list')">Mevcut Firmalar (<span id="company-mgmt-count">0</span>)</button>
+          <button type="button" id="tab-btn-merge-companies" class="tab-segmented-btn" onclick="switchCompanyMgmtSubTab('merge-companies')" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;"><i data-lucide="git-merge" style="width: 14px; height: 14px;"></i> <span>Firmaları Birleştir</span></button>
         </div>
 
         <!-- Alt Tab 1: Toplu Yükleme -->
@@ -2150,42 +2306,45 @@
           <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
             Excel'den veya başka bir belgeden kopyaladığınız firma listesini aşağıdaki alana yapıştırın. Her satıra <strong>bir firma adı</strong> gelecek şekilde ekleyin. Mükerrer firmalar yükleme sırasında otomatik ayıklanacaktır.
           </p>
-          <textarea id="company-mgmt-bulk-text" placeholder="Örn:&#10;ABC Tekstil Ltd. Şti.&#10;XYZ Metal Sanayi&#10;Defne Lazer A.Ş." style="width: 100%; height: 180px; padding: 0.75rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); font-size: 0.85rem; line-height: 1.5; outline: none; font-family: monospace; box-sizing: border-box; resize: vertical;"></textarea>
+          <textarea id="company-mgmt-bulk-text" placeholder="Örn:&#10;ABC Tekstil Ltd. Şti.&#10;XYZ Metal Sanayi&#10;Defne Lazer A.Ş." style="width: 100%; height: 180px; padding: 0.75rem; border: 1.5px solid var(--color-border-light); border-radius: 8px; font-size: 0.85rem; line-height: 1.5; outline: none; font-family: monospace; box-sizing: border-box; resize: vertical; background: #fafafa;"></textarea>
           
-          <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 0.35rem;">
-              <span>Veya <strong>CSV dosyası</strong> seçin:</span>
-              <input type="file" id="company-mgmt-csv-file" accept=".csv" onchange="handleCompanyCsvUpload(event)" style="font-size: 0.75rem;">
+          <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--color-border-light);">
+              <span>CSV Dosyası:</span>
+              <input type="file" id="company-mgmt-csv-file" accept=".csv" onchange="handleCompanyCsvUpload(event)" style="font-size: 0.75rem; cursor: pointer;">
             </div>
-            <button class="btn btn-primary" onclick="submitBulkCompanies()" style="padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 700; border: none;">
-              Toplu Yüklemeyi Başlat
+            <button class="btn btn-primary" onclick="submitBulkCompanies()" style="padding: 0.55rem 1.5rem; font-size: 0.85rem; font-weight: 700; border: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="upload-cloud" style="width: 16px; height: 16px;"></i> Toplu Yüklemeyi Başlat
             </button>
           </div>
         </div>
 
         <!-- Alt Tab 2: Tek Tek Ekleme -->
         <div id="sub-panel-single-add" class="company-mgmt-sub-panel" style="display: none;">
-          <div class="form-group">
-            <label for="company-mgmt-single-name" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">Firma Adı</label>
-            <input type="text" id="company-mgmt-single-name" placeholder="Örn: ABC Tekstil Ltd. Şti." style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; box-sizing: border-box; height: 38px;">
+          <div class="form-group" style="background: #f8fafc; border: 1px solid var(--color-border-light); padding: 1.25rem; border-radius: 12px; margin-bottom: 1rem;">
+            <label for="company-mgmt-single-name" style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary-dark); margin-bottom: 0.5rem; display: block;">Firma Adı</label>
+            <input type="text" id="company-mgmt-single-name" placeholder="Örn: ABC Tekstil Ltd. Şti." style="border: 1.5px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; box-sizing: border-box; height: 40px; font-weight: 600;">
           </div>
           <div style="margin-top: 1rem; text-align: right;">
-            <button class="btn btn-primary" onclick="submitSingleCompany()" style="padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 700; border: none;">Firmayı Ekle</button>
+            <button class="btn btn-primary" onclick="submitSingleCompany()" style="padding: 0.55rem 1.5rem; font-size: 0.85rem; font-weight: 700; border: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Firmayı Ekle
+            </button>
           </div>
         </div>
 
         <!-- Alt Tab 3: Firma Listesi & Arama & Silme -->
         <div id="sub-panel-company-list" class="company-mgmt-sub-panel" style="display: none;">
-          <div style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem;">
-            <input type="text" id="company-mgmt-search" placeholder="Listede firma ara..." oninput="filterCompanyMgmtList()" style="flex: 1; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; outline: none; height: 36px; box-sizing: border-box;">
+          <div class="company-search-container">
+            <i data-lucide="search" class="company-search-icon" style="width: 14px; height: 14px;"></i>
+            <input type="text" id="company-mgmt-search" class="company-search-input" placeholder="Listede firma ara..." oninput="filterCompanyMgmtList()">
           </div>
-          <div style="border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); max-height: 220px; overflow-y: auto; background: #ffffff;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; text-align: left;">
+          <div style="border: 1px solid var(--color-border-light); border-radius: 12px; max-height: 260px; overflow-y: auto; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+            <table class="company-table">
               <thead>
-                <tr style="background: var(--color-bg-light); border-bottom: 1px solid var(--color-border-light); font-weight: 700; color: var(--color-text-dark);">
-                  <th style="padding: 0.5rem 0.75rem;">Firma Adı</th>
-                  <th style="padding: 0.5rem 0.75rem;">Ekleyen</th>
-                  <th style="padding: 0.5rem 0.75rem; text-align: right; width: 60px;">İşlem</th>
+                <tr>
+                  <th>Firma Adı</th>
+                  <th>Ekleyen</th>
+                  <th style="text-align: right; width: 130px;">İşlem</th>
                 </tr>
               </thead>
               <tbody id="company-mgmt-list-body">
@@ -2193,8 +2352,9 @@
               </tbody>
             </table>
           </div>
-          <p id="company-mgmt-delete-warning" style="font-size: 0.75rem; color: #ef4444; margin-top: 0.5rem; display: none; font-weight: 600;">
-            * Not: Firma silme yetkisi sadece Süper Yöneticiye aittir.
+          <p id="company-mgmt-delete-warning" style="font-size: 0.75rem; color: #ef4444; margin-top: 0.75rem; display: none; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+            <i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i>
+            <span>Not: Firma silme yetkisi sadece Süper Yöneticiye aittir.</span>
           </p>
         </div>
 
@@ -2204,38 +2364,38 @@
             İsim benzerliği veya yazım hataları nedeniyle bölünmüş olan firmaları tek bir çatı altında birleştirin. Seçilen <strong>Kaynak Firma</strong> altındaki tüm kayıtlı araçlar/plakalar otomatik olarak <strong>Hedef Firma</strong> altına taşınacaktır.
           </p>
           
-          <div class="form-group" style="margin-bottom: 1rem;">
+          <div class="form-group" style="margin-bottom: 1rem; background: #f8fafc; border: 1px solid var(--color-border-light); padding: 1rem; border-radius: 10px;">
             <label for="merge-source-company" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">
               1. Taşınacak (Kaynak) Firma <span style="color:red;">*</span>
             </label>
-            <select id="merge-source-company" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px;">
+            <select id="merge-source-company" style="border: 1.5px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px; font-weight: 600;">
               <!-- Dinamik yüklenecek -->
             </select>
           </div>
 
-          <div style="text-align: center; margin: 0.5rem 0; color: var(--color-text-muted);">
-            <i data-lucide="chevrons-down" style="width: 24px; height: 24px;"></i>
+          <div style="text-align: center; margin: 0.5rem 0; color: var(--color-primary);">
+            <i data-lucide="arrow-down-up" style="width: 20px; height: 20px;"></i>
           </div>
 
-          <div class="form-group" style="margin-bottom: 1.25rem;">
+          <div class="form-group" style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid var(--color-border-light); padding: 1rem; border-radius: 10px;">
             <label for="merge-target-company" style="font-weight: 700; font-size: 0.85rem; color: var(--color-text-dark); margin-bottom: 0.35rem; display: block;">
               2. Birleştirilecek (Hedef) Resmi Firma <span style="color:red;">*</span>
             </label>
-            <select id="merge-target-company" style="border: 1px solid var(--color-border-light); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px;">
+            <select id="merge-target-company" style="border: 1.5px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; width: 100%; background: #ffffff; color: var(--color-text-dark); outline: none; height: 38px; font-weight: 600;">
               <!-- Dinamik yüklenecek -->
             </select>
           </div>
 
           <div style="margin-top: 1.5rem; text-align: right;">
-            <button class="btn btn-primary" onclick="submitMergeCompanies()" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; font-weight: 700; border: none; background: #ef4444; color: white;">
-              Plakaları Taşı ve Birleştir
+            <button class="btn btn-primary" onclick="submitMergeCompanies()" style="padding: 0.55rem 1.5rem; font-size: 0.85rem; font-weight: 700; border: none; background: #ef4444; color: white; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="merge" style="width: 16px; height: 16px;"></i> Plakaları Taşı ve Birleştir
             </button>
           </div>
         </div>
 
       </div>
       <div class="modal-footer" style="background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); justify-content: flex-end; padding: 1rem 1.5rem; display: flex;">
-        <button class="btn btn-secondary" onclick="closeModal('modal-company-management')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; background: transparent; border: 1px solid var(--color-border-light); color: var(--color-text-dark); cursor: pointer; border-radius: var(--radius-sm);">Kapat</button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-company-management')" style="padding: 0.5rem 1.5rem; min-height: 40px; font-size: 0.9rem; background: transparent; border: 1px solid var(--color-border-light); color: var(--color-text-dark); cursor: pointer; border-radius: 8px;">Kapat</button>
       </div>
     </div>
   </div>

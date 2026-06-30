@@ -12150,12 +12150,8 @@ function switchCompanyMgmtSubTab(tabName) {
     if (btn) {
       if (t === tabName) {
         btn.classList.add('active');
-        btn.style.color = 'var(--color-primary)';
-        btn.style.borderBottom = '2px solid var(--color-primary)';
       } else {
         btn.classList.remove('active');
-        btn.style.color = 'var(--color-text-muted)';
-        btn.style.borderBottom = '2px solid transparent';
       }
     }
   });
@@ -12241,10 +12237,10 @@ function renderCompanyMgmtList(list) {
 
   listBody.innerHTML = list.map(c => {
     const deleteBtn = isSuperadmin 
-      ? `<button onclick="deleteCompany(${c.id})" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer;">Sil</button>`
-      : `<button disabled class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 700; border-radius: var(--radius-sm); cursor: not-allowed; opacity: 0.6;">Sil</button>`;
+      ? `<button onclick="deleteCompany(${c.id})" class="btn-action btn-action-delete"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`
+      : `<button disabled class="btn-action" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed; opacity: 0.6;"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`;
     
-    const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; min-height: 28px; font-size: 0.75rem; background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; margin-right: 0.25rem;">Ayarlar</button>`;
+    const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn-action btn-action-edit" style="margin-right: 0.25rem;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`;
 
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
@@ -12301,6 +12297,12 @@ function renderCompanyMgmtList(list) {
       </tr>
     `;
   }).join('');
+
+  if (typeof lucide !== 'undefined') {
+    setTimeout(() => {
+      lucide.createIcons();
+    }, 20);
+  }
 }
 
 // 5. Firma Listesinde Arama Yapma
