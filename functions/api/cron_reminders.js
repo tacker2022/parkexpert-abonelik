@@ -559,7 +559,7 @@ export async function onRequest(context) {
               const systemHealthHtml = `
                 <!-- System Health & Quick Actions -->
                 <div style="margin-bottom: 2rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; font-family: sans-serif;">
-                  <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                  <table class="two-col-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                     <tr>
                       <!-- Left: Health -->
                       <td style="width: 50%; vertical-align: top; padding-right: 12px; border-right: 1px solid #e2e8f0;">
@@ -617,7 +617,7 @@ export async function onRequest(context) {
                 const percent = maxCount > 0 ? Math.round((stat.count / maxCount) * 100) : 0;
                 trendHtml += `
                   <tr>
-                    <td style="width: 120px; color: #475569; font-weight: 600; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.label}</td>
+                    <td class="trend-date" style="width: 120px; color: #475569; font-weight: 600; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.label}</td>
                     <td style="padding: 8px 0; vertical-align: middle;">
                       <div style="background-color: #e2e8f0; border-radius: 6px; height: 12px; min-width: 120px; max-width: 320px; overflow: hidden; position: relative; display: block;">
                         <table style="width: 100%; height: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
@@ -628,7 +628,7 @@ export async function onRequest(context) {
                         </table>
                       </div>
                     </td>
-                    <td style="width: 140px; text-align: right; font-weight: 700; color: #1e293b; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle; line-height: 1.25; white-space: nowrap;">
+                    <td class="trend-count" style="width: 140px; text-align: right; font-weight: 700; color: #1e293b; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle; line-height: 1.25; white-space: nowrap;">
                       ${stat.count} kayıt ${stat.avgTimeText ? `<br><span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">(Ort: ${stat.avgTimeText})</span>` : ""}
                     </td>
                   </tr>
@@ -646,30 +646,30 @@ export async function onRequest(context) {
                 </div>
 
                 <!-- KPI Cards Grid -->
-                <div style="margin-bottom: 2rem; width: 100%; display: table; border-collapse: separate; border-spacing: 8px 0;">
-                  <div style="display: table-row;">
+                <table class="kpi-table" style="margin-bottom: 2rem; width: 100%; border-collapse: separate; border-spacing: 8px 0; font-family: sans-serif;">
+                  <tr class="kpi-row">
                     <!-- Card 1: Son 24 Saat -->
-                    <div style="display: table-cell; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                    <td class="kpi-card" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 1rem; text-align: center; width: 33%; vertical-align: top;">
                       <div style="font-size: 0.7rem; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">⚡ SON 24 SAAT</div>
                       <div style="font-size: 1.8rem; font-weight: 800; color: #d97706; line-height: 1.1;">${recentApps.length}</div>
                       <div style="font-size: 0.65rem; color: #b45309; font-weight: 600; margin-top: 0.25rem;">Yeni Başvuru</div>
-                    </div>
+                    </td>
                     
                     <!-- Card 2: Toplam Başvuru -->
-                    <div style="display: table-cell; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                    <td class="kpi-card" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1rem; text-align: center; width: 33%; vertical-align: top;">
                       <div style="font-size: 0.7rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">📊 TÜM ZAMANLAR</div>
                       <div style="font-size: 1.8rem; font-weight: 800; color: #2563eb; line-height: 1.1;">${totalApps}</div>
                       <div style="font-size: 0.65rem; color: #1d4ed8; font-weight: 600; margin-top: 0.25rem;">Toplam Başvuru</div>
-                    </div>
+                    </td>
                     
                     <!-- Card 3: Ort. Onay Süresi -->
-                    <div style="display: table-cell; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 10px; padding: 1rem; text-align: center; width: 33%;">
+                    <td class="kpi-card" style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 10px; padding: 1rem; text-align: center; width: 33%; vertical-align: top;">
                       <div style="font-size: 0.7rem; font-weight: 800; color: #be185d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">⏱️ ORT. ONAY SÜRESİ</div>
                       <div style="font-size: 1.1rem; font-weight: 800; color: #db2777; line-height: 1.1; padding: 0.4rem 0;">${avgApprovalTimeText}</div>
                       <div style="font-size: 0.65rem; color: #be185d; font-weight: 600; margin-top: 0.1rem;">Son 24 Saat</div>
-                    </div>
-                  </div>
-                </div>
+                    </td>
+                  </tr>
+                </table>
 
                 <!-- Trend Chart Section -->
                 <div style="margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); font-family: sans-serif;">

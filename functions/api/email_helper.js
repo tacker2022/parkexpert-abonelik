@@ -15,9 +15,55 @@ export async function sendEmail({ to, subject, html, env }) {
   .pulse-dot {
     animation: pulse 2s infinite ease-in-out;
   }
+  @media only screen and (max-width: 480px) {
+    .email-wrapper {
+      padding: 10px !important;
+    }
+    .email-container {
+      border-radius: 8px !important;
+    }
+    .kpi-table {
+      display: block !important;
+      width: 100% !important;
+    }
+    .kpi-row {
+      display: block !important;
+      width: 100% !important;
+    }
+    .kpi-card {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin-bottom: 10px !important;
+    }
+    .two-col-table td {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      border-right: none !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      padding-bottom: 15px !important;
+      margin-bottom: 15px !important;
+    }
+    .two-col-table td:last-child {
+      border-bottom: none !important;
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .trend-date {
+      width: 90px !important;
+      font-size: 0.78rem !important;
+    }
+    .trend-count {
+      width: 105px !important;
+      font-size: 0.78rem !important;
+    }
+  }
 </style>
-<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; padding: 2rem; color: #334155; margin: 0; min-height: 100%;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; overflow: hidden;">
+<div class="email-wrapper" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; padding: 2rem; color: #334155; margin: 0; min-height: 100%;">
+  <div class="email-container" style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; overflow: hidden;">
     <!-- Logo / Header -->
     <div style="text-align: center; padding: 2rem; background: #0f3ba2; border-bottom: 3px solid #eab308;">
       <h2 style="color: #ffffff; margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: 0.05em;">PARKEXPERT</h2>
