@@ -1267,6 +1267,11 @@ function handleMarketingCheckboxClick(event) {
   }
 }
 
+function showToast(title, message, iconName = 'check') {
+  showToastNotification(title, message, iconName);
+}
+window.showToast = showToast;
+
 function showToastNotification(title, message, iconName) {
   const toast = document.getElementById('email-toast');
   const toastTitle = document.getElementById('toast-title');
@@ -5576,7 +5581,7 @@ async function addOtoparkCategory() {
     const updatedCategories = [...window.otoparkCategories, value];
     await saveOtoparkCategories(updatedCategories);
     input.value = '';
-    alert("Kategori başarıyla eklendi.");
+    showToast("Başarılı", "Kategori başarıyla eklendi.", "check");
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -5647,7 +5652,7 @@ async function editOtoparkCategory(oldCategory) {
     const updatedCategories = window.otoparkCategories.map(c => c === oldCategory ? trimmed : c);
     await saveOtoparkCategories(updatedCategories);
     
-    alert("Kategori ve ilişkili otoparklar başarıyla güncellendi.");
+    showToast("Başarılı", "Kategori ve ilişkili otoparklar başarıyla güncellendi.", "check");
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -5671,7 +5676,7 @@ async function deleteOtoparkCategory(category) {
   try {
     const updatedCategories = window.otoparkCategories.filter(c => c !== category);
     await saveOtoparkCategories(updatedCategories);
-    alert("Kategori başarıyla silindi.");
+    showToast("Başarılı", "Kategori başarıyla silindi.", "trash");
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -6178,7 +6183,7 @@ async function saveOtoparkConfig(event) {
     renderOtoparksTable();
     populateLocationFilter();
 
-    alert("Otopark bilgileri başarıyla kaydedildi.");
+    showToast('Başarılı', 'Otopark bilgileri başarıyla kaydedildi.', 'check');
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -7137,7 +7142,7 @@ async function saveQuickEdit(event) {
     // Reopen drawer to refresh values
     openDrawer(appId);
 
-    alert("Değişiklikler başarıyla kaydedildi.");
+    showToast('Başarılı', 'Değişiklikler başarıyla kaydedildi.', 'check');
   } catch (err) {
     console.error("Failed to save quick edit:", err);
     alert("Kaydedilemedi: " + err.message);
@@ -7172,7 +7177,7 @@ async function deleteCurrentApplication() {
       const drawer = document.getElementById('drawer-overlay');
       if (drawer) drawer.classList.remove('active');
 
-      alert("Başvuru başarıyla silindi.");
+      showToast("Başarılı", "Başvuru başarıyla silindi.", "trash");
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -7246,7 +7251,7 @@ async function deleteSelectedApplications() {
       const btn = document.getElementById('btn-bulk-delete');
       if (btn) btn.style.display = 'none';
 
-      alert(`Seçilen ${ids.length} adet başvuru başarıyla silindi.`);
+      showToast("Başarılı", `Seçilen ${ids.length} adet başvuru başarıyla silindi.`, "trash");
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -8824,7 +8829,7 @@ async function saveAdminConfig(event) {
     closeModal('modal-admin-edit');
     await populateActiveUserSelect();
     renderAdminsTable();
-    alert("Yönetici yetkilendirmesi başarıyla kaydedildi.");
+    showToast("Başarılı", "Yönetici yetkilendirmesi başarıyla kaydedildi.", "check");
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -8860,7 +8865,7 @@ async function deleteAdmin(adminId) {
       await populateActiveUserSelect();
       renderAdminsTable();
       handleUserRoleChange();
-      alert("Yönetici yetkileri kaldırıldı.");
+      showToast("Başarılı", "Yönetici yetkileri kaldırıldı.", "trash");
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -10976,7 +10981,7 @@ async function saveOtoparkTemplates(event) {
     closeTemplatesModal();
     await loadOtoparks();
     renderOtoparksTable();
-    alert("Şablonlar başarıyla kaydedildi.");
+    showToast("Başarılı", "Şablonlar başarıyla kaydedildi.", "check");
   } catch (err) {
     console.error(err);
     alert(err.message);
@@ -12401,7 +12406,7 @@ async function terminateSelectedSessions() {
       throw new Error(await res.text());
     }
 
-    alert("Seçilen oturumlar başarıyla sonlandırıldı.");
+    showToast("Başarılı", "Seçilen oturumlar başarıyla sonlandırıldı.", "shield-alert");
     
     // Reset master checkbox
     const master = document.getElementById('sessions-select-all');
@@ -12447,7 +12452,7 @@ async function terminateAllOtherSessions() {
       throw new Error(await res.text());
     }
 
-    alert("Tüm diğer oturumlar başarıyla sonlandırıldı.");
+    showToast("Başarılı", "Tüm diğer oturumlar başarıyla sonlandırıldı.", "shield-alert");
     
     // Reset master checkbox
     const master = document.getElementById('sessions-select-all');
@@ -12481,7 +12486,7 @@ async function terminateSession(jti, expiresAt, username) {
       throw new Error(await res.text());
     }
     
-    alert("Oturum başarıyla sonlandırıldı.");
+    showToast("Başarılı", "Oturum başarıyla sonlandırıldı.", "shield-alert");
     fetchActiveSessions();
   } catch (err) {
     alert(`Oturum kapatılamadı: ${err.message}`);
@@ -12871,7 +12876,7 @@ async function submitBulkCompanies() {
       return;
     }
 
-    alert(`Toplu yükleme tamamlandı! ${data.count} yeni firma başarıyla kaydedildi.`);
+    showToast("Başarılı", `Toplu yükleme tamamlandı! ${data.count} yeni firma başarıyla kaydedildi.`, "check");
     textarea.value = '';
     loadOtoparkCompanies();
     switchCompanyMgmtSubTab('company-list');
@@ -13178,7 +13183,7 @@ async function submitMergeCompanies() {
       return;
     }
 
-    alert(`Tebrikler! ${data.count} araç başarıyla "${targetCompany}" firmasına aktarıldı. Eski firma listeden temizlendi.`);
+    showToast("Başarılı", `Tebrikler! ${data.count} araç başarıyla "${targetCompany}" firmasına aktarıldı. Eski firma listeden temizlendi.`, "check");
     
     // Refresh application list from API to update tables & charts
     if (typeof loadApplications === 'function') {
