@@ -2417,11 +2417,11 @@
   </div>
 
   <!-- Modal: B2B Company Portal Add Vehicle -->
-  <div class="modal" id="modal-company-portal-add" style="display: none;">
-    <div class="modal-content" style="max-width: 550px;">
+  <div class="modal-overlay" id="modal-company-portal-add" style="z-index: 1200;">
+    <div class="modal-window" style="max-width: 550px;">
       <div class="modal-header">
         <h3 class="modal-title">Yeni Plaka Ekle</h3>
-        <button class="btn-close" onclick="closeModal('modal-company-portal-add')">&times;</button>
+        <button class="modal-close" onclick="closeModal('modal-company-portal-add')">&times;</button>
       </div>
       <div class="modal-body" style="padding: 1.5rem;">
         <form id="company-portal-add-form" onsubmit="submitCompanyPortalVehicle(event)">
@@ -2492,14 +2492,14 @@
   </div>
 
   <!-- Modal: Audit Log Details -->
-  <div class="modal" id="modal-audit-log-details" style="display: none;">
-    <div class="modal-content" style="max-width: 650px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+  <div class="modal-overlay" id="modal-audit-log-details" style="z-index: 1200;">
+    <div class="modal-window" style="max-width: 650px;">
       <div class="modal-header" style="background: rgba(15, 59, 162, 0.03); border-bottom: 1px solid var(--color-border-light); padding: 1.25rem 1.5rem;">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; color: var(--color-primary-dark); font-weight: 800;">
           <i data-lucide="scroll" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
           <span>İşlem Denetim Detayı</span>
         </h3>
-        <button class="btn-close" onclick="closeModal('modal-audit-log-details')" style="font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer; border: none; background: none; outline: none;">&times;</button>
+        <button class="modal-close" onclick="closeModal('modal-audit-log-details')" style="font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer; border: none; background: none; outline: none;">&times;</button>
       </div>
       <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
         

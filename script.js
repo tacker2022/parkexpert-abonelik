@@ -6402,6 +6402,12 @@ window.toggleOtoparkIndividual = toggleOtoparkIndividual;
 let currentAdminTab = 'applications';
 
 function switchAdminTab(tabName) {
+  // Clear any active drawers, modals and restore body scrolling
+  if (typeof closeDrawer === 'function') closeDrawer();
+  const activeModals = document.querySelectorAll('.modal-overlay.active, .modal.active');
+  activeModals.forEach(m => m.classList.remove('active'));
+  document.body.style.overflow = '';
+
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
