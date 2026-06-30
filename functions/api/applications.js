@@ -371,7 +371,9 @@ export async function onRequest(context) {
             actionType: auditActionType,
             targetId: id,
             details: auditDetails,
-            ipAddress
+            ipAddress,
+            otoparkName: oldApp.parking_location || null,
+            companyName: oldApp.company_name || null
           })
         );
       }
@@ -809,7 +811,9 @@ export async function onRequest(context) {
           actionType: "create_test_app",
           targetId: appId,
           details: `Test başvurusu #${appId} (${full_name}) oluşturuldu.`,
-          ipAddress
+          ipAddress,
+          otoparkName: parking_location || null,
+          companyName: null
         })
       );
 

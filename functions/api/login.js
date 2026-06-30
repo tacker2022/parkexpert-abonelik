@@ -504,7 +504,9 @@ export async function onRequest(context) {
       actionType: "LOGIN",
       targetId: jti,
       details: userObj.role === "company" ? "Firma yetkilisi sisteme giriş yaptı." : "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
-      ipAddress: clientIp
+      ipAddress: clientIp,
+      otoparkName: userObj.otopark_name || null,
+      companyName: userObj.company_name || null
     });
     
     if (userObj.role === "superadmin") {

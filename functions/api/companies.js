@@ -232,7 +232,8 @@ export async function onRequest(context) {
           role: user.role,
           actionType: "Firma Toplu Yükleme",
           details: `Otopark: ${otopark_name}, Yüklenen Firma Sayısı: ${dbPayload.length}, Başarılı/Yeni Eklenen: ${Array.isArray(inserted) ? inserted.length : 0}`,
-          ipAddress: clientIp
+          ipAddress: clientIp,
+          otoparkName: otopark_name || null
         });
       } catch (e) {
         console.error("Audit log error:", e);
@@ -358,7 +359,9 @@ export async function onRequest(context) {
           role: user.role,
           actionType: "Firma Güncelleme",
           details: `Firma: ${company.name} (${company.otopark_name}) yetki ve kota bilgileri güncellendi.`,
-          ipAddress: clientIp
+          ipAddress: clientIp,
+          otoparkName: company.otopark_name || null,
+          companyName: company.name || null
         });
       } catch (e) {
         console.error("Audit log error:", e);
@@ -425,7 +428,9 @@ export async function onRequest(context) {
           role: user.role,
           actionType: "Firma Silme",
           details: `Firma: ${companyName || id} (${otoparkName || ''}) sistemden silindi.`,
-          ipAddress: clientIp
+          ipAddress: clientIp,
+          otoparkName: otoparkName || null,
+          companyName: companyName || null
         });
       } catch (e) {
         console.error("Audit log error:", e);

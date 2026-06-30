@@ -187,7 +187,9 @@ export async function onRequest(context) {
         role: user.role,
         actionType: "Firma Birleştirme",
         details: `Otopark: ${otopark_name}, Kaynak: "${source_company}" -> Hedef: "${target_company}". Taşınan Araç: ${movedPlatesCount}`,
-        ipAddress: clientIp
+        ipAddress: clientIp,
+        otoparkName: otopark_name || null,
+        companyName: target_company || null
       });
     } catch (e) {
       console.error("Audit log error:", e);

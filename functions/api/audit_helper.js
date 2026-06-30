@@ -7,7 +7,9 @@ export async function logAudit({
   actionType,
   targetId,
   details,
-  ipAddress
+  ipAddress,
+  otoparkName,
+  companyName
 }) {
   try {
     const cleanUrl = supabaseUrl.replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
@@ -27,7 +29,9 @@ export async function logAudit({
         action_type: actionType,
         target_id: String(targetId || ""),
         details: details || "",
-        ip_address: ipAddress || ""
+        ip_address: ipAddress || "",
+        otopark_name: otoparkName || null,
+        company_name: companyName || null
       })
     });
 

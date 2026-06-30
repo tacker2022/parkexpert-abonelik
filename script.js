@@ -11410,7 +11410,7 @@ async function loadAuditLogs() {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+      <td colspan="8" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
         Denetim günlüğü yükleniyor, lütfen bekleyin...
       </td>
     </tr>
@@ -11459,7 +11459,7 @@ async function loadAuditLogs() {
     console.error("Failed to load audit logs:", err);
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-danger); font-weight: 600;">
+        <td colspan="8" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-danger); font-weight: 600;">
           Hata oluştu: ${err.message}
         </td>
       </tr>
@@ -11510,7 +11510,7 @@ function renderAuditLogsTable(logs) {
   if (logs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
+        <td colspan="8" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
           Gösterilecek denetim kaydı bulunamadı.
         </td>
       </tr>
@@ -11611,6 +11611,9 @@ function renderAuditLogsTable(logs) {
         break;
     }
 
+    const otoparkText = log.otopark_name || '<span style="color:var(--color-text-muted);font-style:italic;">-</span>';
+    const companyText = log.company_name || '<span style="color:var(--color-text-muted);font-style:italic;">-</span>';
+
     tr.innerHTML = `
       <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-muted); font-size: 0.8rem; white-space: nowrap;">${dateFormatted}</td>
       <td style="padding: 0.85rem 1.5rem; font-weight: 700; color: var(--color-text-dark);">${log.admin_username}</td>
@@ -11618,7 +11621,9 @@ function renderAuditLogsTable(logs) {
       <td style="padding: 0.85rem 1.5rem; vertical-align: middle;">
         <span class="status-badge" style="${actionStyle} font-weight: 700; font-size: 0.75rem; white-space: nowrap;">${actionLabel}</span>
       </td>
-      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; cursor: pointer; transition: color 0.15s ease;" onclick="viewAuditLogDetails(${idx})" title="Detayları görmek için tıklayın">${maskAuditDetails(log.details || '')}</td>
+      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${log.otopark_name || ''}">${otoparkText}</td>
+      <td style="padding: 0.85rem 1.5rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${log.company_name || ''}">${companyText}</td>
+      <td style="padding: 0.85rem 1.5rem; color: var(--color-text-dark); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; cursor: pointer; transition: color 0.15s ease;" onclick="viewAuditLogDetails(${idx})" title="Detayları görmek için tıklayın">${maskAuditDetails(log.details || '')}</td>
       <td style="padding: 0.85rem 1.5rem; text-align: center; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">${log.ip_address || '-'}</td>
     `;
 

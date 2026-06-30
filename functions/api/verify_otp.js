@@ -304,7 +304,9 @@ export async function onRequest(context) {
       actionType: "LOGIN",
       targetId: jti,
       details: "Yönetici 2FA kodunu başarıyla doğrulayarak giriş yaptı.",
-      ipAddress: clientIp
+      ipAddress: clientIp,
+      otoparkName: userObj.otopark_name || null,
+      companyName: userObj.company_name || null
     });
 
     if (userObj.role === "superadmin") {

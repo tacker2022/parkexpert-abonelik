@@ -288,7 +288,8 @@ export async function onRequest(context) {
             actionType: "update_otopark",
             targetId: id,
             details: `"${name}" otopark işletmesi bilgileri güncellendi.`,
-            ipAddress
+            ipAddress,
+            otoparkName: name || null
           })
         );
 
@@ -349,7 +350,8 @@ export async function onRequest(context) {
                   actionType: "create_otopark",
                   targetId: generatedId,
                   details: `"${name}" adındaki arşivlenmiş otopark işletmesi tekrar etkinleştirildi.`,
-                  ipAddress
+                  ipAddress,
+                  otoparkName: name || null
                 })
               );
 
@@ -394,7 +396,8 @@ export async function onRequest(context) {
             actionType: "create_otopark",
             targetId: generatedId,
             details: `"${name}" adında yeni otopark işletmesi oluşturuldu.`,
-            ipAddress
+            ipAddress,
+            otoparkName: name || null
           })
         );
 
@@ -444,7 +447,8 @@ export async function onRequest(context) {
           actionType: "delete_otopark",
           targetId: id,
           details: `"${otoparkName}" otopark işletmesi arşivlendi (silindi).`,
-          ipAddress
+          ipAddress,
+          otoparkName: otoparkName || null
         })
       );
 
