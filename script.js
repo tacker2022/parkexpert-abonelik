@@ -1284,9 +1284,9 @@ function showToastNotification(title, message, iconName) {
     
     if (toastIcon) {
       if (iconName === 'check' || !iconName) {
-        toastIcon.innerHTML = `<img src="assets/logo_square.png" style="width: 24px; height: 24px; object-fit: contain;">`;
+        toastIcon.innerHTML = `<img src="assets/logo_square.png?v=3" style="width: 24px; height: 24px; object-fit: contain;">`;
       } else if (iconName.startsWith('/') || iconName.startsWith('assets/')) {
-        toastIcon.innerHTML = `<img src="${iconName}" style="width: 24px; height: 24px; object-fit: contain;">`;
+        toastIcon.innerHTML = `<img src="${iconName}?v=3" style="width: 24px; height: 24px; object-fit: contain;">`;
       } else {
         let iconColor = 'var(--color-primary)';
         if (['alert-circle', 'alert-triangle', 'shield-alert', 'trash'].includes(iconName)) {
