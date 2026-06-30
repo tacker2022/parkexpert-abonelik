@@ -699,7 +699,7 @@ async function populateOtoparkSelection() {
     list.forEach(park => {
       const option = document.createElement('option');
       option.value = park.name;
-      const isActive = park.isActive !== false;
+      const isActive = park.isActive !== false && park.allowIndividual !== false;
       if (!isActive) {
         option.disabled = true;
         option.textContent = `${park.name} (ABONELİĞE GEÇİCİ OLARAK KAPALI)`;
@@ -731,7 +731,7 @@ async function populateOtoparkSelection() {
     customOptionsList.appendChild(groupHeaderEl);
 
     list.forEach(park => {
-      const isActive = park.isActive !== false;
+      const isActive = park.isActive !== false && park.allowIndividual !== false;
       
       const optionEl = document.createElement('div');
       optionEl.className = `custom-select-option${isActive ? '' : ' disabled'}`;
