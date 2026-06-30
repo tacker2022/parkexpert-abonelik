@@ -100,6 +100,7 @@ export async function onRequest(context) {
 
       // Helper to calculate average approval time for a set of applications
       const getAvgApprovalTime = (apps) => {
+        if (!apps || !Array.isArray(apps)) return "";
         const approved = apps.filter(app => {
           return app.status === 'Onaylandı' && app.subscription_expires_at && app.date_applied;
         });
@@ -284,9 +285,10 @@ export async function onRequest(context) {
           const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
           
           if (!allTimeStatsMap[dayStr]) {
-            allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime() };
+            allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime(), apps: [] };
           }
           allTimeStatsMap[dayStr].count++;
+          allTimeStatsMap[dayStr].apps.push(app);
         });
 
         allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => a.rawDate - b.rawDate);

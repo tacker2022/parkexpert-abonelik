@@ -408,6 +408,7 @@ export async function onRequest(context) {
 
               // Helper to calculate average approval time for a set of applications
               const getAvgApprovalTime = (apps) => {
+                if (!apps || !Array.isArray(apps)) return "";
                 const approved = apps.filter(app => {
                   return app.status === 'Onaylandı' && app.subscription_expires_at && app.date_applied;
                 });
