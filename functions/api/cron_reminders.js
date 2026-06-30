@@ -406,6 +406,28 @@ export async function onRequest(context) {
               const recentApps = parkApps.filter(app => app.date_applied && new Date(app.date_applied) >= yesterday);
               const totalApps = parkApps.length;
 
+              // Helper to calculate average approval time for a set of applications
+              const getAvgApprovalTime = (apps) => {
+                const approved = apps.filter(app => {
+                  return app.status === 'Onaylandı' && app.subscription_expires_at && app.date_applied;
+                });
+                if (approved.length === 0) return "";
+                const totalMs = approved.reduce((sum, app) => {
+                  const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
+                  const appliedTime = new Date(app.date_applied).getTime();
+                  return sum + Math.max(0, approvedTime - appliedTime);
+                }, 0);
+                const avgMs = totalMs / approved.length;
+                const avgMinutes = Math.round(avgMs / (60 * 1000));
+                if (avgMinutes < 60) {
+                  return `${avgMinutes} dk`;
+                } else {
+                  const hours = Math.floor(avgMinutes / 60);
+                  const minutes = avgMinutes % 60;
+                  return minutes > 0 ? `${hours} sa ${minutes} dk` : `${hours} sa`;
+                }
+              };
+
               // Calculate average approval duration for applications approved in the last 24 hours
               const approvedRecent = parkApps.filter(app => {
                 if (app.status !== 'Onaylandı' || !app.subscription_expires_at || !app.date_applied) return false;
@@ -413,23 +435,7 @@ export async function onRequest(context) {
                 return approvedTime >= yesterday.getTime();
               });
 
-              let avgApprovalTimeText = "—";
-              if (approvedRecent.length > 0) {
-                const totalMs = approvedRecent.reduce((sum, app) => {
-                  const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
-                  const appliedTime = new Date(app.date_applied).getTime();
-                  return sum + Math.max(0, approvedTime - appliedTime);
-                }, 0);
-                const avgMs = totalMs / approvedRecent.length;
-                const avgMinutes = Math.round(avgMs / (60 * 1000));
-                if (avgMinutes < 60) {
-                  avgApprovalTimeText = `${avgMinutes} dakika`;
-                } else {
-                  const hours = Math.floor(avgMinutes / 60);
-                  const minutes = avgMinutes % 60;
-                  avgApprovalTimeText = minutes > 0 ? `${hours} saat ${minutes} dk` : `${hours} saat`;
-                }
-              }
+              const avgApprovalTimeText = getAvgApprovalTime(approvedRecent) ? `${getAvgApprovalTime(approvedRecent)}` : "—";
 
               // Calculate daily trend counts for the last 7 days (Turkey timezone offset calculation)
               const trendStats = [];
@@ -448,15 +454,17 @@ export async function onRequest(context) {
                 const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${daysOfWeek[localDayOfWeek]}`;
                 const dayStr = `${String(localDay).padStart(2, '0')}.${String(localMonth + 1).padStart(2, '0')}.${trDate.getUTCFullYear()}`;
 
-                const count = parkApps.filter(app => {
+                const dayApps = parkApps.filter(app => {
                   if (!app.date_applied) return false;
                   const appTrDate = new Date(new Date(app.date_applied).getTime() + trOffset);
                   const appDayStr = `${String(appTrDate.getUTCDate()).padStart(2, '0')}.${String(appTrDate.getUTCMonth() + 1).padStart(2, '0')}.${appTrDate.getUTCFullYear()}`;
                   return appDayStr === dayStr;
-                }).length;
+                });
 
+                const count = dayApps.length;
                 if (count > maxCount) maxCount = count;
-                trendStats.push({ label: dayLabel, count });
+                const avgTimeText = getAvgApprovalTime(dayApps);
+                trendStats.push({ label: dayLabel, count, avgTimeText });
               }
               if (maxCount === 0) maxCount = 1;
 
@@ -511,9 +519,10 @@ export async function onRequest(context) {
                 const dayLabel = `${localDay} ${turkishMonths[localMonth]} ${year} ${daysOfWeek[appTrDate.getUTCDay()]}`;
                 
                 if (!allTimeStatsMap[dayStr]) {
-                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime() };
+                  allTimeStatsMap[dayStr] = { label: dayLabel, count: 0, rawDate: appTrDate.getTime(), apps: [] };
                 }
                 allTimeStatsMap[dayStr].count++;
+                allTimeStatsMap[dayStr].apps.push(app);
               });
 
               const allTimeStats = Object.values(allTimeStatsMap).sort((a, b) => a.rawDate - b.rawDate);
@@ -529,12 +538,17 @@ export async function onRequest(context) {
                     <div style="max-height: 250px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
                       <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                         <tbody>
-                          ${allTimeStats.map((stat, idx) => `
-                            <tr style="border-bottom: ${idx < allTimeStats.length - 1 ? '1px solid #f1f5f9' : 'none'};">
-                              <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif;">${stat.label}</td>
-                              <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f3ba2; font-family: sans-serif; white-space: nowrap;">${stat.count} kayıt</td>
-                            </tr>
-                          `).join('')}
+                          ${allTimeStats.map((stat, idx) => {
+                            const avgTimeText = getAvgApprovalTime(stat.apps);
+                            return `
+                              <tr style="border-bottom: ${idx < allTimeStats.length - 1 ? '1px solid #f1f5f9' : 'none'};">
+                                <td style="padding: 8px 0; color: #475569; font-weight: 600; font-family: sans-serif;">${stat.label}</td>
+                                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #0f3ba2; font-family: sans-serif; white-space: nowrap;">
+                                  ${stat.count} kayıt ${avgTimeText ? `<span style="font-size: 0.75rem; color: #64748b; font-weight: 500; margin-left: 4px;">(Ort: ${avgTimeText})</span>` : ""}
+                                </td>
+                              </tr>
+                            `;
+                          }).join('')}
                         </tbody>
                       </table>
                     </div>
@@ -614,7 +628,9 @@ export async function onRequest(context) {
                         </table>
                       </div>
                     </td>
-                    <td style="width: 80px; text-align: right; font-weight: 700; color: #1e293b; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle;">${stat.count} kayıt</td>
+                    <td style="width: 140px; text-align: right; font-weight: 700; color: #1e293b; padding: 8px 0; font-size: 0.85rem; font-family: sans-serif; vertical-align: middle; line-height: 1.25; white-space: nowrap;">
+                      ${stat.count} kayıt ${stat.avgTimeText ? `<br><span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">(Ort: ${stat.avgTimeText})</span>` : ""}
+                    </td>
                   </tr>
                 `;
               });
