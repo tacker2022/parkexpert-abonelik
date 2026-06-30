@@ -98,6 +98,28 @@ export async function onRequest(context) {
       const tz = { timeZone: "Europe/Istanbul" };
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+      // Helper to calculate average approval time for a set of applications
+      const getAvgApprovalTime = (apps) => {
+        const approved = apps.filter(app => {
+          return app.status === 'Onaylandı' && app.subscription_expires_at && app.date_applied;
+        });
+        if (approved.length === 0) return "";
+        const totalMs = approved.reduce((sum, app) => {
+          const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
+          const appliedTime = new Date(app.date_applied).getTime();
+          return sum + Math.max(0, approvedTime - appliedTime);
+        }, 0);
+        const avgMs = totalMs / approved.length;
+        const avgMinutes = Math.round(avgMs / (60 * 1000));
+        if (avgMinutes < 60) {
+          return `${avgMinutes} dk`;
+        } else {
+          const hours = Math.floor(avgMinutes / 60);
+          const minutes = avgMinutes % 60;
+          return minutes > 0 ? `${hours} sa ${minutes} dk` : `${hours} sa`;
+        }
+      };
+
       if (mode === "real") {
         const allAppsRes = await fetch(`${supabaseUrl}/rest/v1/applications?select=id,status,parking_location,date_applied,subscription_expires_at,full_name,plate_number,subscription_type&order=date_applied.desc&limit=5000`, {
           headers: {
@@ -114,28 +136,6 @@ export async function onRequest(context) {
         parkApps = allApps.filter(app => app.parking_location === selectedParkingLocation);
         recentApps = parkApps.filter(app => app.date_applied && new Date(app.date_applied) >= yesterday);
         totalApps = parkApps.length;
-
-        // Helper to calculate average approval time for a set of applications
-        const getAvgApprovalTime = (apps) => {
-          const approved = apps.filter(app => {
-            return app.status === 'Onaylandı' && app.subscription_expires_at && app.date_applied;
-          });
-          if (approved.length === 0) return "";
-          const totalMs = approved.reduce((sum, app) => {
-            const approvedTime = new Date(app.subscription_expires_at).getTime() - (30 * 24 * 60 * 60 * 1000);
-            const appliedTime = new Date(app.date_applied).getTime();
-            return sum + Math.max(0, approvedTime - appliedTime);
-          }, 0);
-          const avgMs = totalMs / approved.length;
-          const avgMinutes = Math.round(avgMs / (60 * 1000));
-          if (avgMinutes < 60) {
-            return `${avgMinutes} dk`;
-          } else {
-            const hours = Math.floor(avgMinutes / 60);
-            const minutes = avgMinutes % 60;
-            return minutes > 0 ? `${hours} sa ${minutes} dk` : `${hours} sa`;
-          }
-        };
 
         // Calculate average approval duration for applications approved in the last 24 hours
         const approvedRecent = parkApps.filter(app => {
