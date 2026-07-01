@@ -13653,24 +13653,28 @@ async function loadCompanyPortalVehicles() {
     const activeFreeVehicles = data.filter(app => app.status === 'Onaylandı' && app.subscription_type === 'Kurumsal (Ücretsiz)');
     const usedQuota = activeFreeVehicles.length;
     const totalQuota = user.quota_limit || 0;
+    const remainingQuota = Math.max(0, totalQuota - usedQuota);
 
+    // Calculate active paid registrations
+    const activePaidVehicles = data.filter(app => app.status === 'Onaylandı' && app.subscription_type === 'Kurumsal (Ücretli)');
+    const paidCount = activePaidVehicles.length;
+
+    // Update B2B Portal Premium Statistics Cards
+    const statTotalEl = document.getElementById('company-portal-stat-total');
+    const statUsedEl = document.getElementById('company-portal-stat-used');
+    const statRemainingEl = document.getElementById('company-portal-stat-remaining');
+    const statPaidEl = document.getElementById('company-portal-stat-paid');
+
+    if (statTotalEl) statTotalEl.textContent = totalQuota;
+    if (statUsedEl) statUsedEl.textContent = usedQuota;
+    if (statRemainingEl) statRemainingEl.textContent = remainingQuota;
+    if (statPaidEl) statPaidEl.textContent = paidCount;
+
+    // Fallback support for older elements if still referenced in memory
     const quotaUsedEl = document.getElementById('company-portal-quota-used');
     const quotaTotalEl = document.getElementById('company-portal-quota-total');
-    const quotaBarEl = document.getElementById('company-portal-quota-bar');
-
     if (quotaUsedEl) quotaUsedEl.textContent = usedQuota;
     if (quotaTotalEl) quotaTotalEl.textContent = totalQuota;
-    if (quotaBarEl) {
-      const pct = totalQuota > 0 ? Math.min(100, Math.round((usedQuota / totalQuota) * 100)) : 0;
-      quotaBarEl.style.width = `${pct}%`;
-      if (pct >= 100) {
-        quotaBarEl.style.background = '#ef4444';
-      } else if (pct >= 80) {
-        quotaBarEl.style.background = '#f59e0b';
-      } else {
-        quotaBarEl.style.background = 'var(--color-primary)';
-      }
-    }
 
     renderCompanyPortalVehicles(data);
   } catch (err) {
