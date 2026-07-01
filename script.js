@@ -12862,6 +12862,8 @@ function renderCompanyMgmtList(list) {
               <span style="font-size: 0.95rem; font-weight: 850; color: var(--color-text-dark); text-transform: uppercase; white-space: normal; word-break: break-word;">${c.name}</span>
               <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
                 ${vehiclesBadge}
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="award" style="width: 10px; height: 10px;"></i> Ücretsiz Kota: ${c.quota_limit || 0} Araç</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="maximize" style="width: 10px; height: 10px;"></i> ${c.m2_area || 0} m²</span>
                 <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="user-check" style="width: 10px; height: 10px;"></i> Ekleyen: ${c.created_by || 'sistem'}</span>
               </div>
             </div>
@@ -12904,7 +12906,7 @@ function renderCompanyMgmtList(list) {
                 <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 600;">
               </div>
               <div>
-                <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Kota Limiti</label>
+                <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Ücretsiz Abonelik Kota Limiti</label>
                 <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 700;">
               </div>
             </div>
@@ -14149,7 +14151,7 @@ function renderOtoparkCompaniesList() {
             <div style="display: flex; flex-direction: column; gap: 0.25rem; text-align: left; min-width: 0;">
               <span style="font-size: 0.95rem; font-weight: 850; letter-spacing: 0.01em; color: var(--color-text-dark); text-transform: uppercase; white-space: normal; word-break: break-word;">${item.companyName}</span>
               <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
-                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> Kota: ${item.quota_limit} araç</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> Ücretsiz Kota: ${item.quota_limit} Araç</span>
                 <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="maximize" style="width: 10px; height: 10px;"></i> ${item.m2_area} m²</span>
               </div>
             </div>
@@ -14191,7 +14193,7 @@ function renderOtoparkCompaniesList() {
                 <input type="number" id="otopark-company-edit-m2-${item.companyId}" value="${item.m2_area}" oninput="suggestOtoparkQuotaFromM2(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 600;">
               </div>
               <div>
-                <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Kota Limiti</label>
+                <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Ücretsiz Abonelik Kota Limiti</label>
                 <input type="number" id="otopark-company-edit-quota-${item.companyId}" value="${item.quota_limit}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 700;">
               </div>
             </div>
