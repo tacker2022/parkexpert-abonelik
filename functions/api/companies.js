@@ -343,7 +343,7 @@ export async function onRequest(context) {
         if (cleanPhone) {
           const targetName = rep_name || company.rep_name || "Firma Yetkilisi";
           const targetUser = finalUsername || company.username || "Tanımlanmadı";
-          const passMsg = password ? password : "(Değiştirilmedi, mevcut şifreniz geçerlidir)";
+          const passMsg = password ? password : "•••••••• (Güvenliğiniz için maskelenmiştir. Mevcut şifreniz geçerlidir. Unuttuysanız yöneticinizden yeni şifre talep edebilirsiniz.)";
           const messageText = `Merhaba ${targetName},\n\n${company.otopark_name} bünyesindeki "${company.name}" firması için Kurumsal Temsilci Paneli giriş bilgileriniz tanımlanmıştır.\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${targetUser}\n🔑 Şifre: ${passMsg}\n\nBu bilgilerle giriş yaparak şirket araçlarınızı ve personellerinizi kendiniz tanımlayabilirsiniz.`;
 
           // Send notifications in parallel to prevent client-side timeouts
