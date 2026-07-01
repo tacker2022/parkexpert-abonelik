@@ -8126,6 +8126,12 @@ async function handleHeaderAvatarUpload(input) {
       avatarImg.src = `/api/document?path=avatars/${currentAdminVal}.jpg&_t=${Date.now()}`;
       avatarImg.style.display = 'block';
     }
+
+    const heroAvatarImgEl = document.getElementById('company-portal-avatar-img');
+    if (heroAvatarImgEl) {
+      heroAvatarImgEl.src = `/api/document?path=avatars/${currentAdminVal}.jpg&_t=${Date.now()}`;
+      heroAvatarImgEl.style.display = 'block';
+    }
     
     const loggedInUserJson = localStorage.getItem('parkexpert_user');
     const loggedInUserObj = loggedInUserJson ? JSON.parse(loggedInUserJson) : null;
@@ -13698,6 +13704,11 @@ async function loadCompanyPortalVehicles() {
 
         if (avatarInitialEl) {
           avatarInitialEl.textContent = currentComp.name ? currentComp.name.trim().substring(0, 1).toUpperCase() : 'D';
+        }
+        const heroAvatarImgEl = document.getElementById('company-portal-avatar-img');
+        if (heroAvatarImgEl && user.id) {
+          heroAvatarImgEl.src = `/api/document?path=avatars/${user.id}.jpg&_t=${Date.now()}`;
+          heroAvatarImgEl.style.display = 'block';
         }
         if (headerBadgeEl) headerBadgeEl.textContent = currentComp.name;
         if (heroOtoparkEl) {
