@@ -13881,7 +13881,11 @@ function renderOtoparkCompaniesList() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--color-text-muted); text-align: center;">Arama kriterlerine uygun firma bulunamadı.</td></tr>`;
+    tbody.innerHTML = `<div style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: 12px; box-sizing: border-box; width: 100%;">
+      <i data-lucide="search" style="width: 32px; height: 32px; color: #94a3b8;"></i>
+      <span>Arama kriterlerine uygun firma bulunamadı.</span>
+    </div>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     return;
   }
   
@@ -13891,12 +13895,12 @@ function renderOtoparkCompaniesList() {
     
     if (activeReps.length > 0) {
       repsHtml = activeReps.map(r => `
-        <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.65rem 0.85rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.35rem; min-width: 250px; max-width: 320px; box-sizing: border-box; text-align: left;">
-          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--color-border-light); padding-bottom: 0.35rem; margin-bottom: 0.15rem;">
-            <span style="font-weight: 800; font-size: 0.85rem; color: var(--color-primary-dark); letter-spacing: 0.01em;">${r.name}</span>
+        <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.4rem; box-sizing: border-box; text-align: left; width: 100%;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--color-border-light); padding-bottom: 0.4rem; margin-bottom: 0.2rem;">
+            <span style="font-weight: 800; font-size: 0.875rem; color: var(--color-primary-dark); letter-spacing: 0.01em;">${r.name}</span>
             ${r.isPrimary ? '<span style="background: rgba(15, 59, 162, 0.08); color: var(--color-primary); padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;">Ana Temsilci</span>' : ''}
           </div>
-          <div style="font-size: 0.75rem; color: #475569; display: flex; flex-direction: column; gap: 0.25rem; font-weight: 500;">
+          <div style="font-size: 0.775rem; color: #475569; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.4rem; font-weight: 500;">
             <div style="display: flex; align-items: center; gap: 0.35rem;">
               <i data-lucide="user" style="width: 12px; height: 12px; color: #94a3b8;"></i>
               <span>Kullanıcı: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.username}</strong></span>
@@ -13905,7 +13909,7 @@ function renderOtoparkCompaniesList() {
               <i data-lucide="phone" style="width: 12px; height: 12px; color: #94a3b8;"></i>
               <span>Tel: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.phone}</strong></span>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.35rem;">
+            <div style="display: flex; align-items: center; gap: 0.35rem; grid-column: span 2;">
               <i data-lucide="mail" style="width: 12px; height: 12px; color: #94a3b8;"></i>
               <span>E-posta: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.email}</strong></span>
             </div>
@@ -13914,7 +13918,7 @@ function renderOtoparkCompaniesList() {
       `).join('');
     } else {
       repsHtml = `
-        <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(241, 245, 249, 0.5); border: 1px dashed #cbd5e1; padding: 0.5rem 0.85rem; border-radius: 10px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">
+        <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(241, 245, 249, 0.5); border: 1px dashed #cbd5e1; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">
           <i data-lucide="user-x" style="width: 14px; height: 14px; color: #94a3b8;"></i>
           <span>Temsilci Tanımlanmamış</span>
         </div>
@@ -13922,48 +13926,57 @@ function renderOtoparkCompaniesList() {
     }
     
     const editBtn = item.companyId 
-      ? `<button onclick="toggleOtoparkCompanyEditRow(${item.companyId})" class="btn-action btn-action-edit" style="margin-right: 0.25rem;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`
+      ? `<button onclick="toggleOtoparkCompanyEditRow(${item.companyId})" class="btn-action btn-action-edit" style="width: 100%;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`
       : ``;
 
     const resendBtn = (item.companyId && activeReps.length > 0)
-      ? `<button onclick="resendOtoparkCompanyCredentials(${item.companyId})" class="btn-action btn-action-resend" title="Yeni Şifre Üret & Temsilciye Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
+      ? `<button onclick="resendOtoparkCompanyCredentials(${item.companyId})" class="btn-action btn-action-resend" style="width: 100%;" title="Yeni Şifre Üret & Temsilciye Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
       : ``;
 
     return `
-      <tr style="border-bottom: 1px solid var(--color-border-light); vertical-align: middle;">
-        <td style="padding: 1.25rem 1rem; font-weight: 700; color: var(--color-text-dark); text-transform: uppercase;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <div style="background: rgba(15, 59, 162, 0.06); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i data-lucide="building" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+      <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 14px; padding: 1.25rem; box-shadow: 0 4px 16px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.85rem; box-sizing: border-box; text-align: left; position: relative;" class="company-card-row">
+        <!-- Card Top Header -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: nowrap; gap: 1rem; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0;">
+            <div style="background: rgba(15, 59, 162, 0.06); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="building" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 0.2rem; text-align: left;">
-              <span style="font-size: 0.85rem; font-weight: 800; letter-spacing: 0.01em; color: var(--color-text-dark);">${item.companyName}</span>
-              <div style="display: flex; gap: 0.25rem;">
-                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.4rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> Kota: ${item.quota_limit} araç</span>
-                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.4rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="maximize" style="width: 10px; height: 10px;"></i> ${item.m2_area} m²</span>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; text-align: left; min-width: 0;">
+              <span style="font-size: 0.95rem; font-weight: 850; letter-spacing: 0.01em; color: var(--color-text-dark); text-transform: uppercase; white-space: normal; word-break: break-word;">${item.companyName}</span>
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> Kota: ${item.quota_limit} araç</span>
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="maximize" style="width: 10px; height: 10px;"></i> ${item.m2_area} m²</span>
               </div>
             </div>
           </div>
-        </td>
-        <td style="padding: 1.25rem 1rem; vertical-align: middle;">
-          ${repsHtml}
-        </td>
-        <td style="padding: 1.25rem 1rem; text-align: right; white-space: nowrap; vertical-align: middle;">
-          <div style="display: inline-flex; gap: 0.35rem; align-items: center; justify-content: flex-end;">
+
+          <!-- Action Buttons Stacked Vertically (neat right alignment) -->
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; width: 130px; flex-shrink: 0;">
             ${editBtn}
             ${resendBtn}
           </div>
-        </td>
-      </tr>
-      <tr id="otopark-company-edit-row-${item.companyId}" style="display: none; background: #f8fafc; border-bottom: 2px solid var(--color-border-light);">
-        <td colspan="3" style="padding: 1.25rem 1rem;">
-          <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 12px; padding: 1.25rem; text-align: left; box-shadow: 0 4px 12px rgba(15, 59, 162, 0.03);">
-            <div style="border-bottom: 1.5px solid #f1f5f9; padding-bottom: 0.6rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        </div>
+
+        <!-- Card Body: Representative Info -->
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+          <span style="font-size: 0.725rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.25rem;">
+            <i data-lucide="shield-check" style="width: 13px; height: 13px; color: #10b981;"></i>
+            Yetkilendirilmiş Temsilci (B2B Yetkilisi)
+          </span>
+          <div style="width: 100%;">
+            ${repsHtml}
+          </div>
+        </div>
+
+        <!-- Inline Edit Box -->
+        <div id="otopark-company-edit-row-${item.companyId}" style="display: none; border-top: 1.5px solid #f1f5f9; padding-top: 1rem; margin-top: 0.25rem;">
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; text-align: left;">
+            <div style="border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.6rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
               <span style="font-size: 0.85rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.35rem;">
                 <i data-lucide="edit-3" style="width: 14px; height: 14px; color: var(--color-primary);"></i>
                 Temsilci Bilgilerini Düzenle
               </span>
-              <span style="background: #f1f5f9; font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.45rem; border-radius: 6px; color: #64748b;">Firma ID: #${item.companyId}</span>
+              <span style="background: #e2e8f0; font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.45rem; border-radius: 6px; color: #475569;">Firma ID: #${item.companyId}</span>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.85rem;">
@@ -13980,6 +13993,7 @@ function renderOtoparkCompaniesList() {
                 <input type="text" id="otopark-company-edit-repname-${item.companyId}" value="${item.rep_name}" placeholder="AD SOYAD" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionOtopark(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 600;">
               </div>
             </div>
+            
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
               <div>
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Telefon</label>
@@ -13995,7 +14009,7 @@ function renderOtoparkCompaniesList() {
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1.5px solid #f1f5f9; padding-top: 0.75rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1.5px solid #e2e8f0; padding-top: 0.75rem;">
               <div style="display: flex; align-items: center; gap: 0.4rem;">
                 <input type="checkbox" id="otopark-company-edit-sendsms-${item.companyId}" checked style="width: 16px; height: 16px; cursor: pointer;">
                 <label for="otopark-company-edit-sendsms-${item.companyId}" style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; user-select: none;">
@@ -14010,8 +14024,8 @@ function renderOtoparkCompaniesList() {
               </div>
             </div>
           </div>
-        </td>
-      </tr>
+        </div>
+      </div>
     `;
   }).join('');
   
@@ -14029,8 +14043,8 @@ function toggleOtoparkCompanyEditRow(companyId) {
   if (!row) return;
   if (row.style.display === 'none') {
     // Close all other edit rows
-    document.querySelectorAll('#otopark-companies-table-body tr[id^="otopark-company-edit-row-"]').forEach(r => r.style.display = 'none');
-    row.style.display = 'table-row';
+    document.querySelectorAll('#otopark-companies-table-body [id^="otopark-company-edit-row-"]').forEach(r => r.style.display = 'none');
+    row.style.display = 'block';
   } else {
     row.style.display = 'none';
   }
