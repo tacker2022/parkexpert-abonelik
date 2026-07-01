@@ -8127,7 +8127,9 @@ async function handleHeaderAvatarUpload(input) {
       avatarImg.style.display = 'block';
     }
     
-    if (currentAdminVal !== 'superadmin') {
+    const loggedInUserJson = localStorage.getItem('parkexpert_user');
+    const loggedInUserObj = loggedInUserJson ? JSON.parse(loggedInUserJson) : null;
+    if (loggedInUserObj && loggedInUserObj.role === 'superadmin' && currentAdminVal !== 'superadmin') {
       renderAdminsTable();
     }
     
