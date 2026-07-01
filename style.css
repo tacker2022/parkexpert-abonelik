@@ -1397,7 +1397,7 @@ textarea.is-invalid {
   margin-right: -1.25rem;
   margin-top: -2rem;
   height: 88px;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: none;
   box-sizing: border-box;
 }
 
@@ -1443,7 +1443,7 @@ textarea.is-invalid {
   background-color: #ffffff;
   height: 88px;
   padding: 0 3rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
