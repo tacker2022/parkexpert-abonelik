@@ -12811,6 +12811,10 @@ function renderCompanyMgmtList(list) {
     
     const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn-action btn-action-edit" style="flex: 1;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`;
 
+    const resendBtn = c.rep_phone
+      ? `<button onclick="resendCompanyCredentials(${c.id}, false)" class="btn-action btn-action-resend" style="flex: 1;" title="Yeni Şifre Üret & Temsilciye Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
+      : ``;
+
     const activeVehicles = (typeof allApplications !== 'undefined' ? allApplications : []).filter(app => 
       app.parking_location === c.otopark_name && 
       app.company_name && 
@@ -12864,8 +12868,9 @@ function renderCompanyMgmtList(list) {
           </div>
           
           <!-- Actions Block -->
-          <div style="display: flex; gap: 0.35rem; width: 140px; flex-shrink: 0;">
+          <div style="display: flex; gap: 0.35rem; width: ${c.rep_phone ? '250px' : '140px'}; flex-shrink: 0;">
             ${settingsBtn}
+            ${resendBtn}
             ${deleteBtn}
           </div>
         </div>
@@ -14363,16 +14368,25 @@ async function saveOtoparkCompanyCredentials(id) {
   }
 }
 
-async function resendOtoparkCompanyCredentials(id) {
-  const item = window.currentOtoparkCompaniesList.find(x => x.companyId === id);
+async function resendCompanyCredentials(id, fromOtoparkModal = false) {
+  let item = null;
+  if (fromOtoparkModal) {
+    item = (window.currentOtoparkCompaniesList || []).find(x => x.companyId === id);
+  } else {
+    item = (companyMgmtLoadedList || []).find(x => x.id === id);
+  }
   if (!item) return;
 
-  if (!item.rep_phone) {
+  const repPhone = item.rep_phone;
+  const repName = item.rep_name;
+  const companyName = fromOtoparkModal ? item.companyName : item.name;
+
+  if (!repPhone) {
     alert("Temsilci telefon numarası tanımlı değil!");
     return;
   }
 
-  const confirmSend = confirm(`"${item.companyName}" temsilcisi için yeni bir şifre üretilip SMS/WhatsApp/E-posta ile gönderilecektir. Onaylıyor musunuz?`);
+  const confirmSend = confirm(`"${companyName}" temsilcisi için yeni bir şifre üretilip SMS/WhatsApp/E-posta ile gönderilecektir. Onaylıyor musunuz?`);
   if (!confirmSend) return;
 
   // Generate a random 8-character password
@@ -14398,8 +14412,8 @@ async function resendOtoparkCompanyCredentials(id) {
         password: newPassword,
         quota_limit: item.quota_limit,
         m2_area: item.m2_area,
-        rep_name: item.rep_name,
-        rep_phone: item.rep_phone,
+        rep_name: repName,
+        rep_phone: repPhone,
         rep_email: item.rep_email,
         send_sms: true
       })
@@ -14414,13 +14428,23 @@ async function resendOtoparkCompanyCredentials(id) {
     window.allRegisteredCompanies = null;
     showToast('Başarılı', 'Giriş bilgileri temsilciye başarıyla gönderildi.', 'check');
     
-    if (window.currentOtoparkCompaniesName) {
-      await openOtoparkCompaniesModal(window.currentOtoparkCompaniesName);
+    if (fromOtoparkModal) {
+      if (window.currentOtoparkCompaniesName) {
+        await openOtoparkCompaniesModal(window.currentOtoparkCompaniesName);
+      }
+    } else {
+      if (typeof loadCompanyMgmtList === 'function') {
+        await loadCompanyMgmtList();
+      }
     }
   } catch (err) {
     console.error("Error resending company credentials:", err);
     alert("Bağlantı hatası. Lütfen tekrar deneyin.");
   }
+}
+
+async function resendOtoparkCompanyCredentials(id) {
+  await resendCompanyCredentials(id, true);
 }
 
 window.openOtoparkCompaniesModal = openOtoparkCompaniesModal;
@@ -14429,6 +14453,7 @@ window.toggleOtoparkCompanyEditRow = toggleOtoparkCompanyEditRow;
 window.suggestOtoparkQuotaFromM2 = suggestOtoparkQuotaFromM2;
 window.saveOtoparkCompanyCredentials = saveOtoparkCompanyCredentials;
 window.resendOtoparkCompanyCredentials = resendOtoparkCompanyCredentials;
+window.resendCompanyCredentials = resendCompanyCredentials;
 
 function handleUsernameSuggestionMgmt(id) {
   const nameVal = document.getElementById(`company-edit-repname-${id}`)?.value || '';
