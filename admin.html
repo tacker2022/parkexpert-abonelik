@@ -2169,8 +2169,16 @@
       }
       #modal-company-management .modal-body {
         padding: 1.5rem !important;
-        max-height: 680px !important;
+        max-height: 85vh !important;
         overflow-y: auto !important;
+      }
+      .company-card-row {
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+      .company-card-row:hover {
+        border-color: var(--color-primary-light) !important;
+        box-shadow: 0 8px 30px rgba(15, 59, 162, 0.06) !important;
+        transform: translateY(-2px) !important;
       }
       #modal-company-management .otopark-select-card {
         background: rgba(37, 99, 235, 0.03) !important;
@@ -2381,7 +2389,7 @@
             <i data-lucide="search" style="position: absolute; left: 0.85rem; color: #94a3b8; width: 16px; height: 16px;"></i>
             <input type="text" id="company-mgmt-search" placeholder="Listede firma ara..." oninput="filterCompanyMgmtList()" style="width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.5rem; border: 1.5px solid var(--color-border-light); border-radius: 10px; font-size: 0.85rem; outline: none; background: #ffffff; box-sizing: border-box; font-weight: 500; transition: all 0.2s;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--color-border-light)'">
           </div>
-          <div style="border: 1px solid var(--color-border-light); border-radius: 14px; max-height: 380px; overflow-y: auto; background: #fafafa; padding: 0.75rem; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem;" id="company-mgmt-list-body">
+          <div style="border: 1px solid var(--color-border-light); border-radius: 14px; max-height: 520px; overflow-y: auto; background: #fafafa; padding: 0.75rem; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem;" id="company-mgmt-list-body">
             <!-- Dinamik yüklenecek card listesi -->
           </div>
           <p id="company-mgmt-delete-warning" style="font-size: 0.75rem; color: #ef4444; margin-top: 0.75rem; display: none; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
@@ -2556,7 +2564,7 @@
 
   <!-- Modal: Otopark Companies & B2B Representatives -->
   <div class="modal-overlay" id="modal-otopark-companies" style="z-index: 1200;">
-    <div class="modal-window" style="max-width: 750px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+    <div class="modal-window" style="max-width: 950px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header" style="background: rgba(15, 59, 162, 0.03); border-bottom: 1px solid var(--color-border-light); padding: 1.25rem 1.5rem; flex-shrink: 0;">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; color: var(--color-primary-dark); font-weight: 800;">
           <i data-lucide="building" style="width: 20px; height: 20px; color: var(--color-primary);"></i>
