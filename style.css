@@ -1392,9 +1392,13 @@ textarea.is-invalid {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  width: calc(100% + 2.5rem);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  margin-top: -2rem;
+  height: 88px;
+  border-bottom: 1px solid var(--color-border-light);
+  box-sizing: border-box;
 }
 
 .sidebar-menu {
@@ -1437,11 +1441,13 @@ textarea.is-invalid {
 
 .admin-header {
   background-color: #ffffff;
-  padding: 1.5rem 3rem;
+  height: 88px;
+  padding: 0 3rem;
   border-bottom: 1px solid var(--color-border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .admin-header-title h1 {
@@ -2368,6 +2374,16 @@ textarea.is-invalid {
     padding: 1rem 1.5rem;
     gap: 1.5rem;
   }
+
+  .sidebar-logo {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+    height: auto !important;
+    border-bottom: none !important;
+    padding-bottom: 0.5rem !important;
+  }
   
   .sidebar-menu {
     flex-direction: row;
@@ -2386,6 +2402,7 @@ textarea.is-invalid {
   }
   
   .admin-header {
+    height: auto;
     padding: 1rem 1.5rem;
     flex-direction: column;
     gap: 1rem;
