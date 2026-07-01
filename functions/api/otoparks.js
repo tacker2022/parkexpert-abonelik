@@ -239,10 +239,11 @@ export async function onRequest(context) {
       }
 
       if (id) {
-        // Get the old name of the otopark first to check if name is being changed
+        // Get the old otopark record first to compare changes and check name cascade
+        let oldOtopark = null;
         let oldName = null;
         try {
-          const oldRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${id}&select=name`, {
+          const oldRes = await fetch(`${supabaseUrl}/rest/v1/otoparks?id=eq.${id}&select=*`, {
             headers: {
               "apikey": supabaseAnonKey,
               "Authorization": `Bearer ${supabaseAnonKey}`
@@ -251,11 +252,12 @@ export async function onRequest(context) {
           if (oldRes.ok) {
             const oldData = await oldRes.json();
             if (oldData.length > 0) {
-              oldName = oldData[0].name;
+              oldOtopark = oldData[0];
+              oldName = oldOtopark.name;
             }
           }
         } catch (err) {
-          console.error("Error retrieving old otopark name:", err);
+          console.error("Error retrieving old otopark record:", err);
         }
 
         // UPDATE otopark
@@ -278,7 +280,7 @@ export async function onRequest(context) {
         const data = await updateRes.json();
 
         // Cascade updates to applications and admin_users if name changed
-        if (oldName && oldName !== name) {
+        if (name !== undefined && oldName && oldName !== name) {
           try {
             // 1. Update applications.parking_location references
             await fetch(`${supabaseUrl}/rest/v1/applications?parking_location=eq.${encodeURIComponent(oldName)}`, {
@@ -320,6 +322,78 @@ export async function onRequest(context) {
           }
         }
 
+        // Build detailed changes description
+        const changes = [];
+        if (oldOtopark) {
+          const fieldLabels = {
+            name: "Otopark Adı",
+            category: "Otopark Kategorisi",
+            company_title: "Firma Ünvanı",
+            tax_office: "Vergi Dairesi",
+            tax_number: "Vergi Numarası",
+            bank_name: "Banka Adı",
+            iban: "IBAN",
+            price_employee: "Çalışan Tarifesi (Aylık)",
+            price_external: "Dış Giriş Tarifesi (Aylık)",
+            support_phone: "Destek Telefonu",
+            is_active: "Aktiflik Durumu",
+            notification_emails: "Anlık Bildirim E-postaları",
+            summary_emails: "Günlük Özet E-postaları",
+            requires_management_approval: "Sanayi/OSB Ön Onayı Gerekli",
+            apply_employee_price_to_corporate: "B2B Firma Araçlarına Çalışan Fiyatı Uygula",
+            allow_individual: "Bireysel Başvurulara İzin Ver"
+          };
+
+          for (const key in dbPayload) {
+            if (fieldLabels[key] !== undefined) {
+              const oldValue = oldOtopark[key];
+              const newValue = dbPayload[key];
+
+              const normOld = (oldValue === null || oldValue === undefined) ? "" : String(oldValue).trim();
+              const normNew = (newValue === null || newValue === undefined) ? "" : String(newValue).trim();
+
+              if (normOld !== normNew) {
+                let oldDisp = oldValue;
+                let newDisp = newValue;
+
+                if (key === "is_active") {
+                  oldDisp = oldValue ? "Aktif" : "Pasif";
+                  newDisp = newValue ? "Aktif" : "Pasif";
+                } else if (typeof oldValue === "boolean" || typeof newValue === "boolean") {
+                  oldDisp = oldValue ? "Evet (Gerekli/Aktif)" : "Hayır (Pasif)";
+                  newDisp = newValue ? "Evet (Gerekli/Aktif)" : "Hayır (Pasif)";
+                }
+
+                const displayOld = (oldDisp === "" || oldDisp === null || oldDisp === undefined) ? "Boş" : oldDisp;
+                const displayNew = (newDisp === "" || newDisp === null || newDisp === undefined) ? "Boş" : newDisp;
+
+                changes.push(`• ${fieldLabels[key]}: "${displayOld}" ➡️ "${displayNew}"`);
+              }
+            }
+          }
+
+          if (dbPayload.tariffs !== undefined) {
+            const oldTariffs = JSON.stringify(oldOtopark.tariffs || []);
+            const newTariffs = JSON.stringify(dbPayload.tariffs || []);
+            if (oldTariffs !== newTariffs) {
+              changes.push(`• Tarifeler & Ücretler: Tarifeler güncellendi.`);
+            }
+          }
+
+          if (dbPayload.templates !== undefined) {
+            const oldTemplates = JSON.stringify(oldOtopark.templates || {});
+            const newTemplates = JSON.stringify(dbPayload.templates || {});
+            if (oldTemplates !== newTemplates) {
+              changes.push(`• Bildirim Şablonları: SMS/E-posta şablonları düzenlendi.`);
+            }
+          }
+        }
+
+        const currentName = (name !== undefined ? name : oldName) || "";
+        const detailsText = changes.length > 0 
+          ? `"${currentName}" otopark işletmesi bilgileri güncellendi:\n${changes.join("\n")}`
+          : `"${currentName}" otopark işletmesi bilgileri güncellendi (değişiklik tespit edilmedi).`;
+
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
         context.waitUntil(
@@ -330,9 +404,9 @@ export async function onRequest(context) {
             role: user.role,
             actionType: "update_otopark",
             targetId: id,
-            details: `"${name}" otopark işletmesi bilgileri güncellendi.`,
+            details: detailsText,
             ipAddress,
-            otoparkName: name || null
+            otoparkName: currentName || null
           })
         );
 
