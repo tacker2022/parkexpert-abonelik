@@ -1635,10 +1635,31 @@
              PANEL: B2B COMPANY PORTAL
              ========================================================================== -->
         <div class="admin-panel" id="panel-company-portal" style="display: none;">
-          <!-- Welcoming title -->
-          <div style="margin-bottom: 1.5rem;">
-            <h1 class="admin-panel-title" id="company-portal-title">Firma Araç Listesi</h1>
-            <p class="admin-panel-subtitle" id="company-portal-subtitle">Şirket araçların zincirini ve personel plakalarınızı bu panelden yönetebilirsiniz.</p>
+          <!-- Welcoming title & Company Info Card -->
+          <div style="background: linear-gradient(135deg, #ffffff, #f8fafc); border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.5rem; box-sizing: border-box; text-align: left;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                <h1 class="admin-panel-title" id="company-portal-title" style="margin: 0; font-size: 1.4rem; font-weight: 850; letter-spacing: -0.01em; color: var(--color-primary-dark); text-transform: uppercase;">Firma Araç Listesi</h1>
+                <span id="company-portal-badge-name" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid rgba(37, 99, 235, 0.15); text-transform: uppercase;">YÜKLENİYOR...</span>
+              </div>
+              <p class="admin-panel-subtitle" id="company-portal-subtitle" style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Şirket araçların zincirini ve personel plakalarınızı bu panelden yönetebilirsiniz.</p>
+            </div>
+            
+            <!-- Quick Company Profile Meta Info -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; color: #475569; font-weight: 600;">
+              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
+                <i data-lucide="map-pin" style="width: 14px; height: 14px; color: var(--color-primary);"></i>
+                <span>Otopark: <strong id="company-portal-meta-otopark" style="color: var(--color-text-dark);">-</strong></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
+                <i data-lucide="maximize-2" style="width: 14px; height: 14px; color: #10b981;"></i>
+                <span>Alan: <strong id="company-portal-meta-m2" style="color: var(--color-text-dark);">- m²</strong></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
+                <i data-lucide="user" style="width: 14px; height: 14px; color: #8b5cf6;"></i>
+                <span>Temsilci: <strong id="company-portal-meta-rep" style="color: var(--color-text-dark);">-</strong></span>
+              </div>
+            </div>
           </div>
 
           <!-- B2B Portal Premium Statistics Cards Grid -->

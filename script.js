@@ -13683,6 +13683,17 @@ async function loadCompanyPortalVehicles() {
       if (currentComp) {
         user.quota_limit = currentComp.quota_limit || 0;
         localStorage.setItem('parkexpert_user', JSON.stringify(user));
+
+        // Dynamically update metadata in B2B portal header
+        const badgeNameEl = document.getElementById('company-portal-badge-name');
+        const metaOtoparkEl = document.getElementById('company-portal-meta-otopark');
+        const metaM2El = document.getElementById('company-portal-meta-m2');
+        const metaRepEl = document.getElementById('company-portal-meta-rep');
+
+        if (badgeNameEl) badgeNameEl.textContent = currentComp.name;
+        if (metaOtoparkEl) metaOtoparkEl.textContent = currentComp.otopark_name;
+        if (metaM2El) metaM2El.textContent = `${currentComp.m2_area || 0} m²`;
+        if (metaRepEl) metaRepEl.textContent = currentComp.rep_name || user.username;
       }
     }
   } catch (e) {
@@ -13752,6 +13763,15 @@ function renderCompanyPortalVehicles(list) {
     if (app.subscription_expires_at) {
       const d = new Date(app.subscription_expires_at);
       expiryStr = d.toLocaleDateString('tr-TR');
+      if (app.status === 'Onaylandı') {
+        const diffTime = d - new Date();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          expiryStr += `<div style="font-size: 0.675rem; color: #10b981; font-weight: 700; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.2rem;"><span style="display:inline-block; width: 4px; height: 4px; background: #10b981; border-radius: 50%;"></span> ${diffDays} Gün Kaldı</div>`;
+        } else {
+          expiryStr += `<div style="font-size: 0.675rem; color: #ef4444; font-weight: 700; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.2rem;"><span style="display:inline-block; width: 4px; height: 4px; background: #ef4444; border-radius: 50%;"></span> Süresi Doldu</div>`;
+        }
+      }
     }
 
     let statusClass = 'status-pending';
@@ -13764,6 +13784,13 @@ function renderCompanyPortalVehicles(list) {
       actionBtn = `<button onclick="cancelCompanyPortalVehicle('${app.id}', '${app.plate_number}')" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #ef4444; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.05); cursor: pointer; border-radius: var(--radius-sm); font-weight: 700; min-height: 28px;">İptal Et</button>`;
     }
 
+    let typeBadgeHtml = '';
+    if (app.subscription_type === 'Kurumsal (Ücretsiz)') {
+      typeBadgeHtml = `<span style="background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.725rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; text-transform: none;"><i data-lucide="award" style="width: 12px; height: 12px;"></i> Ücretsiz</span>`;
+    } else {
+      typeBadgeHtml = `<span style="background: rgba(139, 92, 246, 0.08); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.15); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.725rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; text-transform: none;"><i data-lucide="credit-card" style="width: 12px; height: 12px;"></i> Ücretli</span>`;
+    }
+
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light);">
         <td style="padding: 1rem 1.5rem; font-weight: 700; color: var(--color-primary-dark); font-size: 0.9rem;">
@@ -13774,9 +13801,7 @@ function renderCompanyPortalVehicles(list) {
         <td style="padding: 1rem 1.5rem; font-weight: 600;">${app.full_name}</td>
         <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">${app.phone}</td>
         <td style="padding: 1rem 1.5rem;">
-          <span class="badge-role ${app.subscription_type === 'Kurumsal (Ücretsiz)' ? 'badge-role-yonetim-general' : 'badge-role-operator'}" style="font-size: 0.75rem; font-weight: 700;">
-            ${app.subscription_type}
-          </span>
+          ${typeBadgeHtml}
         </td>
         <td style="padding: 1rem 1.5rem;">
           <span class="status-badge ${statusClass}" style="font-size: 0.75rem; font-weight: 700;">
