@@ -7501,6 +7501,16 @@ function handleUserRoleChange() {
     // Show location filter group
     const locationFilterGroup = document.getElementById('filter-location')?.closest('.filter-group');
     if (locationFilterGroup) locationFilterGroup.style.display = 'flex';
+
+    // Show premium admin elements
+    const mGrid = document.querySelector('.metrics-grid');
+    if (mGrid) mGrid.style.display = 'grid';
+    const fPanel = document.querySelector('.filters-panel');
+    if (fPanel) fPanel.style.display = 'block';
+    const aTabs = document.querySelector('.admin-tabs');
+    if (aTabs) aTabs.style.display = 'flex';
+    const wStatus = document.querySelector('.sidebar-widget-status');
+    if (wStatus) wStatus.style.display = 'block';
   } else {
     const sidebarSys = document.getElementById('sidebar-category-system');
     if (sidebarSys) sidebarSys.style.display = 'none';
@@ -7671,6 +7681,16 @@ function handleUserRoleChange() {
       if (currentAdminTab !== 'applications' && currentAdminTab !== 'expirations' && currentAdminTab !== 'companies') {
         switchAdminTab('applications');
       }
+
+      // Show premium admin elements for management
+      const mGrid = document.querySelector('.metrics-grid');
+      if (mGrid) mGrid.style.display = 'grid';
+      const fPanel = document.querySelector('.filters-panel');
+      if (fPanel) fPanel.style.display = 'block';
+      const aTabs = document.querySelector('.admin-tabs');
+      if (aTabs) aTabs.style.display = 'flex';
+      const wStatus = document.querySelector('.sidebar-widget-status');
+      if (wStatus) wStatus.style.display = 'none';
     } else if (userRole === 'company') {
       // B2B Company Portal Role
       if (document.getElementById('sidebar-tab-applications')) document.getElementById('sidebar-tab-applications').style.display = 'none';
@@ -7709,6 +7729,16 @@ function handleUserRoleChange() {
       const expiryLocationFilterGroup = document.getElementById('expiry-filter-location')?.closest('.filter-group');
       if (expiryLocationFilterGroup) expiryLocationFilterGroup.style.display = 'none';
 
+      // Hide premium admin elements for B2B portal
+      const mGrid = document.querySelector('.metrics-grid');
+      if (mGrid) mGrid.style.display = 'none';
+      const fPanel = document.querySelector('.filters-panel');
+      if (fPanel) fPanel.style.display = 'none';
+      const aTabs = document.querySelector('.admin-tabs');
+      if (aTabs) aTabs.style.display = 'none';
+      const wStatus = document.querySelector('.sidebar-widget-status');
+      if (wStatus) wStatus.style.display = 'none';
+
       if (currentAdminTab !== 'company-portal') {
         switchAdminTab('company-portal');
       }
@@ -7736,6 +7766,16 @@ function handleUserRoleChange() {
       // Hide Management Welcome Banner
       const welcomeBanner = document.getElementById('yonetim-welcome-banner');
       if (welcomeBanner) welcomeBanner.style.display = 'none';
+
+      // Show premium admin elements for operator
+      const mGrid = document.querySelector('.metrics-grid');
+      if (mGrid) mGrid.style.display = 'grid';
+      const fPanel = document.querySelector('.filters-panel');
+      if (fPanel) fPanel.style.display = 'block';
+      const aTabs = document.querySelector('.admin-tabs');
+      if (aTabs) aTabs.style.display = 'flex';
+      const wStatus = document.querySelector('.sidebar-widget-status');
+      if (wStatus) wStatus.style.display = 'block';
 
       // Show Operator Welcome Banner
       const operatorBanner = document.getElementById('operator-welcome-banner');
