@@ -190,8 +190,8 @@ export async function onRequest(context) {
         if (!id || !photo_base64) {
           return new Response(JSON.stringify({ error: "Eksik bilgi! ID veya fotoğraf verisi bulunamadı." }), { status: 400, headers });
         }
-        // Authorize: Must be superadmin editing superadmin avatar
-        if (id !== "superadmin") {
+        // Authorize: Must be superadmin OR editing their own self avatar
+        if (user.role !== "superadmin" && String(user.id) !== String(id)) {
           return new Response(JSON.stringify({ error: "Bu işlem için yetkiniz bulunmamaktadır!" }), { status: 403, headers });
         }
         await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);

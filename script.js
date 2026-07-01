@@ -7538,9 +7538,12 @@ function handleUserRoleChange() {
         } else {
           avatar.className = 'user-avatar user-avatar-representative';
         }
-        avatar.removeAttribute('title');
-        avatar.style.cursor = 'default';
-        avatar.onclick = null;
+        avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek için tıklayın');
+        avatar.style.cursor = 'pointer';
+        avatar.onclick = () => {
+          const fileInput = document.getElementById('header-avatar-upload-input');
+          if (fileInput) fileInput.click();
+        };
       }
       if (subtext) {
         const roleText = getDynamicRoleLabel(userRole, adminObj.otoparks);
@@ -7561,7 +7564,7 @@ function handleUserRoleChange() {
             activeOtoparksEl.innerHTML = `<span style="font-size: 0.65rem; color: #ef4444; font-weight: 700;">Yetkili Otopark Yok</span>`;
           } else if (adminObj.otoparks.length <= 2) {
             activeOtoparksEl.innerHTML = adminObj.otoparks.map(name => `
-              <span class="badge-otopark" title="${name}" style="font-size: 0.65rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); display: inline-block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(37, 99, 235, 0.15);">
+              <span class="badge-otopark" title="${name}" style="font-size: 0.65rem; font-weight: 700; background: rgba(37, 99, 235, 0.1); color: #2563eb; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); display: inline-block; max-width: 100%; word-break: break-word; line-height: 1.35; border: 1px solid rgba(37, 99, 235, 0.15); margin-bottom: 0.25rem;">
                 📍 ${name}
               </span>
             `).join('');
