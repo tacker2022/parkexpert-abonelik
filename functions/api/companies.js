@@ -282,8 +282,34 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: "Bu otoparktaki firmayı güncelleme yetkiniz bulunmamaktadır." }), { status: 403, headers });
       }
 
+      let finalUsername = username ? username.trim().toLowerCase() : null;
+      if (finalUsername) {
+        let isUnique = false;
+        let suffix = 2;
+        const baseUsername = finalUsername;
+        while (!isUnique) {
+          const checkRes = await fetch(`${supabaseUrl}/rest/v1/companies?username=eq.${encodeURIComponent(finalUsername)}&id=neq.${id}&select=id`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (checkData.length === 0) {
+              isUnique = true;
+            } else {
+              finalUsername = `${baseUsername}${suffix}`;
+              suffix++;
+            }
+          } else {
+            isUnique = true; // network fallback
+          }
+        }
+      }
+
       const updatePayload = {};
-      if (username !== undefined) updatePayload.username = username ? username.trim().toLowerCase() : null;
+      if (username !== undefined) updatePayload.username = finalUsername;
       if (quota_limit !== undefined) updatePayload.quota_limit = parseInt(quota_limit) || 0;
       if (m2_area !== undefined) updatePayload.m2_area = parseInt(m2_area) || 0;
       if (rep_name !== undefined) updatePayload.rep_name = rep_name ? rep_name.trim() : null;
@@ -316,7 +342,7 @@ export async function onRequest(context) {
         const cleanPhone = targetPhone.replace(/\D/g, "");
         if (cleanPhone) {
           const targetName = rep_name || company.rep_name || "Firma Yetkilisi";
-          const targetUser = username || company.username || "Tanımlanmadı";
+          const targetUser = finalUsername || company.username || "Tanımlanmadı";
           const passMsg = password ? password : "(Değiştirilmedi, mevcut şifreniz geçerlidir)";
           const messageText = `Merhaba ${targetName},\n\n${company.otopark_name} bünyesindeki "${company.name}" firması için Kurumsal Temsilci Paneli giriş bilgileriniz tanımlanmıştır.\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${targetUser}\n🔑 Şifre: ${passMsg}\n\nBu bilgilerle giriş yaparak şirket araçlarınızı ve personellerinizi kendiniz tanımlayabilirsiniz.`;
 
