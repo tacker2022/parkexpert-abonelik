@@ -13869,6 +13869,28 @@ function renderOtoparkCompaniesList() {
   const tbody = document.getElementById('otopark-companies-table-body');
   const searchInput = document.getElementById('otopark-companies-search');
   if (!tbody) return;
+
+  // Defensive check against cached admin.html table structure
+  const parentTable = tbody.closest('table');
+  if (parentTable) {
+    const parentContainer = parentTable.parentElement;
+    if (parentContainer) {
+      const newDiv = document.createElement('div');
+      newDiv.id = 'otopark-companies-table-body';
+      newDiv.style.display = 'flex';
+      newDiv.style.flexDirection = 'column';
+      newDiv.style.gap = '1rem';
+      newDiv.style.width = '100%';
+      
+      if (parentContainer.classList.contains('table-responsive')) {
+        parentContainer.replaceWith(newDiv);
+      } else {
+        parentTable.replaceWith(newDiv);
+      }
+      renderOtoparkCompaniesList();
+      return;
+    }
+  }
   
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
   
