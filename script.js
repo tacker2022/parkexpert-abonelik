@@ -13879,7 +13879,7 @@ function renderOtoparkCompaniesList() {
       : ``;
 
     const resendBtn = (item.companyId && activeReps.length > 0)
-      ? `<button onclick="resendOtoparkCompanyCredentials(${item.companyId})" class="btn-action btn-action-edit" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.15); color: #10b981;" title="Şifreyi Sıfırla & Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
+      ? `<button onclick="resendOtoparkCompanyCredentials(${item.companyId})" class="btn-action btn-action-resend" title="Yeni Şifre Üret & Temsilciye Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
       : ``;
 
     return `
@@ -14091,7 +14091,7 @@ async function resendOtoparkCompanyCredentials(id) {
     }
 
     window.allRegisteredCompanies = null;
-    showToast('Başarılı', `Yeni şifre üretildi (${newPassword}) ve temsilciye gönderildi.`, 'check');
+    showToast('Başarılı', 'Giriş bilgileri temsilciye başarıyla gönderildi.', 'check');
     
     if (window.currentOtoparkCompaniesName) {
       await openOtoparkCompaniesModal(window.currentOtoparkCompaniesName);

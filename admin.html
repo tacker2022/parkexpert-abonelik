@@ -2261,35 +2261,57 @@
         border-bottom: 1px solid var(--color-border-light) !important;
         transition: background 0.2s ease !important;
       }
-      #modal-company-management .btn-action {
-        padding: 0.35rem 0.75rem !important;
-        min-height: 28px !important;
+      .btn-action {
+        padding: 0.4rem 0.85rem !important;
+        min-height: 30px !important;
         font-size: 0.75rem !important;
         font-weight: 700 !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         cursor: pointer !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         display: inline-flex !important;
         align-items: center !important;
-        gap: 0.25rem !important;
+        justify-content: center !important;
+        gap: 0.35rem !important;
+        outline: none !important;
+        font-family: inherit !important;
+        border: 1px solid transparent !important;
       }
-      #modal-company-management .btn-action-edit {
-        background: rgba(37, 99, 235, 0.08) !important;
-        color: var(--color-primary) !important;
-        border: 1px solid rgba(37, 99, 235, 0.15) !important;
+      .btn-action-edit {
+        background: rgba(15, 59, 162, 0.06) !important;
+        color: var(--color-primary-dark) !important;
+        border: 1px solid rgba(15, 59, 162, 0.12) !important;
       }
-      #modal-company-management .btn-action-edit:hover {
+      .btn-action-edit:hover {
         background: var(--color-primary) !important;
         color: #ffffff !important;
+        border-color: var(--color-primary) !important;
+        box-shadow: 0 4px 12px rgba(15, 59, 162, 0.15) !important;
+        transform: translateY(-1px) !important;
       }
-      #modal-company-management .btn-action-delete {
-        background: rgba(239, 68, 68, 0.08) !important;
-        color: #ef4444;
-        border: 1px solid rgba(239, 68, 68, 0.15) !important;
+      .btn-action-delete {
+        background: rgba(239, 68, 68, 0.06) !important;
+        color: #ef4444 !important;
+        border: 1px solid rgba(239, 68, 68, 0.12) !important;
       }
-      #modal-company-management .btn-action-delete:hover:not(:disabled) {
+      .btn-action-delete:hover:not(:disabled) {
         background: #ef4444 !important;
         color: #ffffff !important;
+        border-color: #ef4444 !important;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
+        transform: translateY(-1px) !important;
+      }
+      .btn-action-resend {
+        background: rgba(16, 185, 129, 0.06) !important;
+        color: #10b981 !important;
+        border: 1px solid rgba(16, 185, 129, 0.12) !important;
+      }
+      .btn-action-resend:hover {
+        background: #10b981 !important;
+        color: #ffffff !important;
+        border-color: #10b981 !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+        transform: translateY(-1px) !important;
       }
     </style>
 
