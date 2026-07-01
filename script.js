@@ -14076,7 +14076,8 @@ function renderOtoparkCompaniesList() {
               <span style="background: #e2e8f0; font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.45rem; border-radius: 6px; color: #475569;">Firma ID: #${item.companyId}</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.85rem;">
+            <!-- Row 1: m2 Area and Quota Limit -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.85rem;">
               <div>
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">m² Alanı</label>
                 <input type="number" id="otopark-company-edit-m2-${item.companyId}" value="${item.m2_area}" oninput="suggestOtoparkQuotaFromM2(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 600;">
@@ -14085,13 +14086,14 @@ function renderOtoparkCompaniesList() {
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Kota Limiti</label>
                 <input type="number" id="otopark-company-edit-quota-${item.companyId}" value="${item.quota_limit}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 700;">
               </div>
-              <div style="grid-column: span 2;">
+            </div>
+            
+            <!-- Row 2: Rep Name, Telephone, Email -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+              <div>
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Ad Soyad <span style="color: red;">*</span></label>
                 <input type="text" id="otopark-company-edit-repname-${item.companyId}" value="${item.rep_name}" placeholder="AD SOYAD" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionOtopark(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s; font-weight: 600;">
               </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
               <div>
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Telefon</label>
                 <input type="tel" id="otopark-company-edit-repphone-${item.companyId}" value="${item.rep_phone}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s;">
