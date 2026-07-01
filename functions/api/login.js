@@ -2,6 +2,7 @@ import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
 import { sendTelegramAlert } from "./telegram_helper.js";
 import { logAudit } from "./audit_helper.js";
+import { sendSMS } from "./sms_helper.js";
 
 // Helper for safe base64 encoding (supports Unicode)
 function base64Encode(str) {
@@ -310,7 +311,9 @@ export async function onRequest(context) {
                   company_name: comp.name,
                   otopark_name: comp.otopark_name,
                   quota_limit: comp.quota_limit || 0,
-                  otoparks: [comp.otopark_name]
+                  otoparks: [comp.otopark_name],
+                  phone: comp.rep_phone,
+                  email: comp.rep_email
                 };
               }
             }
@@ -379,8 +382,8 @@ export async function onRequest(context) {
       ? context.env.SUPERADMIN_EMAIL
       : userObj.email;
 
-    // Force 2FA only if enabled AND we have an email address to send the code to AND user is not company representative
-    if (userObj.role !== "company" && twoFactorEnabled && targetEmail) {
+    // Force 2FA only if enabled AND we have an email or phone address to send the code to
+    if (twoFactorEnabled && (targetEmail || targetPhone)) {
       const otpCode = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -403,22 +406,30 @@ export async function onRequest(context) {
         const otpErr = await otpRes.text();
         console.error("Failed to save OTP in database:", otpErr);
       } else {
-        // Send automatically via Email
-        const mailHtml = `
-          <p>Merhaba,</p>
-          <p><strong>PARKEXPERT Yönetici Paneli</strong> giriş işleminizi tamamlamak için kullanabileceğiniz güvenlik kodu aşağıdadır:</p>
-          <div style="text-align: center; margin: 2rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1;">
-            <span style="font-family: monospace; font-size: 2.25rem; font-weight: 800; letter-spacing: 0.1em; color: #0f3ba2;">${otpCode}</span>
-          </div>
-          <p>Bu kod güvenlik amacıyla <strong>5 dakika</strong> süreyle geçerlidir.</p>
-          <p>Giriş talebini siz yapmadıysanız lütfen şifrenizi değiştirin ve sistem yöneticinizle iletişime geçin.</p>
-        `;
-        await sendEmail({
-          to: targetEmail,
-          subject: `PARKEXPERT Giriş Güvenlik Kodu: ${otpCode}`,
-          html: mailHtml,
-          env: context.env
-        });
+        // Send automatically via first available channel (priority: email -> WhatsApp -> SMS)
+        if (targetEmail) {
+          const mailHtml = `
+            <p>Merhaba,</p>
+            <p><strong>PARKEXPERT Giriş Paneli</strong> giriş işleminizi tamamlamak için kullanabileceğiniz güvenlik kodu aşağıdadır:</p>
+            <div style="text-align: center; margin: 2rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1;">
+              <span style="font-family: monospace; font-size: 2.25rem; font-weight: 800; letter-spacing: 0.1em; color: #0f3ba2;">${otpCode}</span>
+            </div>
+            <p>Bu kod güvenlik amacıyla <strong>5 dakika</strong> süreyle geçerlidir.</p>
+            <p>Giriş talebini siz yapmadıysanız lütfen şifrenizi değiştirin ve sistem yöneticinizle iletişime geçin.</p>
+          `;
+          await sendEmail({
+            to: targetEmail,
+            subject: `PARKEXPERT Giriş Güvenlik Kodu: ${otpCode}`,
+            html: mailHtml,
+            env: context.env
+          });
+        } else if (twoFactorWhatsappEnabled && targetPhone) {
+          const waMessage = `PARKEXPERT Giriş Doğrulama Kodunuz: ${otpCode}\nBu kod 5 dakika boyunca geçerlidir.`;
+          await sendWhatsApp(targetPhone, waMessage, context.env);
+        } else if (twoFactorSmsEnabled && targetPhone) {
+          const smsMessage = `PARKEXPERT Giriş Doğrulama Kodunuz: ${otpCode}. Bu kod 5 dakika boyunca geçerlidir.`;
+          await sendSMS(targetPhone, smsMessage, context.env, null, false, "0", "2FA");
+        }
 
         // Send Telegram alert for superadmin login attempt
         const clientIp = context.request.headers.get("CF-Connecting-IP") || "";

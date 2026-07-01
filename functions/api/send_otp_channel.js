@@ -113,6 +113,21 @@ export async function onRequest(context) {
         if (admins.length > 0) {
           targetPhone = admins[0].phone || "";
           targetEmail = admins[0].email || "";
+        } else {
+          // Look in companies table for B2B representatives
+          const compRes = await fetch(`${supabaseUrl}/rest/v1/companies?username=eq.${encodeURIComponent(username.toLowerCase())}&select=rep_phone,rep_email`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          if (compRes.ok) {
+            const comps = await compRes.json();
+            if (comps.length > 0) {
+              targetPhone = comps[0].rep_phone || "";
+              targetEmail = comps[0].rep_email || "";
+            }
+          }
         }
       }
     }

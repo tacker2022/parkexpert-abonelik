@@ -255,12 +255,38 @@ export async function onRequest(context) {
             phone: admin.phone,
             email: admin.email
           };
+        } else {
+          // Check companies table for B2B representatives
+          const compRes = await fetch(`${supabaseUrl}/rest/v1/companies?username=eq.${encodeURIComponent(username.toLowerCase())}&select=*`, {
+            headers: {
+              "apikey": supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`
+            }
+          });
+          if (compRes.ok) {
+            const comps = await compRes.json();
+            if (comps.length > 0) {
+              const comp = comps[0];
+              userObj = {
+                id: `comp_${comp.id}`,
+                name: comp.name,
+                username: comp.username,
+                role: "company",
+                company_name: comp.name,
+                otopark_name: comp.otopark_name,
+                quota_limit: comp.quota_limit || 0,
+                otoparks: [comp.otopark_name],
+                phone: comp.rep_phone,
+                email: comp.rep_email
+              };
+            }
+          }
         }
       }
     }
 
     if (!userObj) {
-      return new Response(JSON.stringify({ error: "Yönetici kullanıcısı bulunamadı!" }), { status: 404, headers });
+      return new Response(JSON.stringify({ error: "Kullanıcı bulunamadı!" }), { status: 404, headers });
     }
 
     // 3. Delete OTP record (cleanup)
