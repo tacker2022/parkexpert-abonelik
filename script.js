@@ -13809,16 +13809,26 @@ async function openOtoparkCompaniesModal(otoparkName) {
     });
     
     // Convert to list for filtering
-    window.currentOtoparkCompaniesList = Object.keys(companyRepsMap).map(compName => ({
-      companyName: compName,
-      reps: companyRepsMap[compName]
-    }));
+    window.currentOtoparkCompaniesList = Object.keys(companyRepsMap).map(compName => {
+      const dbComp = companies.find(c => c.name.trim() === compName) || {};
+      return {
+        companyId: dbComp.id || null,
+        companyName: compName,
+        m2_area: dbComp.m2_area || 0,
+        quota_limit: dbComp.quota_limit || 0,
+        username: dbComp.username || '',
+        rep_name: dbComp.rep_name || '',
+        rep_phone: dbComp.rep_phone || '',
+        rep_email: dbComp.rep_email || '',
+        reps: companyRepsMap[compName]
+      };
+    });
     
     // Render the table
     renderOtoparkCompaniesList();
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 700;">Hata: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 700;">Hata: ${err.message}</td></tr>`;
   }
 }
 
@@ -13838,7 +13848,7 @@ function renderOtoparkCompaniesList() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--color-text-muted); text-align: center;">Arama kriterlerine uygun firma bulunamadı.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--color-text-muted); text-align: center;">Arama kriterlerine uygun firma bulunamadı.</td></tr>`;
     return;
   }
   
@@ -13864,16 +13874,84 @@ function renderOtoparkCompaniesList() {
       repsHtml = `<span style="color: var(--color-text-muted); font-style: italic;">Henüz tanımlı temsilci bulunmuyor</span>`;
     }
     
+    const editBtn = item.companyId 
+      ? `<button onclick="toggleOtoparkCompanyEditRow(${item.companyId})" class="btn-action btn-action-edit" style="margin-right: 0.25rem;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`
+      : ``;
+
+    const resendBtn = (item.companyId && activeReps.length > 0)
+      ? `<button onclick="resendOtoparkCompanyCredentials(${item.companyId})" class="btn-action btn-action-edit" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.15); color: #10b981;" title="Şifreyi Sıfırla & Gönder"><i data-lucide="send" style="width: 12px; height: 12px;"></i> Şifre Gönder</button>`
+      : ``;
+
     return `
       <tr style="border-bottom: 1px solid var(--color-border-light); vertical-align: top;">
         <td style="padding: 1rem; font-weight: 700; color: var(--color-text-dark); text-transform: uppercase;">
-          <div style="display: center; align-items: center; gap: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
             <i data-lucide="building" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
             <span>${item.companyName}</span>
+          </div>
+          <div style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; font-weight: 500;">
+            Kota: ${item.quota_limit} araç | Alan: ${item.m2_area} m²
           </div>
         </td>
         <td style="padding: 1rem;">
           ${repsHtml}
+        </td>
+        <td style="padding: 1rem; text-align: right; white-space: nowrap;">
+          ${editBtn}
+          ${resendBtn}
+        </td>
+      </tr>
+      <tr id="otopark-company-edit-row-${item.companyId}" style="display: none; background: #f8fafc; border-bottom: 2px solid var(--color-border-light);">
+        <td colspan="3" style="padding: 1rem;">
+          <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 8px; padding: 1rem; text-align: left;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">m² Alanı</label>
+                <input type="number" id="otopark-company-edit-m2-${item.companyId}" value="${item.m2_area}" oninput="suggestOtoparkQuotaFromM2(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Kota Limiti</label>
+                <input type="number" id="otopark-company-edit-quota-${item.companyId}" value="${item.quota_limit}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
+              </div>
+              <div style="grid-column: span 2;">
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
+                <input type="text" id="otopark-company-edit-repname-${item.companyId}" value="${item.rep_name}" placeholder="Adı Soyadı" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
+                <input type="tel" id="otopark-company-edit-repphone-${item.companyId}" value="${item.rep_phone}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci E-Posta</label>
+                <input type="email" id="otopark-company-edit-repemail-${item.companyId}" value="${item.rep_email}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
+                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
+              </div>
+              <div>
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
+                <input type="password" id="otopark-company-edit-password-${item.companyId}" placeholder="Boşsa değişmez" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid var(--color-border-light); padding-top: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" id="otopark-company-edit-sendsms-${item.companyId}" checked style="width: 16px; height: 16px; cursor: pointer;">
+                <label for="otopark-company-edit-sendsms-${item.companyId}" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; user-select: none;">
+                  🔑 Bilgileri Temsilciye Gönder.
+                </label>
+              </div>
+              <div style="display: flex; gap: 0.35rem;">
+                <button onclick="saveOtoparkCompanyCredentials(${item.companyId})" class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 32px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="check" style="width: 14px; height: 14px;"></i> Kaydet
+                </button>
+              </div>
+            </div>
+          </div>
         </td>
       </tr>
     `;
@@ -13888,8 +13966,148 @@ function filterOtoparkCompaniesList() {
   renderOtoparkCompaniesList();
 }
 
+function toggleOtoparkCompanyEditRow(companyId) {
+  const row = document.getElementById(`otopark-company-edit-row-${companyId}`);
+  if (!row) return;
+  if (row.style.display === 'none') {
+    // Close all other edit rows
+    document.querySelectorAll('#otopark-companies-table-body tr[id^="otopark-company-edit-row-"]').forEach(r => r.style.display = 'none');
+    row.style.display = 'table-row';
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+function suggestOtoparkQuotaFromM2(companyId) {
+  const m2Input = document.getElementById(`otopark-company-edit-m2-${companyId}`);
+  const quotaInput = document.getElementById(`otopark-company-edit-quota-${companyId}`);
+  if (m2Input && quotaInput) {
+    const m2 = parseInt(m2Input.value) || 0;
+    let quota = 0;
+    if (m2 >= 50 && m2 < 200) quota = 1;
+    else if (m2 >= 200 && m2 < 300) quota = 2;
+    else if (m2 >= 300) quota = Math.floor(m2 / 100);
+    quotaInput.value = quota;
+  }
+}
+
+async function saveOtoparkCompanyCredentials(id) {
+  const usernameVal = document.getElementById(`otopark-company-edit-username-${id}`)?.value.trim();
+  const passwordVal = document.getElementById(`otopark-company-edit-password-${id}`)?.value;
+  const quotaLimitVal = document.getElementById(`otopark-company-edit-quota-${id}`)?.value;
+  const m2AreaVal = document.getElementById(`otopark-company-edit-m2-${id}`)?.value;
+  const repNameVal = document.getElementById(`otopark-company-edit-repname-${id}`)?.value.trim();
+  const repPhoneVal = document.getElementById(`otopark-company-edit-repphone-${id}`)?.value.trim();
+  const repEmailVal = document.getElementById(`otopark-company-edit-repemail-${id}`)?.value.trim();
+  const sendSmsVal = document.getElementById(`otopark-company-edit-sendsms-${id}`)?.checked;
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/companies', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: id,
+        username: usernameVal || null,
+        password: passwordVal || null,
+        quota_limit: quotaLimitVal ? parseInt(quotaLimitVal) : 0,
+        m2_area: m2AreaVal ? parseInt(m2AreaVal) : 0,
+        rep_name: repNameVal || null,
+        rep_phone: repPhoneVal || null,
+        rep_email: repEmailVal || null,
+        send_sms: !!sendSmsVal
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Güncelleme başarısız: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    window.allRegisteredCompanies = null;
+    showToast('Başarılı', 'Firma yetki ve temsilci bilgileri güncellendi.', 'check');
+    
+    if (window.currentOtoparkCompaniesName) {
+      await openOtoparkCompaniesModal(window.currentOtoparkCompaniesName);
+    }
+  } catch (err) {
+    console.error("Error updating otopark company settings:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
+async function resendOtoparkCompanyCredentials(id) {
+  const item = window.currentOtoparkCompaniesList.find(x => x.companyId === id);
+  if (!item) return;
+
+  if (!item.rep_phone) {
+    alert("Temsilci telefon numarası tanımlı değil!");
+    return;
+  }
+
+  const confirmSend = confirm(`"${item.companyName}" temsilcisi için yeni bir şifre üretilip SMS/WhatsApp/E-posta ile gönderilecektir. Onaylıyor musunuz?`);
+  if (!confirmSend) return;
+
+  // Generate a random 8-character password
+  const characters = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let newPassword = '';
+  for (let i = 0; i < 8; i++) {
+    newPassword += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/companies', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: id,
+        username: item.username || null,
+        password: newPassword,
+        quota_limit: item.quota_limit,
+        m2_area: item.m2_area,
+        rep_name: item.rep_name,
+        rep_phone: item.rep_phone,
+        rep_email: item.rep_email,
+        send_sms: true
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Şifre sıfırlama başarısız: ${data.error || 'Bilinmeyen hata'}`);
+      return;
+    }
+
+    window.allRegisteredCompanies = null;
+    showToast('Başarılı', `Yeni şifre üretildi (${newPassword}) ve temsilciye gönderildi.`, 'check');
+    
+    if (window.currentOtoparkCompaniesName) {
+      await openOtoparkCompaniesModal(window.currentOtoparkCompaniesName);
+    }
+  } catch (err) {
+    console.error("Error resending company credentials:", err);
+    alert("Bağlantı hatası. Lütfen tekrar deneyin.");
+  }
+}
+
 window.openOtoparkCompaniesModal = openOtoparkCompaniesModal;
 window.filterOtoparkCompaniesList = filterOtoparkCompaniesList;
+window.toggleOtoparkCompanyEditRow = toggleOtoparkCompanyEditRow;
+window.suggestOtoparkQuotaFromM2 = suggestOtoparkQuotaFromM2;
+window.saveOtoparkCompanyCredentials = saveOtoparkCompanyCredentials;
+window.resendOtoparkCompanyCredentials = resendOtoparkCompanyCredentials;
 
 
 
