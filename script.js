@@ -13634,6 +13634,21 @@ async function loadCompanyPortalVehicles() {
   const tableBody = document.getElementById('company-portal-table-body');
   if (!tableBody) return;
 
+  // Refresh company quota limit from database dynamically
+  try {
+    const compRes = await fetch(`/api/companies?otopark=${encodeURIComponent(user.otopark_name)}`);
+    if (compRes.ok) {
+      const compList = await compRes.json();
+      const currentComp = compList.find(c => c.name.trim().toUpperCase() === user.company_name.trim().toUpperCase());
+      if (currentComp) {
+        user.quota_limit = currentComp.quota_limit || 0;
+        localStorage.setItem('parkexpert_user', JSON.stringify(user));
+      }
+    }
+  } catch (e) {
+    console.error("Error refreshing company quota:", e);
+  }
+
   try {
     const res = await fetch('/api/applications', {
       headers: {
