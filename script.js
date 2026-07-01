@@ -12834,7 +12834,7 @@ function renderCompanyMgmtList(list) {
               </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
               <div>
                 <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
                 <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
@@ -12846,10 +12846,6 @@ function renderCompanyMgmtList(list) {
               <div>
                 <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
                 <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
-              </div>
-              <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
-                <input type="password" id="company-edit-password-${c.id}" placeholder="Boşsa değişmez" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
               </div>
             </div>
 
@@ -13358,13 +13354,23 @@ function suggestQuotaFromM2(id) {
 // Submits the PATCH request to save company parameters (m2, quota, login credentials)
 async function saveCompanyCredentials(id) {
   const usernameVal = document.getElementById(`company-edit-username-${id}`)?.value.trim();
-  const passwordVal = document.getElementById(`company-edit-password-${id}`)?.value;
   const quotaLimitVal = document.getElementById(`company-edit-quota-${id}`)?.value;
   const m2AreaVal = document.getElementById(`company-edit-m2-${id}`)?.value;
   const repNameVal = document.getElementById(`company-edit-repname-${id}`)?.value.trim();
   const repPhoneVal = document.getElementById(`company-edit-repphone-${id}`)?.value.trim();
   const repEmailVal = document.getElementById(`company-edit-repemail-${id}`)?.value.trim();
   const sendSmsVal = document.getElementById(`company-edit-sendsms-${id}`)?.checked;
+
+  // Auto-generate password on first-time B2B setup
+  let autoPassword = null;
+  const companyObj = (typeof companyMgmtLoadedList !== 'undefined' ? companyMgmtLoadedList : []).find(item => item.id === id) || {};
+  if (usernameVal && !companyObj.username) {
+    const characters = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    autoPassword = '';
+    for (let i = 0; i < 8; i++) {
+      autoPassword += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+  }
 
   const token = localStorage.getItem('parkexpert_token');
   if (!token) return;
@@ -13379,7 +13385,7 @@ async function saveCompanyCredentials(id) {
       body: JSON.stringify({
         id: id,
         username: usernameVal || null,
-        password: passwordVal || null,
+        password: autoPassword,
         quota_limit: quotaLimitVal ? parseInt(quotaLimitVal) : 0,
         m2_area: m2AreaVal ? parseInt(m2AreaVal) : 0,
         rep_name: repNameVal || null,
@@ -13919,7 +13925,7 @@ function renderOtoparkCompaniesList() {
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
               <div>
                 <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
                 <input type="tel" id="otopark-company-edit-repphone-${item.companyId}" value="${item.rep_phone}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
@@ -13931,10 +13937,6 @@ function renderOtoparkCompaniesList() {
               <div>
                 <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
                 <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
-              </div>
-              <div>
-                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Yeni Şifre</label>
-                <input type="password" id="otopark-company-edit-password-${item.companyId}" placeholder="Boşsa değişmez" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
               </div>
             </div>
 
@@ -13993,13 +13995,23 @@ function suggestOtoparkQuotaFromM2(companyId) {
 
 async function saveOtoparkCompanyCredentials(id) {
   const usernameVal = document.getElementById(`otopark-company-edit-username-${id}`)?.value.trim();
-  const passwordVal = document.getElementById(`otopark-company-edit-password-${id}`)?.value;
   const quotaLimitVal = document.getElementById(`otopark-company-edit-quota-${id}`)?.value;
   const m2AreaVal = document.getElementById(`otopark-company-edit-m2-${id}`)?.value;
   const repNameVal = document.getElementById(`otopark-company-edit-repname-${id}`)?.value.trim();
   const repPhoneVal = document.getElementById(`otopark-company-edit-repphone-${id}`)?.value.trim();
   const repEmailVal = document.getElementById(`otopark-company-edit-repemail-${id}`)?.value.trim();
   const sendSmsVal = document.getElementById(`otopark-company-edit-sendsms-${id}`)?.checked;
+
+  // Auto-generate password on first-time B2B setup
+  let autoPassword = null;
+  const item = (window.currentOtoparkCompaniesList || []).find(x => x.companyId === id) || {};
+  if (usernameVal && !item.username) {
+    const characters = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    autoPassword = '';
+    for (let i = 0; i < 8; i++) {
+      autoPassword += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+  }
 
   const token = localStorage.getItem('parkexpert_token');
   if (!token) return;
@@ -14014,7 +14026,7 @@ async function saveOtoparkCompanyCredentials(id) {
       body: JSON.stringify({
         id: id,
         username: usernameVal || null,
-        password: passwordVal || null,
+        password: autoPassword,
         quota_limit: quotaLimitVal ? parseInt(quotaLimitVal) : 0,
         m2_area: m2AreaVal ? parseInt(m2AreaVal) : 0,
         rep_name: repNameVal || null,
