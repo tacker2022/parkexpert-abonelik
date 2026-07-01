@@ -2377,23 +2377,12 @@
 
         <!-- Alt Tab 3: Firma Listesi & Arama & Silme -->
         <div id="sub-panel-company-list" class="company-mgmt-sub-panel" style="display: none;">
-          <div class="company-search-container">
-            <i data-lucide="search" class="company-search-icon" style="width: 14px; height: 14px;"></i>
-            <input type="text" id="company-mgmt-search" class="company-search-input" placeholder="Listede firma ara..." oninput="filterCompanyMgmtList()">
+          <div class="company-search-container" style="position: relative; display: flex; align-items: center; margin-bottom: 1rem;">
+            <i data-lucide="search" style="position: absolute; left: 0.85rem; color: #94a3b8; width: 16px; height: 16px;"></i>
+            <input type="text" id="company-mgmt-search" placeholder="Listede firma ara..." oninput="filterCompanyMgmtList()" style="width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.5rem; border: 1.5px solid var(--color-border-light); border-radius: 10px; font-size: 0.85rem; outline: none; background: #ffffff; box-sizing: border-box; font-weight: 500; transition: all 0.2s;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--color-border-light)'">
           </div>
-          <div style="border: 1px solid var(--color-border-light); border-radius: 12px; max-height: 260px; overflow-y: auto; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-            <table class="company-table">
-              <thead>
-                <tr>
-                  <th>Firma Adı</th>
-                  <th>Ekleyen</th>
-                  <th style="text-align: right; width: 130px;">İşlem</th>
-                </tr>
-              </thead>
-              <tbody id="company-mgmt-list-body">
-                <!-- Dinamik yüklenecek -->
-              </tbody>
-            </table>
+          <div style="border: 1px solid var(--color-border-light); border-radius: 14px; max-height: 380px; overflow-y: auto; background: #fafafa; padding: 0.75rem; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem;" id="company-mgmt-list-body">
+            <!-- Dinamik yüklenecek card listesi -->
           </div>
           <p id="company-mgmt-delete-warning" style="font-size: 0.75rem; color: #ef4444; margin-top: 0.75rem; display: none; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
             <i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i>

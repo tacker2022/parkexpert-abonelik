@@ -12674,7 +12674,6 @@ async function openCompanyManagementModal() {
     opt.textContent = parkName;
     select.appendChild(opt);
   });
-
   // Switch to default tab
   switchCompanyMgmtSubTab('bulk-add');
 
@@ -12776,8 +12775,30 @@ function renderCompanyMgmtList(list) {
   const listBody = document.getElementById('company-mgmt-list-body');
   if (!listBody) return;
 
+  // Defensive check against cached admin.html table structure
+  const parentTable = listBody.closest('table');
+  if (parentTable) {
+    const parentContainer = parentTable.parentElement;
+    if (parentContainer) {
+      const newDiv = document.createElement('div');
+      newDiv.id = 'company-mgmt-list-body';
+      newDiv.style.display = 'flex';
+      newDiv.style.flexDirection = 'column';
+      newDiv.style.gap = '0.75rem';
+      newDiv.style.width = '100%';
+      
+      parentTable.replaceWith(newDiv);
+      renderCompanyMgmtList(list);
+      return;
+    }
+  }
+
   if (list.length === 0) {
-    listBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">Kayıtlı firma bulunamadı.</td></tr>`;
+    listBody.innerHTML = `<div style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: 12px; box-sizing: border-box; width: 100%;">
+      <i data-lucide="search" style="width: 32px; height: 32px; color: #94a3b8;"></i>
+      <span>Kayıtlı firma bulunamadı.</span>
+    </div>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     return;
   }
 
@@ -12785,69 +12806,104 @@ function renderCompanyMgmtList(list) {
 
   listBody.innerHTML = list.map(c => {
     const deleteBtn = isSuperadmin 
-      ? `<button onclick="deleteCompany(${c.id})" class="btn-action btn-action-delete"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`
-      : `<button disabled class="btn-action" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed; opacity: 0.6;"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`;
+      ? `<button onclick="deleteCompany(${c.id})" class="btn-action btn-action-delete" style="flex: 1;"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`
+      : `<button disabled class="btn-action" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed; opacity: 0.6; flex: 1;"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil</button>`;
     
-    const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn-action btn-action-edit" style="margin-right: 0.25rem;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`;
+    const settingsBtn = `<button onclick="toggleCompanyEditRow(${c.id})" class="btn-action btn-action-edit" style="flex: 1;"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Ayarlar</button>`;
+
+    const activeVehicles = (typeof allApplications !== 'undefined' ? allApplications : []).filter(app => 
+      app.parking_location === c.otopark_name && 
+      app.company_name && 
+      app.company_name.trim().toUpperCase() === c.name.trim().toUpperCase()
+    ).length;
+
+    const vehiclesBadge = activeVehicles > 0 
+      ? `<span style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.725rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> ${activeVehicles} Araç</span>`
+      : `<span style="background: rgba(148, 163, 184, 0.08); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.15); font-size: 0.725rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> 0 Araç</span>`;
 
     return `
-      <tr style="border-bottom: 1px solid var(--color-border-light);">
-        <td style="padding: 0.85rem 1rem; font-weight: 600; font-size: 0.9rem; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <span>${c.name}</span>
-          ${(() => {
-            const activeVehicles = (typeof allApplications !== 'undefined' ? allApplications : []).filter(app => 
-              app.parking_location === c.otopark_name && 
-              app.company_name && 
-              app.company_name.trim().toUpperCase() === c.name.trim().toUpperCase()
-            ).length;
-            return activeVehicles > 0 
-              ? `<span style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.725rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> ${activeVehicles} Araç</span>`
-              : `<span style="background: rgba(148, 163, 184, 0.08); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.15); font-size: 0.725rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="car" style="width: 10px; height: 10px;"></i> 0 Araç</span>`;
-          })()}
-        </td>
-        <td style="padding: 0.85rem 1rem; color: var(--color-text-muted); font-size: 0.85rem;">@${c.created_by || 'sistem'}</td>
-        <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">${settingsBtn}${deleteBtn}</td>
-      </tr>
-      <tr id="company-mgmt-edit-row-${c.id}" class="company-mgmt-edit-row" style="display: none; background: #f8fafc; border-bottom: 2px solid var(--color-border-light);">
-        <td colspan="3" style="padding: 1.25rem;">
-          <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 12px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03); text-align: left;">
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-              <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.35rem;">
-                <i data-lucide="edit-3" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
-                <span>"${c.name}" Yetki & Giriş Bilgileri</span>
-              </h4>
-              <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 6px;">ID: #${c.id}</span>
+      <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.75rem; box-sizing: border-box; text-align: left; position: relative;">
+        
+        <!-- Top row: Name & Badges -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0;">
+            <div style="background: rgba(15, 59, 162, 0.06); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="building" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
             </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
+              <span style="font-size: 0.85rem; font-weight: 850; color: var(--color-text-dark); text-transform: uppercase; white-space: normal; word-break: break-word;">${c.name}</span>
+              <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                ${vehiclesBadge}
+                <span style="background: #f1f5f9; color: #475569; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: none; display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="user-check" style="width: 10px; height: 10px;"></i> Ekleyen: ${c.created_by || 'sistem'}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Actions Block -->
+          <div style="display: flex; gap: 0.35rem; width: 140px; flex-shrink: 0;">
+            ${settingsBtn}
+            ${deleteBtn}
+          </div>
+        </div>
+
+        <!-- Inline Edit Details -->
+        <div id="company-mgmt-edit-row-${c.id}" class="company-mgmt-edit-row" style="display: none; border-top: 1.5px solid #f1f5f9; padding-top: 0.85rem; margin-top: 0.15rem;">
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1rem; text-align: left;">
+            <div style="border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.8rem; font-weight: 800; color: var(--color-primary-dark); display: flex; align-items: center; gap: 0.3rem;">
+                <i data-lucide="edit-3" style="width: 13px; height: 13px; color: var(--color-primary);"></i>
+                Yetki & Giriş Düzenle
+              </span>
+              <span style="background: #e2e8f0; font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 5px; color: #475569;">Firma ID: #${c.id}</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
               <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">m² Alanı</label>
-                <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">m² Alanı</label>
+                <input type="number" id="company-edit-m2-${c.id}" value="${c.m2_area || 0}" oninput="suggestQuotaFromM2(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s; font-weight: 600;">
               </div>
               <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Kota Limiti</label>
-                <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Kota Limiti</label>
+                <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s; font-weight: 700;">
               </div>
               <div style="grid-column: span 2;">
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad <span style="color: red;">*</span></label>
-                <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Adı Soyadı" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionMgmt(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Ad Soyad <span style="color: red;">*</span></label>
+                <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="AD SOYAD" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionMgmt(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s; font-weight: 600;">
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Telefon</label>
+                <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s;">
+              </div>
+              <div>
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci E-Posta</label>
+                <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s;">
+              </div>
+              <div>
+                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
+                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #f1f5f9; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
               </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
-              <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Telefon</label>
-                <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-top: 1.5px solid #e2e8f0; padding-top: 0.6rem;">
+              <div style="display: flex; align-items: center; gap: 0.3rem;">
+                <input type="checkbox" id="company-edit-sendsms-${c.id}" checked style="width: 14px; height: 14px; cursor: pointer;">
+                <label for="company-edit-sendsms-${c.id}" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; user-select: none;">
+                  🔑 Giriş bilgilerini otomatik gönder.
+                </label>
               </div>
-              <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci E-Posta</label>
-                <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
-              </div>
-              <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
-                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #e2e8f0; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" onclick="toggleCompanyEditRow(${c.id})" class="btn-action" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.7rem !important; padding: 0.3rem 0.6rem !important; min-height: 26px !important;">İptal</button>
+                <button type="button" onclick="saveCompanyCredentials(${c.id})" class="btn btn-primary" style="padding: 0.3rem 0.85rem; font-size: 0.7rem; min-height: 26px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="check" style="width: 12px; height: 12px;"></i> Kaydet
+                </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--color-border-light); padding-top: 0.75rem;">
               <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -13329,7 +13385,7 @@ function toggleCompanyEditRow(id) {
   if (row) {
     if (row.style.display === 'none') {
       document.querySelectorAll('.company-mgmt-edit-row').forEach(r => r.style.display = 'none');
-      row.style.display = 'table-row';
+      row.style.display = 'block';
     } else {
       row.style.display = 'none';
     }
