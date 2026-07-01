@@ -503,7 +503,7 @@ export async function onRequest(context) {
       role: userObj.role,
       actionType: "LOGIN",
       targetId: jti,
-      details: userObj.role === "company" ? "Firma yetkilisi sisteme giriş yaptı." : "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
+      details: userObj.role === "company" ? `"${userObj.company_name}" firmasının temsilcisi kurumsal panele giriş yaptı.` : "Yönetici doğrudan (2FA olmadan) giriş yaptı.",
       ipAddress: clientIp,
       otoparkName: userObj.otopark_name || null,
       companyName: userObj.company_name || null

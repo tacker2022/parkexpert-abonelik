@@ -354,6 +354,41 @@ export async function onRequest(context) {
         }
       }
 
+      // Build detailed changes description for audit logs
+      const changes = [];
+      const fieldLabels = {
+        username: "Giriş Kullanıcı Adı",
+        quota_limit: "Kota Limiti",
+        m2_area: "m² Alanı",
+        rep_name: "Temsilci Ad Soyad",
+        rep_phone: "Temsilci Telefon",
+        rep_email: "Temsilci E-Posta"
+      };
+
+      for (const key in updatePayload) {
+        if (fieldLabels[key] !== undefined) {
+          const oldValue = company[key];
+          const newValue = updatePayload[key];
+
+          const normOld = (oldValue === null || oldValue === undefined) ? "" : String(oldValue).trim();
+          const normNew = (newValue === null || newValue === undefined) ? "" : String(newValue).trim();
+
+          if (normOld !== normNew) {
+            const displayOld = (oldValue === "" || oldValue === null || oldValue === undefined) ? "Boş" : oldValue;
+            const displayNew = (newValue === "" || newValue === null || newValue === undefined) ? "Boş" : newValue;
+            changes.push(`• ${fieldLabels[key]}: "${displayOld}" ➡️ "${displayNew}"`);
+          }
+        }
+      }
+
+      if (password) {
+        changes.push(`• Şifre: "Yeni şifre tanımlandı"`);
+      }
+
+      const detailsText = changes.length > 0 
+        ? `Firma: "${company.name}" (${company.otopark_name}) yetki ve kimlik bilgileri güncellendi:\n${changes.join("\n")}`
+        : `Firma: "${company.name}" (${company.otopark_name}) yetki ve kimlik bilgileri güncellendi (değişiklik tespit edilmedi).`;
+
       // Log action in audit logs
       try {
         await logAudit({
@@ -362,7 +397,7 @@ export async function onRequest(context) {
           username: user.username,
           role: user.role,
           actionType: "Firma Güncelleme",
-          details: `Firma: ${company.name} (${company.otopark_name}) yetki ve kota bilgileri güncellendi.`,
+          details: detailsText,
           ipAddress: clientIp,
           otoparkName: company.otopark_name || null,
           companyName: company.name || null
