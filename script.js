@@ -12935,6 +12935,19 @@ function renderCompanyMgmtList(list) {
                 </button>
               </div>
             </div>
+
+            <!-- Revision History Section -->
+            <div style="border-top: 1.5px solid #e2e8f0; padding-top: 0.85rem; margin-top: 0.85rem;">
+              <button type="button" onclick="toggleCompanyHistory(${c.id}, '${c.name}')" class="btn-action" style="background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary-light); border-radius: 6px; font-size: 0.725rem; padding: 0.3rem 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                <i data-lucide="history" style="width: 12px; height: 12px;"></i>
+                Firma Değişiklik Geçmişini Göster / Gizle
+              </button>
+              <div id="company-history-container-${c.id}" style="display: none; margin-top: 0.75rem; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.75rem; max-height: 200px; overflow-y: auto; font-size: 0.75rem; color: #475569;">
+                <div id="company-history-list-${c.id}" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <span style="color: #94a3b8; font-style: italic;">Geçmiş yükleniyor...</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -13426,6 +13439,94 @@ function suggestQuotaFromM2(id) {
   }
 }
 
+async function toggleCompanyHistory(id, companyName) {
+  const container = document.getElementById(`company-history-container-${id}`);
+  const listEl = document.getElementById(`company-history-list-${id}`);
+  if (!container || !listEl) return;
+
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    listEl.innerHTML = `<div style="text-align:center; padding: 0.5rem; color: #94a3b8;">Yükleniyor...</div>`;
+
+    try {
+      const token = localStorage.getItem('parkexpert_token');
+      const res = await fetch(`/api/company_history?company_name=${encodeURIComponent(companyName)}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Geçmiş yüklenemedi.");
+      const logs = await res.json();
+
+      if (logs.length === 0) {
+        listEl.innerHTML = `<span style="color: #94a3b8; font-style: italic; padding: 0.25rem;">Henüz bir değişiklik geçmişi bulunmuyor.</span>`;
+        return;
+      }
+
+      listEl.innerHTML = logs.map(log => {
+        const dateStr = new Date(log.created_at).toLocaleString('tr-TR');
+        const formattedDetails = log.details.replace(/\n/g, '<br>');
+        return `
+          <div style="border-bottom: 1px dashed #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 0.25rem; line-height: 1.45; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.7rem; color: #64748b; font-weight: 700;">
+              <span style="display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="user" style="width:10px; height:10px;"></i> ${log.admin_username} (${log.admin_role})</span>
+              <span>${dateStr}</span>
+            </div>
+            <div style="font-weight: 500; font-size: 0.725rem; color: #334155; padding-left: 0.25rem; border-left: 2px solid var(--color-primary-light);">${formattedDetails}</div>
+          </div>
+        `;
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch (err) {
+      listEl.innerHTML = `<span style="color: #ef4444; font-style: italic;">Hata: ${err.message}</span>`;
+    }
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+async function toggleOtoparkCompanyHistory(id, companyName) {
+  const container = document.getElementById(`otopark-company-history-container-${id}`);
+  const listEl = document.getElementById(`otopark-company-history-list-${id}`);
+  if (!container || !listEl) return;
+
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    listEl.innerHTML = `<div style="text-align:center; padding: 0.5rem; color: #94a3b8;">Yükleniyor...</div>`;
+
+    try {
+      const token = localStorage.getItem('parkexpert_token');
+      const res = await fetch(`/api/company_history?company_name=${encodeURIComponent(companyName)}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Geçmiş yüklenemedi.");
+      const logs = await res.json();
+
+      if (logs.length === 0) {
+        listEl.innerHTML = `<span style="color: #94a3b8; font-style: italic; padding: 0.25rem;">Henüz bir değişiklik geçmişi bulunmuyor.</span>`;
+        return;
+      }
+
+      listEl.innerHTML = logs.map(log => {
+        const dateStr = new Date(log.created_at).toLocaleString('tr-TR');
+        const formattedDetails = log.details.replace(/\n/g, '<br>');
+        return `
+          <div style="border-bottom: 1px dashed #f1f5f9; padding-bottom: 0.5rem; margin-bottom: 0.25rem; line-height: 1.45; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.7rem; color: #64748b; font-weight: 700;">
+              <span style="display: inline-flex; align-items: center; gap: 0.2rem;"><i data-lucide="user" style="width:10px; height:10px;"></i> ${log.admin_username} (${log.admin_role})</span>
+              <span>${dateStr}</span>
+            </div>
+            <div style="font-weight: 500; font-size: 0.725rem; color: #334155; padding-left: 0.25rem; border-left: 2px solid var(--color-primary-light);">${formattedDetails}</div>
+          </div>
+        `;
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch (err) {
+      listEl.innerHTML = `<span style="color: #ef4444; font-style: italic;">Hata: ${err.message}</span>`;
+    }
+  } else {
+    container.style.display = 'none';
+  }
+}
+
 // Submits the PATCH request to save company parameters (m2, quota, login credentials)
 async function saveCompanyCredentials(id) {
   const usernameVal = document.getElementById(`company-edit-username-${id}`)?.value.trim();
@@ -13793,6 +13894,8 @@ window.submitMergeCompanies = submitMergeCompanies;
 window.toggleCompanyEditRow = toggleCompanyEditRow;
 window.suggestQuotaFromM2 = suggestQuotaFromM2;
 window.saveCompanyCredentials = saveCompanyCredentials;
+window.toggleCompanyHistory = toggleCompanyHistory;
+window.toggleOtoparkCompanyHistory = toggleOtoparkCompanyHistory;
 window.loadCompanyPortalVehicles = loadCompanyPortalVehicles;
 window.renderCompanyPortalVehicles = renderCompanyPortalVehicles;
 window.filterCompanyPortalVehicles = filterCompanyPortalVehicles;
@@ -14117,6 +14220,19 @@ function renderOtoparkCompaniesList() {
                 <button type="button" onclick="saveOtoparkCompanyCredentials(${item.companyId})" class="btn btn-primary" style="padding: 0.4rem 1.25rem; font-size: 0.8rem; min-height: 32px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                   <i data-lucide="check" style="width: 14px; height: 14px;"></i> Kaydet
                 </button>
+              </div>
+            </div>
+
+            <!-- Revision History Section -->
+            <div style="border-top: 1.5px solid #e2e8f0; padding-top: 0.85rem; margin-top: 0.85rem;">
+              <button type="button" onclick="toggleOtoparkCompanyHistory(${item.companyId}, '${item.companyName}')" class="btn-action" style="background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary-light); border-radius: 6px; font-size: 0.725rem; padding: 0.3rem 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                <i data-lucide="history" style="width: 12px; height: 12px;"></i>
+                Firma Değişiklik Geçmişini Göster / Gizle
+              </button>
+              <div id="otopark-company-history-container-${item.companyId}" style="display: none; margin-top: 0.75rem; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.75rem; max-height: 200px; overflow-y: auto; font-size: 0.75rem; color: #475569;">
+                <div id="otopark-company-history-list-${item.companyId}" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <span style="color: #94a3b8; font-style: italic;">Geçmiş yükleniyor...</span>
+                </div>
               </div>
             </div>
           </div>

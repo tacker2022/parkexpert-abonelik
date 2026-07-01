@@ -423,6 +423,7 @@ export async function onRequest(context) {
           username: user.username,
           role: user.role,
           actionType: "Firma Güncelleme",
+          targetId: id,
           details: detailsText,
           ipAddress: clientIp,
           otoparkName: company.otopark_name || null,
