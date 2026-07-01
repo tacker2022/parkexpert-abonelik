@@ -12845,7 +12845,7 @@ function renderCompanyMgmtList(list) {
               </div>
               <div>
                 <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
-                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" oninput="this.dataset.manuallyEdited = 'true'" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #e2e8f0; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
               </div>
             </div>
 
@@ -13963,7 +13963,7 @@ function renderOtoparkCompaniesList() {
               </div>
               <div>
                 <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
-                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" oninput="this.dataset.manuallyEdited = 'true'" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
+                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #e2e8f0; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
               </div>
             </div>
 
@@ -14178,7 +14178,7 @@ window.resendOtoparkCompanyCredentials = resendOtoparkCompanyCredentials;
 function handleUsernameSuggestionMgmt(id) {
   const nameVal = document.getElementById(`company-edit-repname-${id}`)?.value || '';
   const usernameInput = document.getElementById(`company-edit-username-${id}`);
-  if (usernameInput && !usernameInput.dataset.manuallyEdited) {
+  if (usernameInput) {
     usernameInput.value = generateUsernameFromRepName(nameVal);
   }
 }
@@ -14186,7 +14186,7 @@ function handleUsernameSuggestionMgmt(id) {
 function handleUsernameSuggestionOtopark(id) {
   const nameVal = document.getElementById(`otopark-company-edit-repname-${id}`)?.value || '';
   const usernameInput = document.getElementById(`otopark-company-edit-username-${id}`);
-  if (usernameInput && !usernameInput.dataset.manuallyEdited) {
+  if (usernameInput) {
     usernameInput.value = generateUsernameFromRepName(nameVal);
   }
 }
