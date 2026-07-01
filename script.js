@@ -12872,7 +12872,7 @@ function renderCompanyMgmtList(list) {
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
               <div>
                 <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Telefon</label>
                 <input type="tel" id="company-edit-repphone-${c.id}" value="${c.rep_phone || ''}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s;">
@@ -12881,10 +12881,7 @@ function renderCompanyMgmtList(list) {
                 <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci E-Posta</label>
                 <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; transition: border-color 0.2s;">
               </div>
-              <div>
-                <label style="font-weight: 800; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: #475569; letter-spacing: 0.02em;">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
-                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; background: #f1f5f9; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
-              </div>
+              <input type="hidden" id="company-edit-username-${c.id}" value="${c.username || ''}">
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; border-top: 1.5px solid #e2e8f0; padding-top: 0.6rem;">
@@ -14057,7 +14054,7 @@ function renderOtoparkCompaniesList() {
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
               <div>
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci Telefon</label>
                 <input type="tel" id="otopark-company-edit-repphone-${item.companyId}" value="${item.rep_phone}" placeholder="05xxxxxxxxx" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s;">
@@ -14066,10 +14063,7 @@ function renderOtoparkCompaniesList() {
                 <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Temsilci E-Posta</label>
                 <input type="email" id="otopark-company-edit-repemail-${item.companyId}" value="${item.rep_email}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; transition: border-color 0.2s;">
               </div>
-              <div>
-                <label style="font-weight: 800; font-size: 0.725rem; margin-bottom: 0.35rem; display: block; color: #475569; letter-spacing: 0.02em;">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
-                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" readonly style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.825rem; box-sizing: border-box; height: 36px; outline: none; background: #f1f5f9; font-weight: 700; color: #64748b; cursor: not-allowed;" title="Sistem tarafından otomatik oluşturulur.">
-              </div>
+              <input type="hidden" id="otopark-company-edit-username-${item.companyId}" value="${item.username}">
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1.5px solid #e2e8f0; padding-top: 0.75rem;">
