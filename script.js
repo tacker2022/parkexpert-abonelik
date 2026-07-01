@@ -12829,8 +12829,8 @@ function renderCompanyMgmtList(list) {
                 <input type="number" id="company-edit-quota-${c.id}" value="${c.quota_limit || 0}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
               </div>
               <div style="grid-column: span 2;">
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
-                <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Adı Soyadı" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad <span style="color: red;">*</span></label>
+                <input type="text" id="company-edit-repname-${c.id}" value="${c.rep_name || ''}" placeholder="Adı Soyadı" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionMgmt(${c.id})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
               </div>
             </div>
 
@@ -12844,8 +12844,8 @@ function renderCompanyMgmtList(list) {
                 <input type="email" id="company-edit-repemail-${c.id}" value="${c.rep_email || ''}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff;">
               </div>
               <div>
-                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
-                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
+                <label style="font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
+                <input type="text" id="company-edit-username-${c.id}" value="${c.username || ''}" oninput="this.dataset.manuallyEdited = 'true'" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; height: 36px; outline: none; background: #ffffff; font-weight: 600;">
               </div>
             </div>
 
@@ -13360,6 +13360,33 @@ async function saveCompanyCredentials(id) {
   const repPhoneVal = document.getElementById(`company-edit-repphone-${id}`)?.value.trim();
   const repEmailVal = document.getElementById(`company-edit-repemail-${id}`)?.value.trim();
   const sendSmsVal = document.getElementById(`company-edit-sendsms-${id}`)?.checked;
+
+  if (!repNameVal) {
+    alert("Temsilci Ad Soyad alanı zorunludur!");
+    return;
+  }
+  if (!repPhoneVal) {
+    alert("Temsilci Telefon numarası zorunludur!");
+    return;
+  }
+  const cleanPhone = repPhoneVal.replace(/\D/g, "");
+  if (cleanPhone.length !== 11 || !cleanPhone.startsWith("05")) {
+    alert("Temsilci Telefon numarası geçerli bir mobil numara olmalıdır (Örn: 05xxxxxxxxx).");
+    return;
+  }
+  if (!repEmailVal) {
+    alert("Temsilci E-Posta alanı zorunludur!");
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(repEmailVal)) {
+    alert("Geçersiz e-posta adresi formatı!");
+    return;
+  }
+  if (!usernameVal) {
+    alert("Giriş Kullanıcı Adı alanı zorunludur!");
+    return;
+  }
 
   // Auto-generate password on first-time B2B setup
   let autoPassword = null;
@@ -13920,8 +13947,8 @@ function renderOtoparkCompaniesList() {
                 <input type="number" id="otopark-company-edit-quota-${item.companyId}" value="${item.quota_limit}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
               </div>
               <div style="grid-column: span 2;">
-                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad</label>
-                <input type="text" id="otopark-company-edit-repname-${item.companyId}" value="${item.rep_name}" placeholder="Adı Soyadı" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Temsilci Ad Soyad <span style="color: red;">*</span></label>
+                <input type="text" id="otopark-company-edit-repname-${item.companyId}" value="${item.rep_name}" placeholder="Adı Soyadı" oninput="this.value = this.value.toLocaleUpperCase('tr-TR'); handleUsernameSuggestionOtopark(${item.companyId})" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
               </div>
             </div>
             
@@ -13935,8 +13962,8 @@ function renderOtoparkCompaniesList() {
                 <input type="email" id="otopark-company-edit-repemail-${item.companyId}" value="${item.rep_email}" placeholder="eposta@firma.com" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none;">
               </div>
               <div>
-                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı</label>
-                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
+                <label style="font-weight: 700; font-size: 0.7rem; margin-bottom: 0.25rem; display: block; color: var(--color-text-dark);">Giriş Kullanıcı Adı <span style="color: red;">*</span></label>
+                <input type="text" id="otopark-company-edit-username-${item.companyId}" value="${item.username}" oninput="this.dataset.manuallyEdited = 'true'" style="width: 100%; border: 1.5px solid var(--color-border-light); padding: 0.4rem; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; height: 32px; outline: none; font-weight: 700;">
               </div>
             </div>
 
@@ -14001,6 +14028,33 @@ async function saveOtoparkCompanyCredentials(id) {
   const repPhoneVal = document.getElementById(`otopark-company-edit-repphone-${id}`)?.value.trim();
   const repEmailVal = document.getElementById(`otopark-company-edit-repemail-${id}`)?.value.trim();
   const sendSmsVal = document.getElementById(`otopark-company-edit-sendsms-${id}`)?.checked;
+
+  if (!repNameVal) {
+    alert("Temsilci Ad Soyad alanı zorunludur!");
+    return;
+  }
+  if (!repPhoneVal) {
+    alert("Temsilci Telefon numarası zorunludur!");
+    return;
+  }
+  const cleanPhone = repPhoneVal.replace(/\D/g, "");
+  if (cleanPhone.length !== 11 || !cleanPhone.startsWith("05")) {
+    alert("Temsilci Telefon numarası geçerli bir mobil numara olmalıdır (Örn: 05xxxxxxxxx).");
+    return;
+  }
+  if (!repEmailVal) {
+    alert("Temsilci E-Posta alanı zorunludur!");
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(repEmailVal)) {
+    alert("Geçersiz e-posta adresi formatı!");
+    return;
+  }
+  if (!usernameVal) {
+    alert("Giriş Kullanıcı Adı alanı zorunludur!");
+    return;
+  }
 
   // Auto-generate password on first-time B2B setup
   let autoPassword = null;
@@ -14120,6 +14174,32 @@ window.toggleOtoparkCompanyEditRow = toggleOtoparkCompanyEditRow;
 window.suggestOtoparkQuotaFromM2 = suggestOtoparkQuotaFromM2;
 window.saveOtoparkCompanyCredentials = saveOtoparkCompanyCredentials;
 window.resendOtoparkCompanyCredentials = resendOtoparkCompanyCredentials;
+
+function handleUsernameSuggestionMgmt(id) {
+  const nameVal = document.getElementById(`company-edit-repname-${id}`)?.value || '';
+  const usernameInput = document.getElementById(`company-edit-username-${id}`);
+  if (usernameInput && !usernameInput.dataset.manuallyEdited) {
+    usernameInput.value = generateUsernameFromRepName(nameVal);
+  }
+}
+
+function handleUsernameSuggestionOtopark(id) {
+  const nameVal = document.getElementById(`otopark-company-edit-repname-${id}`)?.value || '';
+  const usernameInput = document.getElementById(`otopark-company-edit-username-${id}`);
+  if (usernameInput && !usernameInput.dataset.manuallyEdited) {
+    usernameInput.value = generateUsernameFromRepName(nameVal);
+  }
+}
+
+function generateUsernameFromRepName(repName) {
+  return repName.toLocaleLowerCase('tr-TR')
+    .replace(/[^a-z0-9ıışğüöç\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '.');
+}
+
+window.handleUsernameSuggestionMgmt = handleUsernameSuggestionMgmt;
+window.handleUsernameSuggestionOtopark = handleUsernameSuggestionOtopark;
 
 
 
