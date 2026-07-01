@@ -12904,21 +12904,6 @@ function renderCompanyMgmtList(list) {
           </div>
         </div>
       </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--color-border-light); padding-top: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" id="company-edit-sendsms-${c.id}" checked style="width: 18px; height: 18px; cursor: pointer;">
-                <label for="company-edit-sendsms-${c.id}" style="font-size: 0.825rem; font-weight: 700; color: var(--color-text-dark); cursor: pointer; user-select: none;">
-                  🔑 Giriş bilgilerini SMS, WhatsApp ve E-Posta ile temsilciye otomatik gönder.
-                </label>
-              </div>
-              <button onclick="saveCompanyCredentials(${c.id})" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.85rem; min-height: 36px; font-weight: 700; border: none; background: var(--color-primary); color: white; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
-                <i data-lucide="check" style="width: 16px; height: 16px;"></i> Kaydet ve Gönder
-              </button>
-            </div>
-          </div>
-        </td>
-      </tr>
     `;
   }).join('');
 
