@@ -1635,31 +1635,61 @@
              PANEL: B2B COMPANY PORTAL
              ========================================================================== -->
         <div class="admin-panel" id="panel-company-portal" style="display: none;">
-          <!-- Welcoming title & Company Info Card -->
-          <div style="background: linear-gradient(135deg, #ffffff, #f8fafc); border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.5rem; box-sizing: border-box; text-align: left;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-                <h1 class="admin-panel-title" id="company-portal-title" style="margin: 0; font-size: 1.4rem; font-weight: 850; letter-spacing: -0.01em; color: var(--color-primary-dark); text-transform: uppercase;">Firma Araç Listesi</h1>
-                <span id="company-portal-badge-name" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid rgba(37, 99, 235, 0.15); text-transform: uppercase;">YÜKLENİYOR...</span>
-              </div>
-              <p class="admin-panel-subtitle" id="company-portal-subtitle" style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Şirket araçların zincirini ve personel plakalarınızı bu panelden yönetebilirsiniz.</p>
-            </div>
+          <!-- B2B Portal Premium Hero Banner -->
+          <div id="company-portal-hero-banner" style="background: linear-gradient(135deg, #0b1528, #0f1e36, #1e293b); color: #ffffff; padding: 1.75rem 2.25rem; border-radius: var(--radius-lg); margin-bottom: 2rem; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; text-align: left; box-sizing: border-box;">
             
-            <!-- Quick Company Profile Meta Info -->
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; color: #475569; font-weight: 600;">
-              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
-                <i data-lucide="map-pin" style="width: 14px; height: 14px; color: var(--color-primary);"></i>
-                <span>Otopark: <strong id="company-portal-meta-otopark" style="color: var(--color-text-dark);">-</strong></span>
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 300px; z-index: 2;">
+              <!-- Company Avatar Circle with initials -->
+              <div style="position: relative; width: 68px; height: 68px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), #2563eb); border: 2.5px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <span id="company-portal-avatar-initial" style="font-size: 1.75rem; font-weight: 900; color: #ffffff; text-transform: uppercase;">D</span>
+                <!-- Pulse online indicator dot -->
+                <span style="position: absolute; bottom: 1px; right: 1px; width: 14px; height: 14px; background: #10b981; border: 2px solid #0b1528; border-radius: 50%; display: inline-block; animation: pulse-glowing-green 1.5s infinite ease-in-out;"></span>
               </div>
-              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
-                <i data-lucide="maximize-2" style="width: 14px; height: 14px; color: #10b981;"></i>
-                <span>Alan: <strong id="company-portal-meta-m2" style="color: var(--color-text-dark);">- m²</strong></span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 0.4rem; background: #ffffff; border: 1px solid var(--color-border-light); padding: 0.45rem 0.85rem; border-radius: 8px;">
-                <i data-lucide="user" style="width: 14px; height: 14px; color: #8b5cf6;"></i>
-                <span>Temsilci: <strong id="company-portal-meta-rep" style="color: var(--color-text-dark);">-</strong></span>
+              
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                  <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.55rem; border-radius: 4px; letter-spacing: 0.05em; text-transform: uppercase;">Kurumsal B2B Portalı</span>
+                  <span id="company-portal-header-badge" style="background: rgba(255, 255, 255, 0.08); color: rgba(255,255,255,0.9); font-size: 0.65rem; font-weight: 750; padding: 0.15rem 0.55rem; border-radius: 4px; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1);">-</span>
+                </div>
+                <h2 id="company-portal-hero-greeting" style="margin: 0; font-size: 1.45rem; font-weight: 850; letter-spacing: -0.02em; color: #ffffff; text-transform: none;">Hoş Geldiniz</h2>
+                
+                <!-- Quota Fill Progress Bar -->
+                <div style="margin-top: 0.85rem; max-width: 320px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.725rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 0.25rem;">
+                    <span>Ücretsiz Kontenjan Doluluk Oranı</span>
+                    <span id="company-portal-hero-quota-pct" style="color: #fbbf24;">%0</span>
+                  </div>
+                  <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: flex;">
+                    <div id="company-portal-hero-quota-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 3px; transition: width 0.4s ease;"></div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Meta statistics blocks in hero banner -->
+            <div style="display: flex; align-items: center; gap: 1rem; z-index: 2; flex-wrap: wrap;">
+              <!-- Otopark Meta Block -->
+              <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); text-align: left; min-width: 130px; box-sizing: border-box;">
+                <div style="font-size: 0.625rem; font-weight: 800; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">📍 Yetkili Konum</div>
+                <div id="company-portal-hero-otopark" style="font-size: 0.825rem; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">-</div>
+              </div>
+              
+              <!-- m2 Area Meta Block -->
+              <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.6rem 0.9rem; border-radius: var(--radius-md); text-align: left; min-width: 90px; box-sizing: border-box;">
+                <div style="font-size: 0.625rem; font-weight: 800; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">📐 Alan Büyüklüğü</div>
+                <div id="company-portal-hero-m2" style="font-size: 0.825rem; font-weight: 800; color: #ffffff;">- m²</div>
+              </div>
+
+              <!-- Quick CTA button -->
+              <button onclick="openCompanyPortalAddModal()" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0b1528; border: none; font-weight: 850; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.35rem; border-radius: var(--radius-md); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); font-size: 0.825rem; height: 42px; min-height: 42px; cursor: pointer; transition: all 0.2s; outline: none; font-family: inherit;">
+                <i data-lucide="plus-circle" style="width: 16px; height: 16px; stroke-width: 3px;"></i>
+                <span>Yeni Plaka Ekle</span>
+              </button>
+            </div>
+
+            <!-- Background decorative shape -->
+            <div style="position: absolute; right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.02); z-index: 1;"></div>
+            <div style="position: absolute; left: 10%; bottom: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(37, 99, 235, 0.03); z-index: 1;"></div>
           </div>
 
           <!-- B2B Portal Premium Statistics Cards Grid -->
@@ -1723,13 +1753,6 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
               <input type="text" id="company-portal-search" placeholder="Plaka veya sürücü ara..." oninput="filterCompanyPortalVehicles()" style="max-width: 320px; border: 1px solid var(--color-border-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; outline: none; height: 38px; box-sizing: border-box; width: 100%;">
-            </div>
-            
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <button class="btn btn-primary" onclick="openCompanyPortalAddModal()" style="min-height: 38px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.25rem;">
-                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
-                <span>Yeni Plaka Ekle</span>
-              </button>
             </div>
           </div>
 

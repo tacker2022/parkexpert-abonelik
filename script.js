@@ -13684,7 +13684,37 @@ async function loadCompanyPortalVehicles() {
         user.quota_limit = currentComp.quota_limit || 0;
         localStorage.setItem('parkexpert_user', JSON.stringify(user));
 
-        // Dynamically update metadata in B2B portal header
+        // Dynamically update metadata in B2B portal premium hero banner
+        const avatarInitialEl = document.getElementById('company-portal-avatar-initial');
+        const headerBadgeEl = document.getElementById('company-portal-header-badge');
+        const heroGreetingEl = document.getElementById('company-portal-hero-greeting');
+        const heroOtoparkEl = document.getElementById('company-portal-hero-otopark');
+        const heroM2El = document.getElementById('company-portal-hero-m2');
+
+        if (avatarInitialEl) {
+          avatarInitialEl.textContent = currentComp.name ? currentComp.name.trim().substring(0, 1).toUpperCase() : 'D';
+        }
+        if (headerBadgeEl) headerBadgeEl.textContent = currentComp.name;
+        if (heroOtoparkEl) {
+          heroOtoparkEl.textContent = currentComp.otopark_name;
+          heroOtoparkEl.setAttribute('title', currentComp.otopark_name);
+        }
+        if (heroM2El) heroM2El.textContent = `${currentComp.m2_area || 0} m²`;
+        
+        if (heroGreetingEl) {
+          const hour = new Date().getHours();
+          let greeting = 'İyi Çalışmalar';
+          if (hour >= 5 && hour < 12) greeting = 'Günaydın';
+          else if (hour >= 12 && hour < 17) greeting = 'Tünaydın';
+          else if (hour >= 17 && hour < 22) greeting = 'İyi Akşamlar';
+          else greeting = 'İyi Geceler';
+
+          const repName = currentComp.rep_name || user.username || '';
+          const greetingText = repName ? `${greeting}, ${repName.split(' ')[0].toUpperCase()}` : `${greeting}, Firma Yetkilisi`;
+          heroGreetingEl.textContent = greetingText;
+        }
+
+        // Support fallback elements if any
         const badgeNameEl = document.getElementById('company-portal-badge-name');
         const metaOtoparkEl = document.getElementById('company-portal-meta-otopark');
         const metaM2El = document.getElementById('company-portal-meta-m2');
@@ -13735,6 +13765,22 @@ async function loadCompanyPortalVehicles() {
     if (statUsedEl) statUsedEl.textContent = usedQuota;
     if (statRemainingEl) statRemainingEl.textContent = remainingQuota;
     if (statPaidEl) statPaidEl.textContent = paidCount;
+
+    // Update B2B Hero Banner Quota progress bar and percentage text
+    const pct = totalQuota > 0 ? Math.min(100, Math.round((usedQuota / totalQuota) * 100)) : 0;
+    const heroQuotaPctEl = document.getElementById('company-portal-hero-quota-pct');
+    const heroQuotaBarEl = document.getElementById('company-portal-hero-quota-bar');
+    if (heroQuotaPctEl) heroQuotaPctEl.textContent = `%${pct}`;
+    if (heroQuotaBarEl) {
+      heroQuotaBarEl.style.width = `${pct}%`;
+      if (pct >= 100) {
+        heroQuotaBarEl.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+      } else if (pct >= 80) {
+        heroQuotaBarEl.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+      } else {
+        heroQuotaBarEl.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+      }
+    }
 
     // Fallback support for older elements if still referenced in memory
     const quotaUsedEl = document.getElementById('company-portal-quota-used');
