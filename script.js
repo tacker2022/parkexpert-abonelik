@@ -9162,6 +9162,36 @@ function openCreateAdminModal() {
 
 let currentSimulatedAdmin = null;
 
+function generateUniqueUsername(name) {
+  const trMap = {
+    'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+    'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
+    'â': 'a', 'î': 'i', 'û': 'u', 'Â': 'a', 'Î': 'i', 'Û': 'u'
+  };
+  
+  let cleanName = name;
+  for (let key in trMap) {
+    cleanName = cleanName.replaceAll(key, trMap[key]);
+  }
+  
+  let baseUsername = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!baseUsername) baseUsername = "user";
+  
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  
+  let finalUsername = baseUsername;
+  let counter = 1;
+  
+  while (admins.some(a => a.username === finalUsername)) {
+    counter++;
+    finalUsername = baseUsername + counter;
+  }
+  
+  return finalUsername;
+}
+
+window.generateUniqueUsername = generateUniqueUsername;
+
 function generateRandomPassword() {
   const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const lowers = "abcdefghijkmnopqrstuvwxyz";
@@ -9396,8 +9426,15 @@ async function saveAdminConfig(event) {
 
   const id = document.getElementById('edit-admin-id').value;
   const name = document.getElementById('edit-admin-name').value.trim();
-  const username = document.getElementById('edit-admin-username').value.trim().toLowerCase().replace(/\s+/g, '');
-  const password = document.getElementById('edit-admin-password').value;
+  
+  let username = document.getElementById('edit-admin-username')?.value?.trim()?.toLowerCase()?.replace(/\s+/g, '') || '';
+  let isNewAdmin = !id;
+
+  if (isNewAdmin) {
+    username = generateUniqueUsername(name);
+  }
+
+  const password = document.getElementById('edit-admin-password')?.value || '';
   const phone = document.getElementById('edit-admin-phone')?.value.trim() || '';
   const email = document.getElementById('edit-admin-email')?.value.trim() || '';
   
@@ -9418,7 +9455,6 @@ async function saveAdminConfig(event) {
   }
 
   let finalPassword = password;
-  let isNewAdmin = !id;
 
   if (isNewAdmin && !password) {
     finalPassword = generateRandomPassword();
