@@ -11657,6 +11657,7 @@ async function loadAuditLogs() {
     }
 
     renderAuditLogsTable(allAuditLogs);
+    analyzeAuditSecurity(allAuditLogs);
     updateAuditPaginationControls();
   } catch (err) {
     console.error("Failed to load audit logs:", err);
@@ -11671,8 +11672,254 @@ async function loadAuditLogs() {
 }
 
 function filterAuditLogs() {
+  currentSecurityFilter = null;
   auditCurrentPage = 1;
   loadAuditLogs();
+}
+
+let currentSecurityFilter = null;
+
+function filterAuditBySecurity(type) {
+  const cards = {
+    drift: document.getElementById('audit-security-card-drift'),
+    critical: document.getElementById('audit-security-card-critical'),
+    night: document.getElementById('audit-security-card-night')
+  };
+
+  // If clicked card is already active, reset filter
+  if (currentSecurityFilter === type) {
+    currentSecurityFilter = null;
+    Object.values(cards).forEach(card => {
+      if (card) {
+        card.style.boxShadow = 'none';
+        card.style.transform = 'scale(1)';
+      }
+    });
+    renderAuditLogsTable(allAuditLogs);
+    return;
+  }
+
+  currentSecurityFilter = type;
+  
+  // Highlight active card
+  Object.entries(cards).forEach(([key, card]) => {
+    if (!card) return;
+    if (key === type) {
+      card.style.boxShadow = '0 0 0 2px var(--color-primary)';
+      card.style.transform = 'scale(1.02)';
+    } else {
+      card.style.boxShadow = 'none';
+      card.style.transform = 'scale(1)';
+    }
+  });
+
+  let filtered = [];
+  if (type === 'drift') {
+    // Collect users with multiple IPs
+    const userIps = {};
+    allAuditLogs.forEach(log => {
+      const uname = (log.admin_username || '').trim();
+      if (!uname || uname === '-' || uname === 'sistem') return;
+      if (!userIps[uname]) userIps[uname] = new Set();
+      if (log.ip_address) userIps[uname].add(log.ip_address);
+    });
+    const driftUsers = Object.keys(userIps).filter(uname => userIps[uname].size > 1);
+    filtered = allAuditLogs.filter(log => driftUsers.includes((log.admin_username || '').trim()));
+  } else if (type === 'critical') {
+    const criticalTypes = ['delete_admin', 'delete_otopark', 'Firma Silme', 'Veritabanı Yedeği İndirildi', 'TERMINATE_SESSION', 'delete_application'];
+    filtered = allAuditLogs.filter(log => criticalTypes.includes(log.action_type) || (log.action_type && log.action_type.toLowerCase().includes('silme')));
+  } else if (type === 'night') {
+    filtered = allAuditLogs.filter(log => {
+      if (!log.created_at) return false;
+      const date = new Date(log.created_at);
+      const hour = date.getHours();
+      const uname = (log.admin_username || '').trim();
+      return hour >= 0 && hour < 5 && uname !== '-' && uname !== 'sistem';
+    });
+  }
+
+  renderAuditLogsTable(filtered);
+}
+
+function analyzeAuditSecurity(logs) {
+  const container = document.getElementById('audit-security-analysis-container');
+  if (!container) return;
+
+  const loggedInUserJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = loggedInUserJson ? JSON.parse(loggedInUserJson) : null;
+  
+  if (!loggedInUser || loggedInUser.role !== 'superadmin') {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  const driftAlerts = [];
+  const criticalAlerts = [];
+  const nightAlerts = [];
+
+  // 1. IP Drift Analysis
+  const userIps = {};
+  logs.forEach(log => {
+    const uname = (log.admin_username || '').trim();
+    if (!uname || uname === '-' || uname === 'sistem') return;
+    if (!userIps[uname]) userIps[uname] = new Set();
+    if (log.ip_address) userIps[uname].add(log.ip_address);
+  });
+
+  for (const [uname, ipSet] of Object.entries(userIps)) {
+    if (ipSet.size > 1) {
+      driftAlerts.push({ username: uname, count: ipSet.size, ips: Array.from(ipSet) });
+    }
+  }
+
+  // 2. Critical Actions Analysis
+  const criticalTypes = ['delete_admin', 'delete_otopark', 'Firma Silme', 'Veritabanı Yedeği İndirildi', 'TERMINATE_SESSION', 'delete_application'];
+  logs.forEach(log => {
+    if (criticalTypes.includes(log.action_type) || (log.action_type && log.action_type.toLowerCase().includes('silme'))) {
+      criticalAlerts.push(log);
+    }
+  });
+
+  // 3. Late Night Activity Analysis
+  logs.forEach(log => {
+    if (!log.created_at) return;
+    const date = new Date(log.created_at);
+    const hour = date.getHours();
+    const uname = (log.admin_username || '').trim();
+    if (hour >= 0 && hour < 5 && uname !== '-' && uname !== 'sistem') {
+      nightAlerts.push(log);
+    }
+  });
+
+  // DOM elements update
+  const shield = document.getElementById('audit-security-status-shield');
+  const badge = document.getElementById('audit-security-status-badge');
+  const valDrift = document.getElementById('audit-security-val-drift');
+  const valCritical = document.getElementById('audit-security-val-critical');
+  const valNight = document.getElementById('audit-security-val-night');
+
+  const cardDrift = document.getElementById('audit-security-card-drift');
+  const cardCritical = document.getElementById('audit-security-card-critical');
+  const cardNight = document.getElementById('audit-security-card-night');
+
+  const iconDrift = document.getElementById('audit-security-icon-drift');
+  const iconCritical = document.getElementById('audit-security-icon-critical');
+  const iconNight = document.getElementById('audit-security-icon-night');
+
+  // Reset to defaults
+  if (valDrift) valDrift.textContent = 'Anomali Yok';
+  if (valCritical) valCritical.textContent = 'Risk Yok';
+  if (valNight) valNight.textContent = 'Eylem Yok';
+
+  if (cardDrift) {
+    cardDrift.style.background = '#ffffff';
+    cardDrift.style.border = '1px solid var(--color-border-light)';
+    cardDrift.style.color = 'inherit';
+  }
+  if (iconDrift) {
+    iconDrift.style.background = 'rgba(148, 163, 184, 0.06)';
+    iconDrift.style.color = '#64748b';
+  }
+
+  if (cardCritical) {
+    cardCritical.style.background = '#ffffff';
+    cardCritical.style.border = '1px solid var(--color-border-light)';
+    cardCritical.style.color = 'inherit';
+  }
+  if (iconCritical) {
+    iconCritical.style.background = 'rgba(148, 163, 184, 0.06)';
+    iconCritical.style.color = '#64748b';
+  }
+
+  if (cardNight) {
+    cardNight.style.background = '#ffffff';
+    cardNight.style.border = '1px solid var(--color-border-light)';
+    cardNight.style.color = 'inherit';
+  }
+  if (iconNight) {
+    iconNight.style.background = 'rgba(148, 163, 184, 0.06)';
+    iconNight.style.color = '#64748b';
+  }
+
+  let hasAnomaly = false;
+
+  // Apply Drift Alerts styling
+  if (driftAlerts.length > 0) {
+    hasAnomaly = true;
+    if (valDrift) valDrift.textContent = `${driftAlerts.map(d => `${d.username} (${d.count} IP)`).join(', ')}`;
+    if (cardDrift) {
+      cardDrift.style.background = '#fffbeb';
+      cardDrift.style.border = '1.5px solid #fef3c7';
+      cardDrift.style.color = '#b45309';
+    }
+    if (iconDrift) {
+      iconDrift.style.background = 'rgba(245, 158, 11, 0.1)';
+      iconDrift.style.color = '#d97706';
+    }
+  }
+
+  // Apply Critical Alerts styling
+  if (criticalAlerts.length > 0) {
+    hasAnomaly = true;
+    if (valCritical) valCritical.textContent = `${criticalAlerts.length} Kritik Eylem!`;
+    if (cardCritical) {
+      cardCritical.style.background = '#fef2f2';
+      cardCritical.style.border = '1.5px solid #fee2e2';
+      cardCritical.style.color = '#b91c1c';
+    }
+    if (iconCritical) {
+      iconCritical.style.background = 'rgba(239, 68, 68, 0.1)';
+      iconCritical.style.color = '#dc2626';
+    }
+  }
+
+  // Apply Night Alerts styling
+  if (nightAlerts.length > 0) {
+    hasAnomaly = true;
+    if (valNight) valNight.textContent = `Gece ${nightAlerts.length} Eylem!`;
+    if (cardNight) {
+      cardNight.style.background = '#fffbeb';
+      cardNight.style.border = '1.5px solid #fef3c7';
+      cardNight.style.color = '#b45309';
+    }
+    if (iconNight) {
+      iconNight.style.background = 'rgba(245, 158, 11, 0.1)';
+      iconNight.style.color = '#d97706';
+    }
+  }
+
+  // Main status badge styling
+  if (hasAnomaly) {
+    if (shield) {
+      shield.style.background = 'rgba(245, 158, 11, 0.1)';
+      shield.style.color = '#d97706';
+      shield.style.border = '1px solid rgba(245, 158, 11, 0.2)';
+      shield.innerHTML = '<i data-lucide="shield-alert" style="width: 18px; height: 18px; stroke-width: 2.5px;"></i>';
+    }
+    if (badge) {
+      badge.textContent = 'UYARI: ŞÜPHELİ ETKİNLİK';
+      badge.style.background = 'rgba(245, 158, 11, 0.1)';
+      badge.style.color = '#d97706';
+      badge.style.border = '1px solid rgba(245, 158, 11, 0.2)';
+    }
+  } else {
+    if (shield) {
+      shield.style.background = 'rgba(16, 185, 129, 0.08)';
+      shield.style.color = '#10b981';
+      shield.style.border = '1px solid rgba(16, 185, 129, 0.15)';
+      shield.innerHTML = '<i data-lucide="shield-check" style="width: 18px; height: 18px; stroke-width: 2.5px;"></i>';
+    }
+    if (badge) {
+      badge.textContent = 'SİSTEM GÜVENLİ';
+      badge.style.background = 'rgba(16, 185, 129, 0.08)';
+      badge.style.color = '#10b981';
+      badge.style.border = '1px solid rgba(16, 185, 129, 0.15)';
+    }
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function updateAuditPaginationControls() {

@@ -1551,6 +1551,70 @@
             <p>Yöneticilerin panel üzerinde gerçekleştirdiği tüm kritik işlem ve eylem geçmişi.</p>
           </section>
 
+          <!-- Security Anomaly Analysis Widget -->
+          <div id="audit-security-analysis-container" style="margin-top: 1.5rem; display: none;">
+            <div style="background: linear-gradient(135deg, #ffffff, #f8fafc); border: 1px solid var(--color-border-light); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+              
+              <!-- Title with Status Indicator -->
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-bottom: 1px solid var(--color-border-light); padding-bottom: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div id="audit-security-status-shield" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981;">
+                    <i data-lucide="shield-check" style="width: 18px; height: 18px; stroke-width: 2.5px;"></i>
+                  </div>
+                  <div>
+                    <h4 style="margin: 0; font-size: 0.85rem; font-weight: 900; color: var(--color-primary-dark); text-transform: uppercase; letter-spacing: 0.02em;">⚠️ GÜVENLİK & ANOMALİ ANALİZİ</h4>
+                    <p style="margin: 0; font-size: 0.725rem; color: var(--color-text-muted);">Son log kayıtlarında yapılan otomatik güvenlik ve şüpheli durum taraması.</p>
+                  </div>
+                </div>
+                <span id="audit-security-status-badge" style="background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); font-size: 0.725rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  Sistem Güvenli
+                </span>
+              </div>
+
+              <!-- Alerts Grid -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem;">
+                
+                <!-- Card 1: IP Drift -->
+                <div id="audit-security-card-drift" onclick="filterAuditBySecurity('drift')" style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.85rem; cursor: pointer; transition: all 0.2s; text-align: left; box-sizing: border-box;">
+                  <div id="audit-security-icon-drift" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(148, 163, 184, 0.06); display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0;">
+                    <i data-lucide="split" style="width: 18px; height: 18px;"></i>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem;">Çoklu IP / Sapma Durumu</div>
+                    <div id="audit-security-val-drift" style="font-size: 0.825rem; font-weight: 800; color: #64748b;">Anomali Yok</div>
+                  </div>
+                  <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: #cbd5e1;"></i>
+                </div>
+
+                <!-- Card 2: Critical Actions -->
+                <div id="audit-security-card-critical" onclick="filterAuditBySecurity('critical')" style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.85rem; cursor: pointer; transition: all 0.2s; text-align: left; box-sizing: border-box;">
+                  <div id="audit-security-icon-critical" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(148, 163, 184, 0.06); display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0;">
+                    <i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem;">Kritik / Silme Eylemleri</div>
+                    <div id="audit-security-val-critical" style="font-size: 0.825rem; font-weight: 800; color: #64748b;">Risk Yok</div>
+                  </div>
+                  <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: #cbd5e1;"></i>
+                </div>
+
+                <!-- Card 3: Late night critical acts -->
+                <div id="audit-security-card-night" onclick="filterAuditBySecurity('night')" style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.85rem; cursor: pointer; transition: all 0.2s; text-align: left; box-sizing: border-box;">
+                  <div id="audit-security-icon-night" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(148, 163, 184, 0.06); display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0;">
+                    <i data-lucide="moon" style="width: 18px; height: 18px;"></i>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.675rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem;">Gece Yarısı İşlemleri</div>
+                    <div id="audit-security-val-night" style="font-size: 0.825rem; font-weight: 800; color: #64748b;">Eylem Yok</div>
+                  </div>
+                  <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: #cbd5e1;"></i>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
           <!-- Audit filters -->
           <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end;">
             <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
