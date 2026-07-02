@@ -32,6 +32,36 @@
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body style="background-color: #f1f5f9;">
+  <!-- Premium Welcome Transition Overlay -->
+  <div id="welcome-transition-overlay" class="welcome-overlay" style="display: none;">
+    <!-- Background Animated Orbs -->
+    <div class="welcome-glow-orb welcome-glow-orb-1"></div>
+    <div class="welcome-glow-orb welcome-glow-orb-2"></div>
+    
+    <div class="welcome-overlay-content">
+      <!-- Flying Logo Clone Container -->
+      <div style="position: relative; width: 100%; height: 64px; margin-bottom: 2.5rem; display: flex; align-items: center; justify-content: center;">
+        <img id="welcome-logo-clone" class="welcome-logo-large" src="assets/logo.png" alt="PARKEXPERT Logo">
+      </div>
+      
+      <!-- Flying Avatar Clone Container -->
+      <div id="welcome-avatar-clone-container" class="welcome-avatar-container">
+        <img id="welcome-avatar-clone" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" style="display: none;">
+        <span id="welcome-avatar-initials-clone" class="welcome-avatar-initials"></span>
+      </div>
+      
+      <!-- Text Group (Faded out on flight) -->
+      <div class="welcome-text-group" id="welcome-text-group">
+        <h1 class="welcome-user-name" id="welcome-user-name">Mehmet Durali</h1>
+        <p class="welcome-user-role" id="welcome-user-role">Genel Yönetim</p>
+        <span class="welcome-badge">
+          <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+          Güvenli Oturum Başlatıldı
+        </span>
+        <button class="welcome-skip-btn" onclick="skipWelcomeTransition()">Geçişi Atla</button>
+      </div>
+    </div>
+  </div>
 
   <div class="admin-layout" style="display: none;">
     

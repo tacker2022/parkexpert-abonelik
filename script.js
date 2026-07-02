@@ -242,7 +242,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (formElement) {
     initWizardController();
   } else if (adminTable) {
-    initAdminController();
+    const userJson = localStorage.getItem('parkexpert_user');
+    const token = localStorage.getItem('parkexpert_token');
+    if (userJson && token && !isTokenExpired(token)) {
+      const loggedInUser = JSON.parse(userJson);
+      runWelcomeTransition(loggedInUser);
+    } else {
+      initAdminController();
+    }
   }
 
   // Initialize Hero Live Ticker Simulation if elements are present
@@ -2864,8 +2871,8 @@ async function handleAdminLogin(event) {
     usernameInput.value = '';
     passwordInput.value = '';
 
-    // Initialize controller and fetch
-    initAdminController();
+    // Trigger welcome transition animation
+    runWelcomeTransition(data.user);
 
   } catch (err) {
     if (typeof turnstile !== 'undefined') turnstile.reset();
@@ -2933,8 +2940,8 @@ async function verifyAdminOTP(event) {
 
     temp2FAUsername = null;
 
-    // Initialize controller and fetch
-    initAdminController();
+    // Trigger welcome transition animation
+    runWelcomeTransition(data.user);
 
   } catch (err) {
     if (errorMsg) {
@@ -3153,6 +3160,188 @@ async function handleAdminLogout(reason = 'user') {
 }
 
 window.handleAdminLogout = handleAdminLogout;
+
+window.isWelcomeTransitionActive = false;
+let welcomeSkipTriggered = false;
+
+function skipWelcomeTransition() {
+  welcomeSkipTriggered = true;
+  const overlay = document.getElementById('welcome-transition-overlay');
+  if (overlay) {
+    overlay.classList.add('fade-out');
+    const adminLayout = document.querySelector('.admin-layout');
+    if (adminLayout) {
+      adminLayout.style.display = 'flex';
+      adminLayout.style.opacity = '1';
+    }
+    const destLogo = document.querySelector('.sidebar-logo img');
+    const destAvatar = document.getElementById('current-user-avatar');
+    if (destLogo) destLogo.style.opacity = '1';
+    if (destAvatar) destAvatar.style.opacity = '1';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      window.isWelcomeTransitionActive = false;
+    }, 800);
+  }
+}
+
+window.skipWelcomeTransition = skipWelcomeTransition;
+
+async function runWelcomeTransition(userObj) {
+  if (!userObj) return;
+  window.isWelcomeTransitionActive = true;
+  welcomeSkipTriggered = false;
+
+  const overlay = document.getElementById('welcome-transition-overlay');
+  const nameEl = document.getElementById('welcome-user-name');
+  const roleEl = document.getElementById('welcome-user-role');
+  const avatarImg = document.getElementById('welcome-avatar-clone');
+  const avatarInitials = document.getElementById('welcome-avatar-initials-clone');
+  const textGroup = document.getElementById('welcome-text-group');
+
+  if (!overlay) return;
+
+  // 1. Populate data
+  if (nameEl) nameEl.textContent = userObj.name || 'Yönetici';
+  
+  let roleText = 'Temsilci';
+  if (userObj.role === 'superadmin') roleText = 'Süper Yönetici';
+  else if (userObj.role === 'yonetim') roleText = 'Genel Yönetim';
+  if (roleEl) roleEl.textContent = roleText;
+
+  // Populate avatar photo or initials backup
+  if (userObj.id && userObj.role !== 'superadmin') {
+    const avatarUrl = `/api/document?path=avatars/${userObj.id}.jpg&_t=${Date.now()}`;
+    if (avatarImg) {
+      avatarImg.src = avatarUrl;
+      avatarImg.style.display = 'block';
+      if (avatarInitials) avatarInitials.style.display = 'none';
+    }
+  } else if (userObj.role === 'superadmin') {
+    if (avatarImg) {
+      avatarImg.src = `/api/document?path=avatars/superadmin.jpg&_t=${Date.now()}`;
+      avatarImg.style.display = 'block';
+      if (avatarInitials) avatarInitials.style.display = 'none';
+    }
+  } else {
+    if (avatarImg) avatarImg.style.display = 'none';
+    if (avatarInitials) {
+      avatarInitials.style.display = 'inline-flex';
+      avatarInitials.textContent = (userObj.name || 'YN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
+  }
+
+  // Ensure initials are set in case the image fails to load (onerror backup)
+  if (avatarImg && avatarInitials) {
+    avatarImg.onerror = () => {
+      avatarImg.style.display = 'none';
+      avatarInitials.style.display = 'inline-flex';
+      avatarInitials.textContent = (userObj.name || 'YN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    };
+  }
+
+  // Initialize Lucide Icons inside the overlay
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons({ node: overlay });
+  }
+
+  // 2. Show the overlay
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+  overlay.classList.remove('fade-out', 'transitioning');
+
+  // Reset clone inline transforms
+  const logoClone = document.getElementById('welcome-logo-clone');
+  const avatarCloneContainer = document.getElementById('welcome-avatar-clone-container');
+  if (logoClone) logoClone.style.transform = '';
+  if (avatarCloneContainer) {
+    avatarCloneContainer.style.transform = '';
+    avatarCloneContainer.style.borderColor = 'var(--color-accent-orange)';
+    avatarCloneContainer.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 8px rgba(255, 208, 0, 0.1)';
+    avatarCloneContainer.style.borderWidth = '4px';
+  }
+  if (textGroup) textGroup.style.opacity = '1';
+
+  // Make sure admin layout is loaded in the DOM but invisible
+  const adminLayout = document.querySelector('.admin-layout');
+  if (adminLayout) {
+    adminLayout.style.display = 'flex';
+    adminLayout.style.opacity = '0';
+    adminLayout.style.transition = 'opacity 0.8s ease';
+  }
+
+  // Hide destination logo and avatar in sidebar temporarily for handoff
+  const destLogo = document.querySelector('.sidebar-logo img');
+  const destAvatar = document.getElementById('current-user-avatar');
+  if (destLogo) {
+    destLogo.style.transition = 'opacity 0.3s ease';
+    destLogo.style.opacity = '0';
+  }
+  if (destAvatar) {
+    destAvatar.style.transition = 'opacity 0.3s ease';
+    destAvatar.style.opacity = '0';
+  }
+
+  // 3. Start controller loading with minimum duration
+  const minDelayPromise = new Promise(resolve => setTimeout(resolve, 2000));
+  await Promise.all([minDelayPromise, initAdminController()]);
+
+  // 4. Trigger flight transition
+  if (welcomeSkipTriggered) {
+    completeTransition();
+    return;
+  }
+
+  overlay.classList.add('transitioning');
+
+  if (destLogo && logoClone) {
+    const firstRect = logoClone.getBoundingClientRect();
+    const lastRect = destLogo.getBoundingClientRect();
+
+    if (lastRect.width > 0 && lastRect.height > 0) {
+      const dx = lastRect.left - firstRect.left;
+      const dy = lastRect.top - firstRect.top;
+      const scaleX = lastRect.width / firstRect.width;
+      const scaleY = lastRect.height / firstRect.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      logoClone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+    }
+  }
+
+  if (destAvatar && avatarCloneContainer) {
+    const firstRect = avatarCloneContainer.getBoundingClientRect();
+    const lastRect = destAvatar.getBoundingClientRect();
+
+    if (lastRect.width > 0 && lastRect.height > 0) {
+      const dx = lastRect.left - firstRect.left;
+      const dy = lastRect.top - firstRect.top;
+      const scale = lastRect.width / firstRect.width;
+
+      avatarCloneContainer.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+      avatarCloneContainer.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      avatarCloneContainer.style.boxShadow = 'none';
+      avatarCloneContainer.style.borderWidth = '1px';
+    }
+  }
+
+  setTimeout(() => {
+    completeTransition();
+  }, 1200);
+
+  function completeTransition() {
+    overlay.classList.add('fade-out');
+    if (adminLayout) {
+      adminLayout.style.opacity = '1';
+    }
+    if (destLogo) destLogo.style.opacity = '1';
+    if (destAvatar) destAvatar.style.opacity = '1';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      window.isWelcomeTransitionActive = false;
+    }, 800);
+  }
+}
 
 async function initAdminController() {
   const token = localStorage.getItem('parkexpert_token');
