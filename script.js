@@ -12703,7 +12703,7 @@ async function fetchActiveSessions() {
         userId = 'superadmin';
       } else if (session.role === 'company') {
         const comp = companiesList.find(c => String(c.username).toLowerCase() === String(session.username).toLowerCase());
-        if (comp) userId = comp.id;
+        if (comp) userId = `comp_${comp.id}`;
       } else {
         const adm = adminsList.find(a => String(a.username).toLowerCase() === String(session.username).toLowerCase());
         if (adm) userId = adm.id;
@@ -14454,7 +14454,7 @@ async function openOtoparkCompaniesModal(otoparkName) {
       }
       if (c.rep_name) {
         companyRepsMap[companyNameClean].push({
-          id: c.id,
+          id: `comp_${c.id}`,
           name: c.rep_name,
           phone: c.rep_phone || '-',
           email: c.rep_email || '-',
