@@ -14454,6 +14454,7 @@ async function openOtoparkCompaniesModal(otoparkName) {
       }
       if (c.rep_name) {
         companyRepsMap[companyNameClean].push({
+          id: c.id,
           name: c.rep_name,
           phone: c.rep_phone || '-',
           email: c.rep_email || '-',
@@ -14474,6 +14475,7 @@ async function openOtoparkCompaniesModal(otoparkName) {
         const exists = companyRepsMap[companyNameClean].some(r => r.username === a.username);
         if (!exists) {
           companyRepsMap[companyNameClean].push({
+            id: a.id,
             name: a.name,
             phone: a.phone || '-',
             email: a.email || '-',
@@ -14573,28 +14575,54 @@ function renderOtoparkCompaniesList() {
     const activeReps = item.reps.filter(r => r.name);
     
     if (activeReps.length > 0) {
-      repsHtml = activeReps.map(r => `
-        <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.4rem; box-sizing: border-box; text-align: left; width: 100%;">
-          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--color-border-light); padding-bottom: 0.4rem; margin-bottom: 0.2rem;">
-            <span style="font-weight: 800; font-size: 0.875rem; color: var(--color-primary-dark); letter-spacing: 0.01em;">${r.name}</span>
-            ${r.isPrimary ? '<span style="background: rgba(15, 59, 162, 0.08); color: var(--color-primary); padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;">Ana Temsilci</span>' : ''}
+      repsHtml = activeReps.map(r => {
+        const initials = r.name ? r.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '👤';
+        const avatarUrl = r.id ? `/api/document?path=avatars/${r.id}.jpg` : '';
+        
+        let avatarElHtml = '';
+        if (avatarUrl) {
+          avatarElHtml = `
+            <div style="position: relative; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1.5px solid #ffffff;" onclick="zoomSessionAvatar('${avatarUrl}', '${r.name.replace(/'/g, "\\'")}')">
+              <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover;">
+              <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--color-primary); color: #ffffff; font-weight: 800; font-size: 0.75rem; border-radius: 50%;">
+                ${initials}
+              </span>
+            </div>
+          `;
+        } else {
+          avatarElHtml = `
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--color-primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; text-transform: uppercase;">
+              ${initials}
+            </div>
+          `;
+        }
+
+        return `
+          <div style="background: #ffffff; border: 1.5px solid var(--color-border-light); padding: 0.75rem 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(15, 59, 162, 0.02); display: flex; flex-direction: column; gap: 0.4rem; box-sizing: border-box; text-align: left; width: 100%;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--color-border-light); padding-bottom: 0.4rem; margin-bottom: 0.2rem; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex: 1;">
+                ${avatarElHtml}
+                <span style="font-weight: 800; font-size: 0.875rem; color: var(--color-primary-dark); letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${r.name}">${r.name}</span>
+              </div>
+              ${r.isPrimary ? '<span style="background: rgba(15, 59, 162, 0.08); color: var(--color-primary); padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0;">Ana Temsilci</span>' : ''}
+            </div>
+            <div style="font-size: 0.775rem; color: #475569; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.4rem; font-weight: 500;">
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="user" style="width: 12px; height: 12px; color: #94a3b8;"></i>
+                <span>Kullanıcı: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.username}</strong></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="phone" style="width: 12px; height: 12px; color: #94a3b8;"></i>
+                <span>Tel: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.phone}</strong></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.35rem; grid-column: span 2;">
+                <i data-lucide="mail" style="width: 12px; height: 12px; color: #94a3b8;"></i>
+                <span>E-posta: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.email}</strong></span>
+              </div>
+            </div>
           </div>
-          <div style="font-size: 0.775rem; color: #475569; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.4rem; font-weight: 500;">
-            <div style="display: flex; align-items: center; gap: 0.35rem;">
-              <i data-lucide="user" style="width: 12px; height: 12px; color: #94a3b8;"></i>
-              <span>Kullanıcı: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.username}</strong></span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.35rem;">
-              <i data-lucide="phone" style="width: 12px; height: 12px; color: #94a3b8;"></i>
-              <span>Tel: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.phone}</strong></span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.35rem; grid-column: span 2;">
-              <i data-lucide="mail" style="width: 12px; height: 12px; color: #94a3b8;"></i>
-              <span>E-posta: <strong style="color: var(--color-text-dark); font-weight: 700;">${r.email}</strong></span>
-            </div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } else {
       repsHtml = `
         <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(241, 245, 249, 0.5); border: 1px dashed #cbd5e1; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">
