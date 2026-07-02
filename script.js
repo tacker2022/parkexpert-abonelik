@@ -12714,11 +12714,13 @@ async function fetchActiveSessions() {
         const adm = adminsList.find(a => String(a.username).toLowerCase() === String(session.username).toLowerCase());
         if (adm && adm.otoparks && adm.otoparks.length > 0) {
           if (adm.otoparks.length === 1) {
-            authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block;" title="${adm.otoparks[0]}">📍 ${adm.otoparks[0]}</span>`;
+            const escapeSingleQuote = adm.otoparks[0].replace(/'/g, "\\'");
+            authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block;" title="${escapeSingleQuote}">📍 ${adm.otoparks[0]}</span>`;
           } else {
-            const otoparksJoined = adm.otoparks.join('\n');
+            const otoparksJoined = adm.otoparks.map(o => o.replace(/'/g, "\\'")).join(', ');
+            const otoparksAlert = adm.otoparks.map(o => `• ${o.replace(/'/g, "\\'")}`).join('\\n');
             authorizedLocationsHtml = `
-              <span title="${otoparksJoined}" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: help; display: inline-flex; align-items: center; gap: 0.25rem;">
+              <span title="${otoparksJoined}" onclick="alert('${adm.name} için Yetkili Otopark Listesi:\\n\\n${otoparksAlert}')" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                 📍 ${adm.otoparks.length} Konum Yetkisi ℹ️
               </span>
             `;
