@@ -3419,14 +3419,21 @@ function populateCompanyFilter() {
   const filterCompany = document.getElementById('filter-company');
   if (!filterCompany) return;
   
+  const selectedLocation = document.getElementById('filter-location')?.value || '';
   const currentVal = filterCompany.value;
   filterCompany.innerHTML = '<option value="">Tüm Firmalar</option>';
   
-  // Get unique companies from allApplications
-  const appCompanies = allApplications.map(app => app.company_name).filter(Boolean);
+  // Get unique companies from allApplications, filtered by selected location
+  const appCompanies = allApplications
+    .filter(app => !selectedLocation || app.parking_location === selectedLocation)
+    .map(app => app.company_name)
+    .filter(Boolean);
   
-  // Get registered companies from B2B registry
-  const regCompanies = (window.allRegisteredCompanies || []).map(c => c.name).filter(Boolean);
+  // Get registered companies from B2B registry, filtered by selected location
+  const regCompanies = (window.allRegisteredCompanies || [])
+    .filter(c => !selectedLocation || c.otopark_name === selectedLocation)
+    .map(c => c.name)
+    .filter(Boolean);
   
   // Merge lists to get all unique company names
   const mergedCompanies = new Set([...appCompanies, ...regCompanies]);
@@ -3449,7 +3456,11 @@ function populateCompanyFilter() {
     filterCompany.appendChild(opt);
   });
   
-  filterCompany.value = currentVal;
+  if (companies.includes(currentVal)) {
+    filterCompany.value = currentVal;
+  } else {
+    filterCompany.value = "";
+  }
 }
 
 function renderTable(apps) {
@@ -3672,9 +3683,18 @@ function formatDateShortTR(dateStr) {
   return dateStr;
 }
 
+let lastSelectedLocation = null;
+
 function applyFilters() {
-  const query = document.getElementById('search-query').value.toLowerCase().trim();
   const location = document.getElementById('filter-location').value;
+  
+  // Re-populate company filter options if selected otopark location changes
+  if (location !== lastSelectedLocation) {
+    lastSelectedLocation = location;
+    populateCompanyFilter();
+  }
+
+  const query = document.getElementById('search-query').value.toLowerCase().trim();
   const company = document.getElementById('filter-company')?.value;
   const status = document.getElementById('filter-status').value;
   const dateVal = document.getElementById('filter-date').value;
