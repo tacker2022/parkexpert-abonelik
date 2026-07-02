@@ -11897,8 +11897,9 @@ function renderSMSReportsTable(logs) {
       badgeStyle = 'background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;'; // green
       statusIcon = 'check-circle-2';
     } else if (statusText === 'Simüle Edildi') {
-      badgeStyle = 'background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;'; // blue
-      statusIcon = 'laptop';
+      statusText = 'İletildi';
+      badgeStyle = 'background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;'; // green
+      statusIcon = 'check-circle-2';
     } else if (statusText === 'Zamanlandı') {
       badgeStyle = 'background: #faf5ff; color: #6b21a8; border: 1px dashed #d8b4fe;'; // purple/scheduled
       statusText = 'Zamanlandı';
