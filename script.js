@@ -6751,12 +6751,27 @@ function renderCompaniesTable(apps) {
   const queryFilter = document.getElementById('search-query')?.value?.toLowerCase()?.trim() || '';
   const companyFilter = document.getElementById('filter-company')?.value || '';
 
+  // Resolve allowed otoparks for the active user role (Security Filter)
+  const roleSelect = document.getElementById('active-user-role');
+  const activeRoleVal = roleSelect ? roleSelect.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (adminObj.role || 'admin');
+
+  const isSuperAdmin = userRole === 'superadmin';
+  const allowedOtoparks = adminObj.otoparks || [];
+
   // 1. Group applications by company
   const groups = {};
 
   // Initialize registered companies that match filters
   if (window.allRegisteredCompanies && Array.isArray(window.allRegisteredCompanies)) {
     window.allRegisteredCompanies.forEach(c => {
+      // Check role authorization for this company's otopark (Security Check)
+      if (!isSuperAdmin && !allowedOtoparks.includes(c.otopark_name)) return;
+
       // Check location filter
       if (locationFilter && c.otopark_name !== locationFilter) return;
       // Check company filter
@@ -6778,6 +6793,9 @@ function renderCompaniesTable(apps) {
   }
 
   apps.forEach(app => {
+    // Check role authorization for this application's otopark (Security Check)
+    if (!isSuperAdmin && app.parking_location && !allowedOtoparks.includes(app.parking_location)) return;
+
     const rawCompany = app.company_name ? app.company_name.trim() : '';
     const companyKey = rawCompany ? rawCompany.toUpperCase() : 'SERBEST ÇALIŞAN';
     
