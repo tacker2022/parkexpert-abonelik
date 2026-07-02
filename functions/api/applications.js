@@ -711,6 +711,29 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ error: `Supabase delete error: ${errText}` }), { status: deleteRes.status, headers });
       }
 
+      const deletedRows = await deleteRes.json();
+      const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+
+      // Log deletion audit event for each deleted subscription/application
+      if (Array.isArray(deletedRows)) {
+        for (const row of deletedRows) {
+          context.waitUntil(
+            logAudit({
+              supabaseUrl,
+              supabaseAnonKey,
+              username: user.username,
+              role: user.role,
+              actionType: "delete_application",
+              targetId: row.id,
+              details: `Abonelik başvurusu #${row.id} (Plaka: ${row.plate_number || ''}, İsim: ${row.full_name || ''}, Konum: ${row.parking_location || ''}) kalıcı olarak silindi.`,
+              ipAddress,
+              otoparkName: row.parking_location || null,
+              companyName: row.company_name || null
+            })
+          );
+        }
+      }
+
       // Delete documents from Cloudflare R2
       if (bucket) {
         const idList = id.split(",");
@@ -728,7 +751,7 @@ export async function onRequest(context) {
         }
       }
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      return new Response(JSON.stringify({ success: true, deletedCount: Array.isArray(deletedRows) ? deletedRows.length : 0 }), { status: 200, headers });
     }
 
     // ----------------------------------------------------
