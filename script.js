@@ -6765,6 +6765,7 @@ function renderCompaniesTable(apps) {
       if (companyKey) {
         groups[companyKey] = {
           name: c.name.trim(),
+          otopark_name: c.otopark_name || '',
           vehicles: 0,
           records: [],
           applications: []
@@ -6857,8 +6858,13 @@ function renderCompaniesTable(apps) {
         const rejectedCount = group.applications.filter(a => a.status === 'Reddedildi').length;
 
         // Calculate locations
-        const locations = [...new Set(group.applications.map(a => a.parking_location))];
-        const locationsStr = locations.join(', ');
+        let locationsStr = '';
+        if (group.applications && group.applications.length > 0) {
+          const locations = [...new Set(group.applications.map(a => a.parking_location))];
+          locationsStr = locations.join(', ');
+        } else {
+          locationsStr = group.otopark_name || '-';
+        }
 
         // Calculate total revenue from approved apps
         const totalRevenue = group.applications
