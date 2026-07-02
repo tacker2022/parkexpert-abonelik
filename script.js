@@ -12622,24 +12622,26 @@ async function fetchActiveSessions() {
   
   tableBody.innerHTML = `
     <tr>
-      <td colspan="7" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+      <td colspan="8" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
         <span class="ocr-spinner" style="display: inline-block; margin-right: 0.5rem; vertical-align: middle;"></span> Aktif oturumlar yükleniyor...
       </td>
     </tr>
   `;
   
   try {
-    const res = await fetch('/api/active_sessions', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const [sessionsRes, adminsRes, companiesRes] = await Promise.all([
+      fetch('/api/active_sessions', { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch('/api/admins', { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch('/api/companies?all=true', { headers: { 'Authorization': `Bearer ${token}` } })
+    ]);
     
-    if (!res.ok) {
-      throw new Error(await res.text());
+    if (!sessionsRes.ok) {
+      throw new Error(await sessionsRes.text());
     }
     
-    const data = await res.json();
+    const data = await sessionsRes.json();
+    const adminsList = adminsRes.ok ? await adminsRes.json() : [];
+    const companiesList = companiesRes.ok ? await companiesRes.json() : [];
     
     // Store active session usernames globally to show online statuses on admin cards
     window.activeSessionUsernames = data.map(s => s.username);
@@ -12654,7 +12656,7 @@ async function fetchActiveSessions() {
     if (data.length === 0) {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="7" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+          <td colspan="8" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
             Aktif oturum bulunamadı.
           </td>
         </tr>
@@ -12691,6 +12693,33 @@ async function fetchActiveSessions() {
       else if (ua.includes("Android")) clientInfo += " (Android)";
       else if (ua.includes("iPhone")) clientInfo += " (iPhone)";
 
+      // Resolve Authorized Locations / Company name
+      let authorizedLocationsHtml = '<span style="color: var(--color-text-muted); font-style: italic;">-</span>';
+      
+      if (session.role === 'superadmin') {
+        authorizedLocationsHtml = `<span style="background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); font-size: 0.675rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem;"><i data-lucide="crown" style="width: 11px; height: 11px;"></i> Tüm Konumlar</span>`;
+      } else if (session.role === 'company') {
+        const comp = companiesList.find(c => String(c.username).toLowerCase() === String(session.username).toLowerCase());
+        if (comp) {
+          authorizedLocationsHtml = `
+            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+              <span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.775rem; text-transform: uppercase;">🏢 ${comp.name}</span>
+              <span style="font-size: 0.7rem; color: var(--color-text-muted); font-weight: 600;">📍 ${comp.otopark_name}</span>
+            </div>
+          `;
+        } else {
+          authorizedLocationsHtml = `<span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.775rem;">🏢 Kurumsal Firma</span>`;
+        }
+      } else {
+        const adm = adminsList.find(a => String(a.username).toLowerCase() === String(session.username).toLowerCase());
+        if (adm && adm.otoparks && adm.otoparks.length > 0) {
+          const otoparksJoined = adm.otoparks.join(', ');
+          authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: normal; word-break: break-word;" title="${otoparksJoined}">📍 ${otoparksJoined}</span>`;
+        } else {
+          authorizedLocationsHtml = `<span style="color: var(--color-text-muted); font-style: italic; font-size: 0.725rem;">Otopark Atanmamış</span>`;
+        }
+      }
+
       return `
         <tr style="border-bottom: 1px solid var(--color-border-light); ${isCurrent ? 'background: rgba(16, 185, 129, 0.03);' : ''}">
           <td style="padding: 1rem; text-align: center;">
@@ -12711,6 +12740,9 @@ async function fetchActiveSessions() {
           </td>
           <td style="padding: 1rem; color: var(--color-text-muted); font-weight: 500;">
             ${session.role === 'superadmin' ? 'Süper Admin' : 'Admin'}
+          </td>
+          <td style="padding: 1rem;">
+            ${authorizedLocationsHtml}
           </td>
           <td style="padding: 1rem; font-family: monospace; color: var(--color-text-dark);">
             ${session.ip_address || 'Bilinmiyor'}<br>
@@ -12742,7 +12774,7 @@ async function fetchActiveSessions() {
     console.error("Failed to load active sessions:", err);
     tableBody.innerHTML = `
       <tr>
-        <td colspan="7" style="padding: 2rem; text-align: center; color: #ef4444; font-weight: 700;">
+        <td colspan="8" style="padding: 2rem; text-align: center; color: #ef4444; font-weight: 700;">
           Oturumlar yüklenirken hata oluştu: ${err.message}
         </td>
       </tr>
