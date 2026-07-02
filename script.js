@@ -8692,12 +8692,15 @@ function renderAdminsTable() {
           </div>
         </div>
       </div>
-      <div class="admin-card__footer">
+      <div class="admin-card__footer" style="gap: 0.35rem; display: flex;">
+        <button class="admin-card__action-btn" onclick="sendAdminPassword('${admin.id}')" style="background: rgba(79, 70, 229, 0.05); color: #4f46e5; border-color: rgba(79, 70, 229, 0.15); font-size: 0.725rem; font-weight: 700;" title="Yeni şifre üret ve gönder">
+          <i data-lucide="key-round" style="width: 11px; height: 11px;"></i> Şifre Gönder
+        </button>
         <button class="admin-card__action-btn admin-card__action-btn--edit" onclick="editAdmin('${admin.id}')">
-          <i data-lucide="edit-2" style="width: 12px; height: 12px;"></i> Düzenle
+          <i data-lucide="edit-2" style="width: 11px; height: 11px;"></i> Düzenle
         </button>
         <button class="admin-card__action-btn admin-card__action-btn--delete" onclick="deleteAdmin('${admin.id}')">
-          <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Sil
+          <i data-lucide="trash-2" style="width: 11px; height: 11px;"></i> Sil
         </button>
       </div>
     `;
@@ -9140,11 +9143,11 @@ function openCreateAdminModal() {
 
   const passInput = document.getElementById('edit-admin-password');
   if (passInput) {
-    passInput.required = true;
+    passInput.required = false;
     passInput.value = '';
   }
   const passStar = document.getElementById('admin-password-required-star');
-  if (passStar) passStar.style.display = 'inline';
+  if (passStar) passStar.style.display = 'none';
 
   const phoneInput = document.getElementById('edit-admin-phone');
   const emailInput = document.getElementById('edit-admin-email');
@@ -9154,6 +9157,197 @@ function openCreateAdminModal() {
   populateAdminOtoparksCheckboxes([]);
   openModal('modal-admin-edit');
 }
+
+}
+
+let currentSimulatedAdmin = null;
+
+function generateRandomPassword() {
+  const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowers = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const specials = "@!#$%^&*";
+  const all = uppers + lowers + digits + specials;
+  
+  let pass = "";
+  pass += uppers[Math.floor(Math.random() * uppers.length)];
+  pass += lowers[Math.floor(Math.random() * lowers.length)];
+  pass += digits[Math.floor(Math.random() * digits.length)];
+  pass += specials[Math.floor(Math.random() * specials.length)];
+  
+  for (let i = 0; i < 6; i++) {
+    pass += all[Math.floor(Math.random() * all.length)];
+  }
+  
+  return pass.split('').sort(() => 0.5 - Math.random()).join('');
+}
+
+function showAdminCredentialsModal(admin, password) {
+  currentSimulatedAdmin = { ...admin, password };
+  
+  const nameEl = document.getElementById('cred-name');
+  const userEl = document.getElementById('cred-username');
+  const passEl = document.getElementById('cred-password');
+  const phoneEl = document.getElementById('cred-phone');
+  const emailEl = document.getElementById('cred-email');
+
+  if (nameEl) nameEl.textContent = admin.name;
+  if (userEl) userEl.textContent = admin.username;
+  if (passEl) passEl.textContent = password;
+  if (phoneEl) phoneEl.textContent = admin.phone || '-';
+  if (emailEl) emailEl.textContent = admin.email || '-';
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  openModal('modal-admin-credentials');
+}
+
+function copyCredPassword() {
+  if (!currentSimulatedAdmin || !currentSimulatedAdmin.password) return;
+  navigator.clipboard.writeText(currentSimulatedAdmin.password).then(() => {
+    showToast("Kopyalandı", "Şifre panoya kopyalandı.", "check");
+  });
+}
+
+function openSimulatedAdminWhatsApp() {
+  if (!currentSimulatedAdmin) return;
+
+  const bubble = document.getElementById('whatsapp-bubble-container');
+  if (!bubble) return;
+
+  const timeStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  
+  bubble.innerHTML = `
+    <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left; font-weight: 700;">
+      Merhaba Sayın ${currentSimulatedAdmin.name}, 🔑
+    </p>
+    <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+      ParkExpert sisteminde yöneticilik/operatörlük yetkilendirmeniz başarıyla tamamlanmıştır. Giriş bilgileriniz aşağıda yer almaktadır:
+    </p>
+
+    <div style="background: rgba(7, 94, 84, 0.05); border-left: 3px solid #075e54; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.25rem 0; font-size: 0.775rem; display: flex; flex-direction: column; gap: 0.25rem; text-align: left; font-family: monospace;">
+      <div><strong>🌐 Giriş Adresi:</strong> <span>parkexpertabonelik.net/admin</span></div>
+      <div><strong>👤 Kullanıcı Adı:</strong> <span style="font-weight: 700;">${currentSimulatedAdmin.username}</span></div>
+      <div><strong>🔑 Giriş Şifresi:</strong> <span style="font-weight: 700; color: #075e54;">${currentSimulatedAdmin.password}</span></div>
+      <div><strong>🛡️ Yetki Rolü:</strong> <span>${currentSimulatedAdmin.role === 'yonetim' ? 'Lokasyon Yönetimi' : 'ParkExpert Operatörü'}</span></div>
+    </div>
+
+    <p style="font-size: 0.825rem; line-height: 1.5; color: #1e1e1e; margin: 0; text-align: left;">
+      Sisteme ilk girişinizde güvenlik gereği şifrenizi güncellemeniz önerilir. Lütfen giriş bilgilerinizi kimseyle paylaşmayınız.
+    </p>
+
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.2rem; font-size: 0.65rem; color: #949494; margin-top: 0.15rem; width: 100%;">
+      <span>${timeStr}</span>
+      <span style="color: #4fc3f7; font-weight: 700; display: inline-flex; align-items: center;">✓✓</span>
+    </div>
+  `;
+
+  openModal('modal-whatsapp-simulation');
+}
+
+function openSimulatedAdminEmail() {
+  if (!currentSimulatedAdmin) return;
+
+  const toName = document.getElementById('email-sim-to-name');
+  const toAddr = document.getElementById('email-sim-to-addr');
+  const subjectEl = document.getElementById('email-sim-subject-code');
+  const body = document.getElementById('email-template-body');
+
+  if (toName) toName.textContent = currentSimulatedAdmin.name;
+  if (toAddr) toAddr.textContent = `<${currentSimulatedAdmin.email}>`;
+  if (subjectEl) subjectEl.textContent = `PARKEXPERT Yönetici Yetkilendirmesi (Giriş: ${currentSimulatedAdmin.username})`;
+
+  if (body) {
+    body.innerHTML = `
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="color: #0f3ba2; font-weight: 900; margin: 0; font-family: sans-serif;">PARKEXPERT</h2>
+        <div style="width: 40px; height: 3px; background: #fbbf24; margin: 0.5rem auto 0 auto; border-radius: 9999px;"></div>
+      </div>
+
+      <h2 style="font-size: 1.15rem; color: #1e3a8a; font-weight: 700; margin-bottom: 1rem; text-align: left;">Sayın ${currentSimulatedAdmin.name},</h2>
+      
+      <p style="font-size: 0.85rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem;">
+        ParkExpert sisteminde yöneticilik/operatörlük yetkilendirmeniz başarıyla tanımlanmıştır. Sisteme erişim sağlamak için gerekli giriş bilgileriniz aşağıda sunulmuştur:
+      </p>
+
+      <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #0f3ba2;">
+        <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 0 0 0.75rem 0; font-weight: 700;">Giriş Bilgileriniz</h4>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; font-family: monospace;">
+          <div><strong>Giriş Adresi:</strong> parkexpertabonelik.net/admin</div>
+          <div><strong>Kullanıcı Adı:</strong> ${currentSimulatedAdmin.username}</div>
+          <div><strong>Giriş Şifresi:</strong> ${currentSimulatedAdmin.password}</div>
+          <div><strong>Yetki Rolü:</strong> ${currentSimulatedAdmin.role === 'yonetim' ? 'Lokasyon Yönetimi' : 'ParkExpert Operatörü'}</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.85rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem;">
+        Güvenliğiniz için sisteme ilk giriş yaptığınızda şifrenizi "Sistem Ayarları" panelinden değiştirmeniz rica olunur. Herhangi bir sorunuz olması halinde sistem yöneticinizle irtibata geçebilirsiniz.
+      </p>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 1.25rem; text-align: center; font-size: 0.75rem; color: #64748b;">
+        Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.<br>
+        © 2026 ParkExpert. Tüm Hakları Saklıdır.
+      </div>
+    `;
+  }
+
+  openModal('modal-email-simulation');
+}
+
+async function sendAdminPassword(adminId) {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) {
+    alert("Yetkisiz işlem! Lütfen giriş yapın.");
+    return;
+  }
+
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const admin = admins.find(a => String(a.id) === String(adminId));
+  if (!admin) return;
+
+  if (confirm(`${admin.name} adlı yöneticiye yeni bir giriş şifresi üretilip gönderilsin mi?`)) {
+    const newPassword = generateRandomPassword();
+    
+    const payload = {
+      id: admin.id,
+      name: admin.name,
+      username: admin.username,
+      otoparks: admin.otoparks || [],
+      phone: admin.phone || null,
+      email: admin.email || null,
+      role: admin.role || 'admin',
+      password: newPassword
+    };
+
+    try {
+      const res = await fetch('/api/admins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Şifre gönderilirken hata oluştu.");
+      }
+
+      showToast("Şifre Üretildi", "Yeni giriş şifresi oluşturuldu ve gönderildi.", "check");
+      showAdminCredentialsModal(admin, newPassword);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+}
+
+window.generateRandomPassword = generateRandomPassword;
+window.showAdminCredentialsModal = showAdminCredentialsModal;
+window.copyCredPassword = copyCredPassword;
+window.openSimulatedAdminWhatsApp = openSimulatedAdminWhatsApp;
+window.openSimulatedAdminEmail = openSimulatedAdminEmail;
+window.sendAdminPassword = sendAdminPassword;
 
 function editAdmin(adminId) {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
@@ -9223,17 +9417,19 @@ async function saveAdminConfig(event) {
     }
   }
 
-  if (!id && !password) {
-    alert("Yeni yöneticiler için şifre zorunludur.");
-    return;
+  let finalPassword = password;
+  let isNewAdmin = !id;
+
+  if (isNewAdmin && !password) {
+    finalPassword = generateRandomPassword();
   }
 
-  if (password) {
-    const hasLength = password.length >= 8;
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasDigit = /[0-9]/.test(password);
-    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  if (finalPassword) {
+    const hasLength = finalPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(finalPassword);
+    const hasLower = /[a-z]/.test(finalPassword);
+    const hasDigit = /[0-9]/.test(finalPassword);
+    const hasSpecial = /[^A-Za-z0-9]/.test(finalPassword);
 
     if (!hasLength || !hasUpper || !hasLower || !hasDigit || !hasSpecial) {
       alert("Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir.");
@@ -9269,8 +9465,8 @@ async function saveAdminConfig(event) {
     photo_base64: photoBase64
   };
 
-  if (password) {
-    payload.password = password;
+  if (finalPassword) {
+    payload.password = finalPassword;
   }
 
   try {
@@ -9292,6 +9488,10 @@ async function saveAdminConfig(event) {
     await populateActiveUserSelect();
     renderAdminsTable();
     showToast("Başarılı", "Yönetici yetkilendirmesi başarıyla kaydedildi.", "check");
+
+    if (isNewAdmin) {
+      showAdminCredentialsModal({ name, username, phone, email, role }, finalPassword);
+    }
   } catch (err) {
     console.error(err);
     alert(err.message);
