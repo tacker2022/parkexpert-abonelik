@@ -12938,7 +12938,7 @@ async function fetchActiveSessions() {
       let avatarHtml = '';
       if (avatarUrl) {
         avatarHtml = `
-          <div style="position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8);" onclick="zoomSessionAvatar('${avatarUrl}', '${displayName.replace(/'/g, "\\")}')">
+          <div style="position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8);" onclick="zoomSessionAvatar('${avatarUrl}', '${displayName.replace(/'/g, "\\'")}')">
             <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
             <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700; font-size: 0.75rem; border-radius: 50%; text-transform: uppercase;">
               ${displayName.substring(0, 1).toUpperCase()}
