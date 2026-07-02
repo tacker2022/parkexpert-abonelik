@@ -12699,7 +12699,9 @@ async function fetchActiveSessions() {
       // Resolve avatar photo if exists
       let avatarUrl = '';
       let userId = null;
-      if (session.role === 'company') {
+      if (session.role === 'superadmin' || session.username === 'superadmin') {
+        userId = 'superadmin';
+      } else if (session.role === 'company') {
         const comp = companiesList.find(c => String(c.username).toLowerCase() === String(session.username).toLowerCase());
         if (comp) userId = comp.id;
       } else {
