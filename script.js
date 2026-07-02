@@ -6957,6 +6957,11 @@ function editApplicationPlate(appId) {
   appIdInput.value = appId;
   typeInput.value = 'plate';
 
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = `Kaydet`;
+  }
+
   contentEl.innerHTML = `
     <div class="filter-group" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.375rem;">
       <label for="edit-plate-input" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Yeni Araç Plakası</label>
@@ -6994,6 +6999,11 @@ function editSubscriptionExpiry(appId) {
   if (titleEl) titleEl.textContent = "Abonelik Bitiş Tarihini Düzenle";
   appIdInput.value = appId;
   typeInput.value = 'expiry';
+
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = `Kaydet`;
+  }
 
   let formattedDate = '';
   if (app.subscription_expires_at) {
@@ -7060,6 +7070,11 @@ async function changeApplicationCompany(appId) {
     });
     optionsHtml += `<option value="__NEW__">[ + Yeni Firma Oluştur ve Aktar ]</option>`;
 
+    const submitBtn = modal.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.innerHTML = `<i data-lucide="arrow-left-right" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i> Aktarımı Tamamla`;
+    }
+
     contentEl.innerHTML = `
       <div class="filter-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.375rem;">
         <label for="edit-company-select" style="font-weight: 700; color: var(--color-primary-dark); font-size: 0.85rem;">Mevcut Firmaya Aktar</label>
@@ -7073,6 +7088,37 @@ async function changeApplicationCompany(appId) {
         <input type="text" id="edit-company-new-input" style="width: 100%; min-height: 42px; padding: 0.5rem 0.875rem; border: 1.5px solid var(--color-border-light); border-radius: var(--radius-sm); font-weight: 700; color: var(--color-text-dark); box-sizing: border-box;">
         <p style="font-size: 0.725rem; color: var(--color-text-muted); margin-top: 0.25rem; margin-bottom: 0;">Yeni oluşturulacak firma otomatik büyük harfle kaydedilir.</p>
       </div>
+
+      <!-- Live Transfer Preview Card -->
+      <div id="transfer-preview-card" style="margin-top: 1.5rem; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1px solid var(--color-border-light); border-radius: 12px; padding: 1rem 1.25rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.6rem; box-sizing: border-box; text-align: left;">
+        <div style="font-size: 0.675rem; font-weight: 800; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.35rem;">
+          <i data-lucide="arrow-left-right" style="width: 14px; height: 14px;"></i> Aktarım Önizleme
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.25rem;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Mevcut Durum</div>
+            <div style="font-size: 0.825rem; font-weight: 800; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" id="transfer-from-name">
+              ${app.company_name || 'SERBEST ÇALIŞAN (Şirketsiz)'}
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(15, 59, 162, 0.06); color: var(--color-primary); flex-shrink: 0;">
+            <i data-lucide="chevrons-right" style="width: 18px; height: 18px;"></i>
+          </div>
+          
+          <div style="flex: 1; min-width: 0; text-align: right;">
+            <div style="font-size: 0.65rem; color: var(--color-primary); font-weight: 700; text-transform: uppercase;">Hedef Firma</div>
+            <div style="font-size: 0.825rem; font-weight: 850; color: var(--color-primary-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" id="transfer-to-name">
+              -
+            </div>
+          </div>
+        </div>
+        
+        <div style="font-size: 0.75rem; color: #475569; font-weight: 500; border-top: 1px dashed var(--color-border-light); padding-top: 0.6rem; margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem; line-height: 1.35;">
+          <i data-lucide="info" style="width: 14px; height: 14px; color: var(--color-primary); flex-shrink: 0;"></i>
+          <span id="transfer-preview-hint" style="flex: 1;">Aboneliği belirtilen firmaya aktarmaktasınız.</span>
+        </div>
+      </div>
     `;
 
     const editCompanyNewInput = document.getElementById('edit-company-new-input');
@@ -7082,8 +7128,14 @@ async function changeApplicationCompany(appId) {
         const end = e.target.selectionEnd;
         e.target.value = e.target.value.toLocaleUpperCase('tr-TR');
         e.target.setSelectionRange(start, end);
+        
+        // Trigger live preview refresh
+        updateTransferPreview();
       });
     }
+
+    // Initialize preview card on load
+    updateTransferPreview();
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
@@ -7108,6 +7160,11 @@ function changeApplicationLocation(appId) {
   if (titleEl) titleEl.textContent = "Otopark Konumunu Düzenle";
   appIdInput.value = appId;
   typeInput.value = 'location';
+
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = `Kaydet`;
+  }
 
   const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
   
@@ -7148,6 +7205,42 @@ function toggleNewCompanyField() {
       inputNew.value = '';
     }
   }
+  updateTransferPreview();
+}
+
+function updateTransferPreview() {
+  const select = document.getElementById('edit-company-select');
+  const input = document.getElementById('edit-company-new-input');
+  const toNameEl = document.getElementById('transfer-to-name');
+  const hintEl = document.getElementById('transfer-preview-hint');
+  
+  if (!select || !toNameEl) return;
+  
+  let targetName = '';
+  let hintText = '';
+  
+  if (select.value === '__NEW__') {
+    targetName = input ? input.value.trim().toLocaleUpperCase('tr-TR') : '';
+    if (!targetName) {
+      targetName = 'YENİ FİRMA YAZIN...';
+      hintText = 'Lütfen oluşturmak istediğiniz yeni firmanın adını yazın.';
+    } else {
+      hintText = `Aboneliği yeni oluşturulacak <strong style="color: var(--color-primary-dark); font-weight: 800;">${targetName}</strong> firmasına aktarmaktasınız.`;
+    }
+  } else {
+    targetName = select.value;
+    if (targetName === 'SERBEST ÇALIŞAN') {
+      targetName = 'SERBEST ÇALIŞAN (Şirketsiz)';
+      hintText = 'Aboneyi herhangi bir firmaya bağlı olmayan serbest çalışan durumuna aktarmaktasınız.';
+    } else {
+      hintText = `Aboneliği mevcut <strong style="color: var(--color-primary-dark); font-weight: 800;">${targetName}</strong> firmasına aktarmaktasınız.`;
+    }
+  }
+  
+  toNameEl.textContent = targetName;
+  if (hintEl) hintEl.innerHTML = hintText;
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function saveQuickEdit(event) {
