@@ -4138,15 +4138,18 @@ textarea.is-invalid {
   color: #0c1a30;
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.3rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 20px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   box-shadow: 0 4px 10px rgba(255, 208, 0, 0.2);
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.3rem;
+  line-height: 1;
+  margin-top: 3px; /* Pull it slightly down to visually align with text line */
   animation: badgeGlowPulse 1.8s infinite alternate ease-in-out;
 }
 
