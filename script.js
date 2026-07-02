@@ -8348,7 +8348,7 @@ function renderAdminsTable() {
         <div class="avatar-container">
           <div class="avatar-ring ${isOnline ? 'online' : ''}">
             <div class="user-avatar" style="width: 38px; height: 38px; position: relative; overflow: hidden; background: var(--color-gradient-accent); border: none; flex-shrink: 0; margin: 0;">
-              <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover;">
+              <img src="/api/document?path=avatars/${admin.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; cursor: zoom-in;" onclick="zoomSessionAvatar('/api/document?path=avatars/${admin.id}.jpg', '${admin.name.replace(/'/g, "\\'")}')">
               <span style="display: flex; width:100%; height:100%; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">${initials}</span>
             </div>
           </div>
