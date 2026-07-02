@@ -12718,9 +12718,9 @@ async function fetchActiveSessions() {
             authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block;" title="${escapeSingleQuote}">📍 ${adm.otoparks[0]}</span>`;
           } else {
             const otoparksJoined = adm.otoparks.map(o => o.replace(/'/g, "\\'")).join(', ');
-            const otoparksAlert = adm.otoparks.map(o => `• ${o.replace(/'/g, "\\'")}`).join('\\n');
+            const otoparksDelimited = adm.otoparks.map(o => o.replace(/'/g, "\\'")).join('|||');
             authorizedLocationsHtml = `
-              <span title="${otoparksJoined}" onclick="alert('${adm.name} için Yetkili Otopark Listesi:\\n\\n${otoparksAlert}')" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+              <span title="${otoparksJoined}" onclick="openAuthorizedOtoparksModal('${adm.name.replace(/'/g, "\\'")}', '${otoparksDelimited}')" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                 📍 ${adm.otoparks.length} Konum Yetkisi ℹ️
               </span>
             `;
@@ -14919,6 +14919,40 @@ function generateUsernameFromRepName(repName) {
 
 window.handleUsernameSuggestionMgmt = handleUsernameSuggestionMgmt;
 window.handleUsernameSuggestionOtopark = handleUsernameSuggestionOtopark;
+
+function openAuthorizedOtoparksModal(adminName, otoparksEscapedJoined) {
+  const otoparks = otoparksEscapedJoined.split('|||').map(o => o.trim()).filter(Boolean);
+  
+  const avatarEl = document.getElementById('auth-otoparks-user-avatar');
+  const nameEl = document.getElementById('auth-otoparks-user-name');
+  const countEl = document.getElementById('auth-otoparks-count');
+  const listEl = document.getElementById('auth-otoparks-list');
+  
+  if (nameEl) nameEl.textContent = adminName;
+  if (avatarEl) {
+    avatarEl.textContent = adminName ? adminName.substring(0, 1).toUpperCase() : '👤';
+  }
+  if (countEl) countEl.textContent = otoparks.length;
+  
+  if (listEl) {
+    listEl.innerHTML = otoparks.map((name, index) => `
+      <div style="background: #ffffff; border: 1px solid var(--color-border-light); border-radius: 10px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.01); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex: 1;">
+          <div style="background: rgba(37, 99, 235, 0.06); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #2563eb;">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+          </div>
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${name}">${name}</span>
+        </div>
+        <span style="background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); font-size: 0.625rem; font-weight: 800; padding: 0.15rem 0.4rem; border-radius: 4px; text-transform: uppercase; margin-left: 0.5rem;">Aktif</span>
+      </div>
+    `).join('');
+  }
+  
+  openModal('modal-authorized-otoparks');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window.openAuthorizedOtoparksModal = openAuthorizedOtoparksModal;
 
 
 
