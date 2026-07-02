@@ -7389,7 +7389,7 @@ async function populateActiveUserSelect() {
         const admins = await res.json();
         localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(admins));
 
-        select.innerHTML = '<option value="superadmin">Süper Yönetici</option>';
+        select.innerHTML = '<option value="superadmin">Talha Çalargün</option>';
         admins.forEach(admin => {
           const opt = document.createElement('option');
           opt.value = admin.id;
