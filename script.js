@@ -4123,6 +4123,23 @@ function updateMetrics(apps) {
     if (subRejected) subRejected.textContent = 'Reddedilmiş işlemler';
   }
 
+  // Update Super Admin welcome banner stats if active
+  const superadminBanner = document.getElementById('superadmin-welcome-banner');
+  if (superadminBanner && superadminBanner.style.display !== 'none') {
+    const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+    const pendingCount = apps.filter(a => a.status === 'review' || a.status === 'pending' || a.status === 'Yeni' || a.status === 'Beklemede').length;
+    
+    const welcomeSubtitle = document.getElementById('superadmin-welcome-subtitle');
+    if (welcomeSubtitle) {
+      welcomeSubtitle.textContent = `Sistem genelinde ${otoparks.length} aktif otoparkı, ${apps.length} toplam abonelik başvurusunu ve servis entegrasyonlarını kontrol ediyorsunuz.`;
+    }
+
+    const statOtoparks = document.getElementById('superadmin-stat-otoparks');
+    const statPending = document.getElementById('superadmin-stat-pending');
+    if (statOtoparks) statOtoparks.textContent = otoparks.length;
+    if (statPending) statPending.textContent = pendingCount;
+  }
+
   if (typeof updateOperatorDashboardStats === 'function') {
     updateOperatorDashboardStats();
   }
@@ -7868,6 +7885,50 @@ async function populateActiveUserSelect() {
   select.value = currentAdminUser;
 }
 
+function toggleBannerThemeMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('banner-theme-dropdown');
+  if (menu) {
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  }
+}
+
+function changeBannerTheme(themeName) {
+  const banner = document.getElementById('superadmin-welcome-banner');
+  if (!banner) return;
+  
+  banner.classList.remove('superadmin-banner-gold', 'superadmin-banner-cyberpunk', 'superadmin-banner-glass');
+  banner.classList.add(`superadmin-banner-${themeName}`);
+  
+  localStorage.setItem('superadmin_banner_theme', themeName);
+  
+  const menu = document.getElementById('banner-theme-dropdown');
+  if (menu) menu.style.display = 'none';
+
+  const badge = document.getElementById('superadmin-welcome-badge');
+  const statusBadge = document.getElementById('superadmin-status-badge');
+  
+  if (themeName === 'cyberpunk') {
+    if (badge) badge.textContent = '🛡️ ROOT DIRECTORY';
+    if (statusBadge) statusBadge.innerHTML = '<span style="width: 4px; height: 4px; background: #10b981; border-radius: 50%;"></span> ONLINE';
+  } else if (themeName === 'glass') {
+    if (badge) badge.textContent = '⚙️ SYSTEM CONTROLLER';
+    if (statusBadge) statusBadge.innerHTML = '<span style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%;"></span> ACTIVE';
+  } else {
+    if (badge) badge.textContent = '👑 SÜPER ADMİN / SİSTEM YÖNETİCİSİ';
+    if (statusBadge) statusBadge.innerHTML = '<span style="width: 4px; height: 4px; background: #ffd000; border-radius: 50%;"></span> ROOT';
+  }
+}
+
+// Close theme selector menu on clicking outside
+document.addEventListener('click', () => {
+  const menu = document.getElementById('banner-theme-dropdown');
+  if (menu) menu.style.display = 'none';
+});
+
+window.toggleBannerThemeMenu = toggleBannerThemeMenu;
+window.changeBannerTheme = changeBannerTheme;
+
 function handleUserRoleChange() {
   const select = document.getElementById('active-user-role');
   if (!select) return;
@@ -7875,6 +7936,9 @@ function handleUserRoleChange() {
   const val = select.value;
   currentAdminUser = val;
   localStorage.setItem('parkexpert_current_admin', val);
+
+  const superadminBanner = document.getElementById('superadmin-welcome-banner');
+  if (superadminBanner) superadminBanner.style.display = 'none';
 
   const avatar = document.getElementById('current-user-avatar');
   const subtext = document.getElementById('active-user-subtext');
@@ -7940,9 +8004,54 @@ function handleUserRoleChange() {
     const operatorBanner = document.getElementById('operator-welcome-banner');
     if (operatorBanner) operatorBanner.style.display = 'none';
 
-    // Show standard header title
+    // Show Super Admin Welcome Banner
+    const superadminBanner = document.getElementById('superadmin-welcome-banner');
+    if (superadminBanner) {
+      superadminBanner.style.display = 'block';
+      
+      const theme = localStorage.getItem('superadmin_banner_theme') || 'gold';
+      changeBannerTheme(theme);
+
+      // Populate avatar image
+      const bannerAvatar = document.getElementById('superadmin-banner-avatar');
+      if (bannerAvatar) {
+        bannerAvatar.src = `/api/document?path=avatars/superadmin.jpg&_t=${Date.now()}`;
+      }
+
+      // Populate greetings
+      const hour = new Date().getHours();
+      let greeting = 'Hoş Geldiniz';
+      if (hour >= 5 && hour < 12) greeting = 'Günaydın';
+      else if (hour >= 12 && hour < 17) greeting = 'Tünaydın';
+      else if (hour >= 17 && hour < 22) greeting = 'İyi Akşamlar';
+      else greeting = 'İyi Geceler';
+
+      const welcomeTitle = document.getElementById('superadmin-welcome-title');
+      if (welcomeTitle) welcomeTitle.textContent = `${greeting}, Talha Çalargün`;
+
+      // Calculate statistics dynamically
+      const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+      const apps = allApplications || [];
+      const pendingCount = apps.filter(a => a.status === 'review' || a.status === 'pending').length;
+
+      const welcomeSubtitle = document.getElementById('superadmin-welcome-subtitle');
+      if (welcomeSubtitle) {
+        welcomeSubtitle.textContent = `Sistem genelinde ${otoparks.length} aktif otoparkı, ${apps.length} toplam abonelik başvurusunu ve servis entegrasyonlarını kontrol ediyorsunuz.`;
+      }
+
+      const statOtoparks = document.getElementById('superadmin-stat-otoparks');
+      const statPending = document.getElementById('superadmin-stat-pending');
+      if (statOtoparks) statOtoparks.textContent = otoparks.length;
+      if (statPending) statPending.textContent = pendingCount;
+
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons({ node: superadminBanner });
+      }
+    }
+
+    // Hide standard header title
     const headerTitle = document.querySelector('.admin-header-title');
-    if (headerTitle) headerTitle.style.display = 'block';
+    if (headerTitle) headerTitle.style.display = 'none';
 
     // Show test notification button
     const testNotificationBtn = document.getElementById('btn-test-notification');

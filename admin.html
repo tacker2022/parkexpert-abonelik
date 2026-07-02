@@ -358,6 +358,69 @@
           </div>
         </div>
 
+        <!-- Super Admin Welcome Banner -->
+        <div id="superadmin-welcome-banner" class="operator-welcome-card superadmin-banner-gold" style="display: none; position: relative; margin-bottom: 2rem;">
+          <!-- Theme Switcher Dropdown inside Banner -->
+          <div class="banner-theme-switcher">
+            <button onclick="toggleBannerThemeMenu(event)" class="btn-banner-theme" id="btn-superadmin-theme-switcher" title="Banner Temasını Değiştir">
+              <i data-lucide="palette" style="width: 15px; height: 15px;"></i>
+            </button>
+            <div id="banner-theme-dropdown" class="banner-theme-menu">
+              <button onclick="changeBannerTheme('gold')" class="theme-menu-item"><span class="theme-dot gold"></span> Sovereign Gold</button>
+              <button onclick="changeBannerTheme('cyberpunk')" class="theme-menu-item"><span class="theme-dot cyberpunk"></span> Cyberpunk Tech</button>
+              <button onclick="changeBannerTheme('glass')" class="theme-menu-item"><span class="theme-dot glass"></span> Glassmorphism</button>
+            </div>
+          </div>
+
+          <div class="operator-welcome-content" style="flex-wrap: wrap; gap: 1.5rem; width: 100%;">
+            <!-- Left Profile: Avatar -->
+            <div class="operator-profile-area" style="min-width: 90px; gap: 0.40rem;">
+              <div class="operator-avatar-wrapper" style="width: 68px; height: 68px; cursor: zoom-in;" onclick="handleYonetimAvatarZoom()" title="Profil fotoğrafını büyüt">
+                <img id="superadmin-banner-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" onerror="this.src='/api/document?path=avatars/default.jpg'">
+                <span class="operator-online-indicator"></span>
+              </div>
+              <span id="superadmin-status-badge" style="font-size: 0.65rem; font-weight: 800; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(255,255,255,0.06); padding: 0.15rem 0.5rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span style="width: 4px; height: 4px; background: #ffd000; border-radius: 50%;"></span> ROOT
+              </span>
+            </div>
+
+            <!-- Middle Panel: Greeting, Title, Subtitle -->
+            <div class="operator-greetings-area" style="flex: 1; min-width: 280px; text-align: left;">
+              <span id="superadmin-welcome-badge" class="operator-welcome-badge">👑 SÜPER ADMİN / SİSTEM YÖNETİCİSİ</span>
+              <h2 id="superadmin-welcome-title" style="margin: 0.25rem 0 0 0; font-size: 1.45rem; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">Hoş Geldiniz, Talha Çalargün</h2>
+              <p id="superadmin-welcome-subtitle" style="margin: 0.35rem 0 0 0; font-size: 0.85rem; opacity: 0.9; color: rgba(255,255,255,0.85); font-weight: 500; line-height: 1.4;">Sistem genelinde 0 aktif otoparkı, 0 toplam abonelik başvurusunu ve servis entegrasyonlarını kontrol ediyorsunuz.</p>
+              
+              <!-- Quick Action buttons inside Banner -->
+              <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="document.getElementById('btn-create-test-app')?.click()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #ffffff; padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.2s;">
+                  <i data-lucide="user-plus" style="width: 13px; height: 13px;"></i>
+                  <span>Test Başvurusu Ekle</span>
+                </button>
+                <button onclick="switchAdminTab('settings')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #ffffff; padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.2s;">
+                  <i data-lucide="settings" style="width: 13px; height: 13px;"></i>
+                  <span>Sistem Ayarları</span>
+                </button>
+                <button onclick="switchAdminTab('audit-logs')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #ffffff; padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.2s;">
+                  <i data-lucide="shield-alert" style="width: 13px; height: 13px;"></i>
+                  <span>Denetim Günlükleri</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Panel: Quick stats indicators -->
+            <div class="operator-metrics-area" style="gap: 0.85rem; align-items: center; flex-direction: row; margin-left: auto;">
+              <div class="operator-mini-metric">
+                <div class="metric-val" id="superadmin-stat-otoparks" style="font-size: 1.35rem; font-weight: 800; text-align: center;">0</div>
+                <div class="metric-lbl" style="font-size: 0.65rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Toplam Otopark</div>
+              </div>
+              <div class="operator-mini-metric pending">
+                <div class="metric-val" id="superadmin-stat-pending" style="font-size: 1.35rem; font-weight: 800; text-align: center;">0</div>
+                <div class="metric-lbl" style="font-size: 0.65rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Onay Bekleyen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Operator Welcome Banner -->
         <div id="operator-welcome-banner" class="operator-welcome-card" style="display: none;">
           <div class="operator-welcome-content">

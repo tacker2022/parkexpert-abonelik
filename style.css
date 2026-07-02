@@ -6168,6 +6168,190 @@ textarea.is-invalid {
   }
 }
 
+/* ==========================================================================
+   SUPER ADMIN WELCOME BANNER THEMES
+   ========================================================================== */
+
+/* 1. Sovereign Gold & Obsidian Theme */
+.superadmin-banner-gold {
+  background: linear-gradient(135deg, #090e1a 0%, #17243c 50%, #10192a 100%) !important;
+  border-top: 3px solid var(--color-accent-orange) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+.superadmin-banner-gold .operator-avatar-wrapper img {
+  border-color: var(--color-accent-orange) !important;
+  box-shadow: 0 0 15px rgba(255, 208, 0, 0.25) !important;
+}
+.superadmin-banner-gold .operator-welcome-badge {
+  background: rgba(255, 208, 0, 0.12) !important;
+  border: 1px solid rgba(255, 208, 0, 0.3) !important;
+  color: var(--color-accent-orange) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+}
+.superadmin-banner-gold .operator-mini-metric {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.superadmin-banner-gold .operator-mini-metric.pending {
+  background: rgba(255, 208, 0, 0.05) !important;
+  border-color: rgba(255, 208, 0, 0.15) !important;
+}
+.superadmin-banner-gold .operator-mini-metric.pending .metric-val {
+  color: var(--color-accent-orange) !important;
+}
+
+/* 2. Cyberpunk Tech Theme */
+.superadmin-banner-cyberpunk {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 70%, #1e1b4b 100%) !important;
+  border-top: 3px solid #3b82f6 !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+.superadmin-banner-cyberpunk .operator-avatar-wrapper img {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35) !important;
+}
+.superadmin-banner-cyberpunk .operator-online-indicator {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 10px #10b981 !important;
+}
+.superadmin-banner-cyberpunk .operator-welcome-badge {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #10b981 !important;
+  font-family: monospace !important;
+  letter-spacing: 2px !important;
+}
+.superadmin-banner-cyberpunk .operator-mini-metric {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+.superadmin-banner-cyberpunk .operator-mini-metric .metric-val {
+  color: #3b82f6 !important;
+}
+.superadmin-banner-cyberpunk .operator-mini-metric.pending {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.superadmin-banner-cyberpunk .operator-mini-metric.pending .metric-val {
+  color: #10b981 !important;
+}
+
+/* 3. Minimalist Glassmorphism Theme */
+.superadmin-banner-glass {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+}
+.superadmin-banner-glass .operator-avatar-wrapper img {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+}
+.superadmin-banner-glass .operator-welcome-badge {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+.superadmin-banner-glass .operator-mini-metric {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.superadmin-banner-glass .operator-mini-metric .metric-val {
+  color: #ffffff !important;
+}
+.superadmin-banner-glass .operator-mini-metric.pending .metric-val {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Theme Switcher Button and Dropdown */
+.banner-theme-switcher {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+}
+
+.btn-banner-theme {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  outline: none;
+}
+
+.btn-banner-theme:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.banner-theme-menu {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  padding: 0.4rem;
+  min-width: 170px;
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.theme-menu-item {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  transition: all var(--transition-fast) ease;
+}
+
+.theme-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.theme-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.theme-dot.gold {
+  background: var(--color-accent-orange);
+  box-shadow: 0 0 5px var(--color-accent-orange);
+}
+
+.theme-dot.cyberpunk {
+  background: #10b981;
+  box-shadow: 0 0 5px #10b981;
+}
+
+.theme-dot.glass {
+  background: #ffffff;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+
 
 
 
