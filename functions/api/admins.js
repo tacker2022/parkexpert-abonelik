@@ -1,6 +1,9 @@
 // Helper for safe base64 decoding (supports Unicode)
 import { logAudit } from "./audit_helper.js";
 import { sendTelegramAlert } from "./telegram_helper.js";
+import { sendSMS } from "./sms_helper.js";
+import { sendEmail } from "./email_helper.js";
+import { sendWhatsApp } from "./whatsapp_helper.js";
 
 function validatePassword(password) {
   if (!password || password.length < 8) return false;
@@ -310,6 +313,47 @@ export async function onRequest(context) {
 
         const data = await updateRes.json();
 
+        // Send notifications if password was changed
+        if (password) {
+          const passMsg = password;
+          const roleLabel = role === "yonetim" ? "Lokasyon / Otopark Yönetimi" : "ParkExpert Operatörü";
+          const messageText = `Merhaba ${name},\n\nParkExpert bünyesinde tanımlanmış olan yönetici/operatör panel giriş bilgileriniz güncellenmiştir.\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${username.toLowerCase()}\n🔑 Şifre: ${passMsg}\n🛡️ Yetki Rolü: ${roleLabel}\n\nBu bilgilerle giriş yaparak otopark abonelik işlemlerinizi yönetebilirsiniz.`;
+
+          const notifications = [];
+          if (phone) {
+            const cleanPhone = phone.replace(/\D/g, "");
+            if (cleanPhone) {
+              notifications.push(
+                sendSMS(cleanPhone, messageText, context.env)
+                  .catch(e => console.error("Admin SMS send error:", e))
+              );
+              notifications.push(
+                sendWhatsApp(cleanPhone, messageText, context.env)
+                  .catch(e => console.error("Admin WhatsApp send error:", e))
+              );
+            }
+          }
+          if (email) {
+            notifications.push(
+              sendEmail({
+                to: email,
+                subject: `Yönetici Giriş Bilgileri - ParkExpert`,
+                html: messageText.replace(/\n/g, "<br>"),
+                env: context.env
+              })
+                .catch(e => console.error("Admin Email send error:", e))
+            );
+          }
+
+          if (notifications.length > 0) {
+            if (context.waitUntil) {
+              context.waitUntil(Promise.all(notifications));
+            } else {
+              await Promise.all(notifications);
+            }
+          }
+        }
+
         // Log audit action
         const changes = [];
         if (oldAdmin.name !== name) {
@@ -424,6 +468,45 @@ export async function onRequest(context) {
         }
 
         const data = await createRes.json();
+
+        // Send notifications to the new administrator
+        const passMsg = password;
+        const roleLabel = role === "yonetim" ? "Lokasyon / Otopark Yönetimi" : "ParkExpert Operatörü";
+        const messageText = `Merhaba ${name},\n\nParkExpert bünyesinde tanımlanmış olan yönetici/operatör panel giriş bilgileriniz aşağıda yer almaktadır:\n\n🌐 Giriş Adresi: https://parkexpertabonelik.net/admin\n👤 Kullanıcı Adı: ${username.toLowerCase()}\n🔑 Şifre: ${passMsg}\n🛡️ Yetki Rolü: ${roleLabel}\n\nBu bilgilerle giriş yaparak otopark abonelik işlemlerinizi yönetebilirsiniz.`;
+
+        const notifications = [];
+        if (phone) {
+          const cleanPhone = phone.replace(/\D/g, "");
+          if (cleanPhone) {
+            notifications.push(
+              sendSMS(cleanPhone, messageText, context.env)
+                .catch(e => console.error("Admin SMS send error:", e))
+            );
+            notifications.push(
+              sendWhatsApp(cleanPhone, messageText, context.env)
+                .catch(e => console.error("Admin WhatsApp send error:", e))
+            );
+          }
+        }
+        if (email) {
+          notifications.push(
+            sendEmail({
+              to: email,
+              subject: `Yönetici Giriş Bilgileri - ParkExpert`,
+              html: messageText.replace(/\n/g, "<br>"),
+              env: context.env
+            })
+              .catch(e => console.error("Admin Email send error:", e))
+          );
+        }
+
+        if (notifications.length > 0) {
+          if (context.waitUntil) {
+            context.waitUntil(Promise.all(notifications));
+          } else {
+            await Promise.all(notifications);
+          }
+        }
 
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
