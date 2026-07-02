@@ -7291,6 +7291,29 @@ async function saveQuickEdit(event) {
   }
 
   try {
+    // If it's a new company, create it in the database first
+    const selectEl = document.getElementById('edit-company-select');
+    if (type === 'company' && selectEl && selectEl.value === '__NEW__' && targetCompany) {
+      const otoparkName = allApplications[appIndex].parking_location;
+      if (otoparkName) {
+        const compRes = await fetch("/api/companies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            otopark_name: otoparkName,
+            companies: [targetCompany]
+          })
+        });
+        if (!compRes.ok) {
+          const compErr = await compRes.json();
+          throw new Error(compErr.error || "Yeni firma resmi olarak kaydedilirken hata oluştu.");
+        }
+      }
+    }
+
     const res = await fetch("/api/applications", {
       method: "PATCH",
       headers: {
@@ -15301,6 +15324,54 @@ async function removeCurrentAvatarPhoto() {
 window.handleAvatarClick = handleAvatarClick;
 window.triggerUploadFromOptions = triggerUploadFromOptions;
 window.removeCurrentAvatarPhoto = removeCurrentAvatarPhoto;
+
+async function runCompanyMigration() {
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+
+  if (!confirm("Eski abonelik kayıtlarında olup B2B listesinde bulunmayan tüm firmaları otomatik göç ettirmek istediğinize emin misiniz?")) return;
+
+  const btn = document.getElementById('tab-btn-migrate-companies');
+  let originalHtml = '';
+  if (btn) {
+    originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="ocr-spinner" style="display:inline-block; width:12px; height:12px; vertical-align:middle; margin-right:0.25rem;"></span> Aktarılıyor...`;
+  }
+
+  try {
+    const res = await fetch('/api/migrate_companies', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Göç işlemi sırasında hata oluştu.");
+    }
+
+    const data = await res.json();
+    alert(data.message || `Eski aboneliklerden ${data.migrated?.length || 0} adet firma başarıyla aktarıldı.`);
+    
+    // Refresh otopark companies lists
+    if (typeof loadOtoparkCompanies === 'function') {
+      loadOtoparkCompanies();
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml || `<i data-lucide="database-backup" style="width: 14px; height: 14px;"></i> <span>Eski Firmaları Aktar</span>`;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+}
+
+window.runCompanyMigration = runCompanyMigration;
 
 
 
