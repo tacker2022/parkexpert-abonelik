@@ -3881,6 +3881,9 @@ function updateMetrics(apps) {
   if (typeof updateOperatorDashboardStats === 'function') {
     updateOperatorDashboardStats();
   }
+  if (typeof updateYonetimDashboardStats === 'function') {
+    updateYonetimDashboardStats();
+  }
 }
 
 /* ==========================================================================
@@ -7828,16 +7831,26 @@ function handleUserRoleChange() {
           welcomeBadge.textContent = badgeText;
         }
 
+        const hour = new Date().getHours();
+        let greeting = 'Hoş Geldiniz';
+        if (hour >= 5 && hour < 12) greeting = 'Günaydın';
+        else if (hour >= 12 && hour < 17) greeting = 'Tünaydın';
+        else if (hour >= 17 && hour < 22) greeting = 'İyi Akşamlar';
+        else greeting = 'İyi Geceler';
+
+        const mgrName = adminObj ? (adminObj.name || 'Yönetici') : 'Yönetici';
+        const personalGreeting = `${greeting}, ${mgrName}`;
+
         if (adminObj && adminObj.otoparks && adminObj.otoparks.length > 1) {
           // Multi-location: show switcher
-          if (welcomeTitle) welcomeTitle.textContent = 'Hoş Geldiniz, Yönetim Paneli';
+          if (welcomeTitle) welcomeTitle.textContent = personalGreeting;
           if (welcomeSubtitle) welcomeSubtitle.textContent = 'Abonelik onay işlemlerini, durum güncellemelerini ve başvuruları bu ekran üzerinden kolayca yönetebilirsiniz.';
           renderYonetimLocationSelector(adminObj.otoparks);
         } else {
           // Single location: hide switcher
           if (locationSelectorContainer) locationSelectorContainer.style.display = 'none';
           const otoparkName = (adminObj && adminObj.otoparks && adminObj.otoparks[0]) ? adminObj.otoparks[0] : 'Site/AVM';
-          if (welcomeTitle) welcomeTitle.textContent = `Hoş Geldiniz, ${otoparkName} Yönetimi`;
+          if (welcomeTitle) welcomeTitle.textContent = personalGreeting;
           if (welcomeSubtitle) welcomeSubtitle.textContent = `${otoparkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
           
           // Force filter values to the single otopark
@@ -7877,6 +7890,10 @@ function handleUserRoleChange() {
       if (aTabs) aTabs.style.display = 'flex';
       const wStatus = document.querySelector('.sidebar-widget-status');
       if (wStatus) wStatus.style.display = 'block';
+
+      if (typeof updateYonetimDashboardStats === 'function') {
+        updateYonetimDashboardStats();
+      }
     } else if (userRole === 'company') {
       // B2B Company Portal Role
       if (document.getElementById('sidebar-tab-applications')) document.getElementById('sidebar-tab-applications').style.display = 'none';
@@ -8145,6 +8162,73 @@ window.initOperatorStatus = initOperatorStatus;
 window.updateOperatorDashboardStats = updateOperatorDashboardStats;
 window.triggerOperatorQuickReview = triggerOperatorQuickReview;
 
+function updateYonetimDashboardStats() {
+  if (!allApplications) return;
+
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (adminObj.role || 'admin');
+
+  if (!isYonetimRole(userRole)) return;
+
+  // 1. Update Avatar
+  const mgmtAvatarImgEl = document.getElementById('yonetim-banner-avatar');
+  if (mgmtAvatarImgEl && adminObj && adminObj.id) {
+    mgmtAvatarImgEl.src = `/api/document?path=avatars/${adminObj.id}.jpg&_t=${Date.now()}`;
+  }
+
+  // 2. Calculate Stats
+  const selectedLocation = document.getElementById('filter-location')?.value || '';
+  const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
+
+  const mgmtApps = allApplications.filter(app => {
+    // Check if the application belongs to this manager's otopark(s)
+    if (selectedLocation) {
+      if (app.parking_location !== selectedLocation) return false;
+    } else {
+      if (!adminObj.otoparks || !adminObj.otoparks.includes(app.parking_location)) return false;
+    }
+
+    // Also check if otopark requires management approval
+    const otoparkObj = otoparks.find(p => p.name === app.parking_location);
+    const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
+    return requiresManagement;
+  });
+
+  const totalMgmtApps = mgmtApps.length;
+  const pendingMgmtApps = mgmtApps.filter(app => app.status === 'Bekleyen' || app.status === 'Yeni' || app.status === 'Beklemede').length;
+
+  const statTotalEl = document.getElementById('yonetim-stat-total');
+  const statPendingEl = document.getElementById('yonetim-stat-pending');
+
+  if (statTotalEl) statTotalEl.textContent = totalMgmtApps;
+  if (statPendingEl) statPendingEl.textContent = pendingMgmtApps;
+}
+
+function handleYonetimAvatarZoom() {
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  
+  if (adminObj && adminObj.id) {
+    const avatarUrl = `/api/document?path=avatars/${adminObj.id}.jpg`;
+    const name = adminObj.name || 'Yönetici';
+    if (typeof zoomSessionAvatar === 'function') {
+      zoomSessionAvatar(avatarUrl, name);
+    }
+  }
+}
+
+window.updateYonetimDashboardStats = updateYonetimDashboardStats;
+window.handleYonetimAvatarZoom = handleYonetimAvatarZoom;
+
 // Global click listener to close operator dropdown
 window.addEventListener('click', (e) => {
   const dropdown = document.getElementById('operator-status-dropdown');
@@ -8236,11 +8320,26 @@ function selectYonetimLocation(parkName, clickedPill) {
   const welcomeTitle = document.getElementById('yonetim-welcome-title');
   const welcomeSubtitle = document.getElementById('yonetim-welcome-subtitle');
   if (welcomeTitle && welcomeSubtitle) {
+    const hour = new Date().getHours();
+    let greeting = 'Hoş Geldiniz';
+    if (hour >= 5 && hour < 12) greeting = 'Günaydın';
+    else if (hour >= 12 && hour < 17) greeting = 'Tünaydın';
+    else if (hour >= 17 && hour < 22) greeting = 'İyi Akşamlar';
+    else greeting = 'İyi Geceler';
+
+    const activeRoleVal = document.getElementById('active-user-role')?.value || 'admin';
+    const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+    const userJson = localStorage.getItem('parkexpert_user');
+    const loggedInUser = userJson ? JSON.parse(userJson) : {};
+    const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+    const mgrName = adminObj ? (adminObj.name || 'Yönetici') : 'Yönetici';
+    const personalGreeting = `${greeting}, ${mgrName}`;
+
     if (parkName === '') {
-      welcomeTitle.textContent = 'Hoş Geldiniz, Yönetim Paneli';
+      welcomeTitle.textContent = personalGreeting;
       welcomeSubtitle.textContent = 'Abonelik onay işlemlerini, durum güncellemelerini ve başvuruları bu ekran üzerinden kolayca yönetebilirsiniz.';
     } else {
-      welcomeTitle.textContent = `Hoş Geldiniz, ${parkName} Yönetimi`;
+      welcomeTitle.textContent = personalGreeting;
       welcomeSubtitle.textContent = `${parkName} adına yapılan abonelik başvurularını anlık olarak inceleyin ve onay süreçlerini yönetin.`;
     }
   }
