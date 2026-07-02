@@ -314,6 +314,7 @@ export async function onRequest(context) {
 
       // Log audit action
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      const country = context.request.headers.get("CF-IPCountry") || "";
       context.waitUntil(
         logAudit({
           supabaseUrl,
@@ -323,7 +324,8 @@ export async function onRequest(context) {
           actionType: "update_settings",
           targetId: "notification_toggles",
           details,
-          ipAddress
+          ipAddress,
+          country
         })
       );
 
@@ -331,7 +333,7 @@ export async function onRequest(context) {
         sendTelegramAlert(
           `<b>⚙️ Sistem Ayarları Güncellendi</b>\n\n` +
           `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
-          `<b>IP Adresi:</b> ${ipAddress}\n` +
+          `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n` +
           `<b>Detay:</b> ${details}`,
           context.env
         )

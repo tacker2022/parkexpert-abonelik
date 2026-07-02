@@ -11810,7 +11810,8 @@ function filterAuditBySecurity(type) {
   const cards = {
     drift: document.getElementById('audit-security-card-drift'),
     critical: document.getElementById('audit-security-card-critical'),
-    night: document.getElementById('audit-security-card-night')
+    night: document.getElementById('audit-security-card-night'),
+    country: document.getElementById('audit-security-card-country')
   };
 
   // If clicked card is already active, reset filter
@@ -11863,6 +11864,15 @@ function filterAuditBySecurity(type) {
       const uname = (log.admin_username || '').trim();
       return hour >= 0 && hour < 5 && uname !== '-' && uname !== 'sistem';
     });
+  } else if (type === 'country') {
+    filtered = allAuditLogs.filter(log => {
+      const ipStr = log.ip_address || '';
+      const match = ipStr.match(/\(([A-Z]{2})\)/);
+      if (match) {
+        return match[1] !== 'TR';
+      }
+      return false;
+    });
   }
 
   renderAuditLogsTable(filtered);
@@ -11885,6 +11895,7 @@ function analyzeAuditSecurity(logs) {
   const driftAlerts = [];
   const criticalAlerts = [];
   const nightAlerts = [];
+  const countryAlerts = [];
 
   // 1. IP Drift Analysis
   const userIps = {};
@@ -11920,25 +11931,38 @@ function analyzeAuditSecurity(logs) {
     }
   });
 
+  // 4. Foreign Country Access Analysis
+  logs.forEach(log => {
+    const ipStr = log.ip_address || '';
+    const match = ipStr.match(/\(([A-Z]{2})\)/);
+    if (match && match[1] !== 'TR') {
+      countryAlerts.push(log);
+    }
+  });
+
   // DOM elements update
   const shield = document.getElementById('audit-security-status-shield');
   const badge = document.getElementById('audit-security-status-badge');
   const valDrift = document.getElementById('audit-security-val-drift');
   const valCritical = document.getElementById('audit-security-val-critical');
   const valNight = document.getElementById('audit-security-val-night');
+  const valCountry = document.getElementById('audit-security-val-country');
 
   const cardDrift = document.getElementById('audit-security-card-drift');
   const cardCritical = document.getElementById('audit-security-card-critical');
   const cardNight = document.getElementById('audit-security-card-night');
+  const cardCountry = document.getElementById('audit-security-card-country');
 
   const iconDrift = document.getElementById('audit-security-icon-drift');
   const iconCritical = document.getElementById('audit-security-icon-critical');
   const iconNight = document.getElementById('audit-security-icon-night');
+  const iconCountry = document.getElementById('audit-security-icon-country');
 
   // Reset to defaults
   if (valDrift) valDrift.textContent = 'Anomali Yok';
   if (valCritical) valCritical.textContent = 'Risk Yok';
   if (valNight) valNight.textContent = 'Eylem Yok';
+  if (valCountry) valCountry.textContent = 'Anomali Yok';
 
   if (cardDrift) {
     cardDrift.style.background = '#ffffff';
@@ -11968,6 +11992,16 @@ function analyzeAuditSecurity(logs) {
   if (iconNight) {
     iconNight.style.background = 'rgba(148, 163, 184, 0.06)';
     iconNight.style.color = '#64748b';
+  }
+
+  if (cardCountry) {
+    cardCountry.style.background = '#ffffff';
+    cardCountry.style.border = '1px solid var(--color-border-light)';
+    cardCountry.style.color = 'inherit';
+  }
+  if (iconCountry) {
+    iconCountry.style.background = 'rgba(148, 163, 184, 0.06)';
+    iconCountry.style.color = '#64748b';
   }
 
   let hasAnomaly = false;
@@ -12014,6 +12048,21 @@ function analyzeAuditSecurity(logs) {
     if (iconNight) {
       iconNight.style.background = 'rgba(245, 158, 11, 0.1)';
       iconNight.style.color = '#d97706';
+    }
+  }
+
+  // Apply Country Alerts styling
+  if (countryAlerts.length > 0) {
+    hasAnomaly = true;
+    if (valCountry) valCountry.textContent = `Dış Ülkeden ${countryAlerts.length} Giriş!`;
+    if (cardCountry) {
+      cardCountry.style.background = '#fef2f2';
+      cardCountry.style.border = '1.5px solid #fee2e2';
+      cardCountry.style.color = '#b91c1c';
+    }
+    if (iconCountry) {
+      iconCountry.style.background = 'rgba(239, 68, 68, 0.1)';
+      iconCountry.style.color = '#dc2626';
     }
   }
 

@@ -1,5 +1,6 @@
 // Helper for safe base64 decoding (supports Unicode)
 import { logAudit } from "./audit_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 function base64Decode(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);
@@ -396,6 +397,7 @@ export async function onRequest(context) {
 
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        const country = context.request.headers.get("CF-IPCountry") || "";
         context.waitUntil(
           logAudit({
             supabaseUrl,
@@ -406,8 +408,21 @@ export async function onRequest(context) {
             targetId: id,
             details: detailsText,
             ipAddress,
+            country,
             otoparkName: currentName || null
           })
+        );
+
+        // Send Telegram alert for otopark update
+        context.waitUntil(
+          sendTelegramAlert(
+            `<b>⚙️ Otopark Ayarları Güncellendi</b>\n\n` +
+            `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+            `<b>Otopark:</b> ${currentName}\n` +
+            `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n` +
+            `<b>Detaylar:</b>\n${changes.join("\n") || 'Değişiklik yapılmadı'}`,
+            context.env
+          )
         );
 
         return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
@@ -458,6 +473,7 @@ export async function onRequest(context) {
 
               // Log audit action
               const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+              const country = context.request.headers.get("CF-IPCountry") || "";
               context.waitUntil(
                 logAudit({
                   supabaseUrl,
@@ -468,8 +484,20 @@ export async function onRequest(context) {
                   targetId: generatedId,
                   details: `"${name}" adındaki arşivlenmiş otopark işletmesi tekrar etkinleştirildi.`,
                   ipAddress,
+                  country,
                   otoparkName: name || null
                 })
+              );
+
+              // Send Telegram alert for otopark reactivation
+              context.waitUntil(
+                sendTelegramAlert(
+                  `<b>♻️ Otopark Tekrar Etkinleştirildi</b>\n\n` +
+                  `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+                  `<b>Otopark:</b> ${name}\n` +
+                  `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})`,
+                  context.env
+                )
               );
 
               return new Response(JSON.stringify({ success: true, data }), { status: 200, headers });
@@ -504,6 +532,7 @@ export async function onRequest(context) {
 
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        const country = context.request.headers.get("CF-IPCountry") || "";
         context.waitUntil(
           logAudit({
             supabaseUrl,
@@ -514,8 +543,20 @@ export async function onRequest(context) {
             targetId: generatedId,
             details: `"${name}" adında yeni otopark işletmesi oluşturuldu.`,
             ipAddress,
+            country,
             otoparkName: name || null
           })
+        );
+
+        // Send Telegram alert for otopark creation
+        context.waitUntil(
+          sendTelegramAlert(
+            `<b>🏢 Yeni Otopark Oluşturuldu</b>\n\n` +
+            `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+            `<b>Yeni Otopark:</b> ${name} (${generatedId})\n` +
+            `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})`,
+            context.env
+          )
         );
 
         return new Response(JSON.stringify({ success: true, data }), { status: 201, headers });
@@ -555,6 +596,7 @@ export async function onRequest(context) {
 
       // Log audit action
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      const country = context.request.headers.get("CF-IPCountry") || "";
       context.waitUntil(
         logAudit({
           supabaseUrl,
@@ -565,8 +607,20 @@ export async function onRequest(context) {
           targetId: id,
           details: `"${otoparkName}" otopark işletmesi arşivlendi (silindi).`,
           ipAddress,
+          country,
           otoparkName: otoparkName || null
         })
+      );
+
+      // Send Telegram alert for otopark archiving
+      context.waitUntil(
+        sendTelegramAlert(
+          `<b>❌ Otopark Arşivlendi (Silindi)</b>\n\n` +
+          `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
+          `<b>Arşivlenen Otopark:</b> ${otoparkName} (${id})\n` +
+          `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})`,
+          context.env
+        )
       );
 
       return new Response(JSON.stringify({ success: true }), { status: 200, headers });

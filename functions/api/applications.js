@@ -2,6 +2,7 @@ import { sendWhatsApp } from "./whatsapp_helper.js";
 import { sendEmail } from "./email_helper.js";
 import { sendSMS } from "./sms_helper.js";
 import { logAudit } from "./audit_helper.js";
+import { sendTelegramAlert } from "./telegram_helper.js";
 
 // Helper for safe base64 decoding (supports Unicode)
 function base64Decode(base64) {
@@ -390,6 +391,7 @@ export async function onRequest(context) {
         }
         
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        const country = context.request.headers.get("CF-IPCountry") || "";
 
         context.waitUntil(
           logAudit({
@@ -401,10 +403,29 @@ export async function onRequest(context) {
             targetId: id,
             details: auditDetails,
             ipAddress,
+            country,
             otoparkName: oldApp.parking_location || null,
             companyName: oldApp.company_name || null
           })
         );
+
+        // Trigger Telegram alert for critical updates (location or company transfer)
+        const isLocationChange = parking_location !== undefined && oldApp.parking_location !== parking_location;
+        const isCompanyChange = company_name !== undefined && oldApp.company_name !== company_name;
+        if (isLocationChange || isCompanyChange) {
+          let changeMsg = `<b>⚠️ Kritik Abonelik Güncellemesi</b>\n\n`;
+          changeMsg += `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n`;
+          changeMsg += `<b>Abonelik ID:</b> #${id} (Plaka: ${oldApp.plate_number || ''}, İsim: ${oldApp.full_name || ''})\n`;
+          if (isLocationChange) {
+            changeMsg += `<b>Otopark Değişimi:</b> "${oldApp.parking_location}" ➔ "${parking_location}"\n`;
+          }
+          if (isCompanyChange) {
+            changeMsg += `<b>Firma Değişimi:</b> "${oldApp.company_name || 'SERBEST ÇALIŞAN'}" ➔ "${company_name || 'SERBEST ÇALIŞAN'}"\n`;
+          }
+          changeMsg += `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})`;
+
+          context.waitUntil(sendTelegramAlert(changeMsg, context.env));
+        }
       }
 
       // Trigger status notifications asynchronously in the background
@@ -713,6 +734,7 @@ export async function onRequest(context) {
 
       const deletedRows = await deleteRes.json();
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      const country = context.request.headers.get("CF-IPCountry") || "";
 
       // Log deletion audit event for each deleted subscription/application
       if (Array.isArray(deletedRows)) {
@@ -727,10 +749,23 @@ export async function onRequest(context) {
               targetId: row.id,
               details: `Abonelik başvurusu #${row.id} (Plaka: ${row.plate_number || ''}, İsim: ${row.full_name || ''}, Konum: ${row.parking_location || ''}) kalıcı olarak silindi.`,
               ipAddress,
+              country,
               otoparkName: row.parking_location || null,
               companyName: row.company_name || null
             })
           );
+        }
+
+        // Send Telegram alert for critical deletion
+        if (deletedRows.length > 0) {
+          let deleteMsg = `<b>❌ Abonelik Silindi</b>\n\n`;
+          deleteMsg += `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n`;
+          deleteMsg += `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n`;
+          deleteMsg += `<b>Silinen Abonelik(ler):</b>\n`;
+          deletedRows.forEach(row => {
+            deleteMsg += `- ID: #${row.id} | Plaka: ${row.plate_number || ''} | İsim: ${row.full_name || ''} | Konum: ${row.parking_location || ''}\n`;
+          });
+          context.waitUntil(sendTelegramAlert(deleteMsg, context.env));
         }
       }
 
@@ -854,6 +889,7 @@ export async function onRequest(context) {
 
       // Log audit
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      const country = context.request.headers.get("CF-IPCountry") || "";
       context.waitUntil(
         logAudit({
           supabaseUrl,
@@ -864,6 +900,7 @@ export async function onRequest(context) {
           targetId: appId,
           details: `Test başvurusu #${appId} (${full_name}) oluşturuldu.`,
           ipAddress,
+          country,
           otoparkName: parking_location || null,
           companyName: null
         })

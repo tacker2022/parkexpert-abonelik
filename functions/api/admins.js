@@ -339,6 +339,7 @@ export async function onRequest(context) {
         }
 
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        const country = context.request.headers.get("CF-IPCountry") || "";
         context.waitUntil(
           logAudit({
             supabaseUrl,
@@ -348,7 +349,8 @@ export async function onRequest(context) {
             actionType: "update_admin",
             targetId: id,
             details,
-            ipAddress
+            ipAddress,
+            country
           })
         );
 
@@ -356,7 +358,7 @@ export async function onRequest(context) {
           sendTelegramAlert(
             `<b>✏️ Yönetici Güncellendi</b>\n\n` +
             `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
-            `<b>IP Adresi:</b> ${ipAddress}\n` +
+            `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n` +
             `<b>Detay:</b> ${details}`,
             context.env
           )
@@ -425,6 +427,7 @@ export async function onRequest(context) {
 
         // Log audit action
         const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+        const country = context.request.headers.get("CF-IPCountry") || "";
         context.waitUntil(
           logAudit({
             supabaseUrl,
@@ -434,7 +437,8 @@ export async function onRequest(context) {
             actionType: "create_admin",
             targetId: newAdminId,
             details: `"${name}" (${username}) yetkili yöneticisi oluşturuldu.`,
-            ipAddress
+            ipAddress,
+            country
           })
         );
 
@@ -442,7 +446,7 @@ export async function onRequest(context) {
           sendTelegramAlert(
             `<b>👤 Yeni Yönetici Oluşturuldu</b>\n\n` +
             `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
-            `<b>IP Adresi:</b> ${ipAddress}\n` +
+            `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n` +
             `<b>Yeni Yönetici:</b> ${name} (${username.toLowerCase()}, Yetki: [${otoparks.join(", ")}])`,
             context.env
           )
@@ -488,6 +492,7 @@ export async function onRequest(context) {
 
       // Log audit action
       const ipAddress = context.request.headers.get("CF-Connecting-IP") || context.request.headers.get("x-real-ip") || "";
+      const country = context.request.headers.get("CF-IPCountry") || "";
       context.waitUntil(
         logAudit({
           supabaseUrl,
@@ -497,7 +502,8 @@ export async function onRequest(context) {
           actionType: "delete_admin",
           targetId: id,
           details: `"${adminName}" (${adminUsername}) yetkili yöneticisi silindi.`,
-          ipAddress
+          ipAddress,
+          country
         })
       );
 
@@ -505,7 +511,7 @@ export async function onRequest(context) {
         sendTelegramAlert(
           `<b>❌ Yönetici Silindi</b>\n\n` +
           `<b>Yapan:</b> ${user.username} (Rol: ${user.role})\n` +
-          `<b>IP Adresi:</b> ${ipAddress}\n` +
+          `<b>IP Adresi:</b> ${ipAddress} (${country || 'Bilinmiyor'})\n` +
           `<b>Silinen Yönetici:</b> ${adminName} (${adminUsername})`,
           context.env
         )

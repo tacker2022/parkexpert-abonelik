@@ -8,11 +8,13 @@ export async function logAudit({
   targetId,
   details,
   ipAddress,
+  country,
   otoparkName,
   companyName
 }) {
   try {
     const cleanUrl = supabaseUrl.replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
+    const displayIp = ipAddress ? (country ? `${ipAddress} (${country.trim().toUpperCase()})` : ipAddress) : "";
     
     // We run it as a fire-and-forget fetch or await it.
     // In workers context, if using context.waitUntil, we can pass it, but standard await is safer.
@@ -29,7 +31,7 @@ export async function logAudit({
         action_type: actionType,
         target_id: String(targetId || ""),
         details: details || "",
-        ip_address: ipAddress || "",
+        ip_address: displayIp,
         otopark_name: otoparkName || null,
         company_name: companyName || null
       })
