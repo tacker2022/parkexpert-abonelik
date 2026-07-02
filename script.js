@@ -3457,15 +3457,40 @@ function populateCompanyFilter() {
   const currentVal = filterCompany.value;
   filterCompany.innerHTML = '<option value="">Tüm Firmalar</option>';
   
-  // Get unique companies from allApplications, filtered by selected location
+  const select = document.getElementById('active-user-role');
+  const activeRoleVal = select ? select.value : 'admin';
+  const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
+  const userJson = localStorage.getItem('parkexpert_user');
+  const loggedInUser = userJson ? JSON.parse(userJson) : {};
+  const activeAdminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
+  const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
+  const isYonetim = isYonetimRole(userRole);
+
+  // Get unique companies from allApplications, filtered by selected location and manager otoparks
   const appCompanies = allApplications
-    .filter(app => !selectedLocation || app.parking_location === selectedLocation)
+    .filter(app => {
+      if (selectedLocation) {
+        return app.parking_location === selectedLocation;
+      }
+      if (isYonetim && activeAdminObj.otoparks) {
+        return activeAdminObj.otoparks.includes(app.parking_location);
+      }
+      return true;
+    })
     .map(app => app.company_name)
     .filter(Boolean);
   
-  // Get registered companies from B2B registry, filtered by selected location
+  // Get registered companies from B2B registry, filtered by selected location and manager otoparks
   const regCompanies = (window.allRegisteredCompanies || [])
-    .filter(c => !selectedLocation || c.otopark_name === selectedLocation)
+    .filter(c => {
+      if (selectedLocation) {
+        return c.otopark_name === selectedLocation;
+      }
+      if (isYonetim && activeAdminObj.otoparks) {
+        return activeAdminObj.otoparks.includes(c.otopark_name);
+      }
+      return true;
+    })
     .map(c => c.name)
     .filter(Boolean);
   
