@@ -6953,6 +6953,9 @@ function editApplicationPlate(appId) {
 
   if (!modal || !contentEl || !appIdInput || !typeInput) return;
 
+  const modalWindow = modal.querySelector('.modal-window');
+  if (modalWindow) modalWindow.style.maxWidth = '450px';
+
   if (titleEl) titleEl.textContent = "Plaka Güncelle";
   appIdInput.value = appId;
   typeInput.value = 'plate';
@@ -6995,6 +6998,9 @@ function editSubscriptionExpiry(appId) {
   const typeInput = document.getElementById('quick-edit-type');
 
   if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  const modalWindow = modal.querySelector('.modal-window');
+  if (modalWindow) modalWindow.style.maxWidth = '450px';
 
   if (titleEl) titleEl.textContent = "Abonelik Bitiş Tarihini Düzenle";
   appIdInput.value = appId;
@@ -7039,6 +7045,9 @@ async function changeApplicationCompany(appId) {
   const typeInput = document.getElementById('quick-edit-type');
 
   if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  const modalWindow = modal.querySelector('.modal-window');
+  if (modalWindow) modalWindow.style.maxWidth = '600px';
 
   if (titleEl) titleEl.textContent = "Firmayı Düzenle / Aktar";
   appIdInput.value = appId;
@@ -7097,7 +7106,7 @@ async function changeApplicationCompany(appId) {
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.25rem;">
           <div style="flex: 1; min-width: 0;">
             <div style="font-size: 0.65rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Mevcut Durum</div>
-            <div style="font-size: 0.825rem; font-weight: 800; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" id="transfer-from-name">
+            <div style="font-size: 0.825rem; font-weight: 800; color: #64748b; margin-top: 0.15rem; word-break: break-word; line-height: 1.3;" id="transfer-from-name">
               ${app.company_name || 'SERBEST ÇALIŞAN (Şirketsiz)'}
             </div>
           </div>
@@ -7108,7 +7117,7 @@ async function changeApplicationCompany(appId) {
           
           <div style="flex: 1; min-width: 0; text-align: right;">
             <div style="font-size: 0.65rem; color: var(--color-primary); font-weight: 700; text-transform: uppercase;">Hedef Firma</div>
-            <div style="font-size: 0.825rem; font-weight: 850; color: var(--color-primary-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem;" id="transfer-to-name">
+            <div style="font-size: 0.825rem; font-weight: 850; color: var(--color-primary-dark); margin-top: 0.15rem; word-break: break-word; line-height: 1.3;" id="transfer-to-name">
               -
             </div>
           </div>
@@ -7156,6 +7165,9 @@ function changeApplicationLocation(appId) {
   const typeInput = document.getElementById('quick-edit-type');
 
   if (!modal || !contentEl || !appIdInput || !typeInput) return;
+
+  const modalWindow = modal.querySelector('.modal-window');
+  if (modalWindow) modalWindow.style.maxWidth = '450px';
 
   if (titleEl) titleEl.textContent = "Otopark Konumunu Düzenle";
   appIdInput.value = appId;
