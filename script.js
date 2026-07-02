@@ -12702,19 +12702,27 @@ async function fetchActiveSessions() {
         const comp = companiesList.find(c => String(c.username).toLowerCase() === String(session.username).toLowerCase());
         if (comp) {
           authorizedLocationsHtml = `
-            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-              <span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.775rem; text-transform: uppercase;">🏢 ${comp.name}</span>
-              <span style="font-size: 0.7rem; color: var(--color-text-muted); font-weight: 600;">📍 ${comp.otopark_name}</span>
+            <div style="display: flex; flex-direction: column; gap: 0.15rem; max-width: 200px;">
+              <span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.725rem; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${comp.name}">🏢 ${comp.name}</span>
+              <span style="font-size: 0.675rem; color: var(--color-text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${comp.otopark_name}">📍 ${comp.otopark_name}</span>
             </div>
           `;
         } else {
-          authorizedLocationsHtml = `<span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.775rem;">🏢 Kurumsal Firma</span>`;
+          authorizedLocationsHtml = `<span style="font-weight: 750; color: var(--color-primary-dark); font-size: 0.725rem;">🏢 Kurumsal Firma</span>`;
         }
       } else {
         const adm = adminsList.find(a => String(a.username).toLowerCase() === String(session.username).toLowerCase());
         if (adm && adm.otoparks && adm.otoparks.length > 0) {
-          const otoparksJoined = adm.otoparks.join(', ');
-          authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: normal; word-break: break-word;" title="${otoparksJoined}">📍 ${otoparksJoined}</span>`;
+          if (adm.otoparks.length === 1) {
+            authorizedLocationsHtml = `<span style="font-size: 0.725rem; color: var(--color-text-dark); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block;" title="${adm.otoparks[0]}">📍 ${adm.otoparks[0]}</span>`;
+          } else {
+            const otoparksJoined = adm.otoparks.join('\n');
+            authorizedLocationsHtml = `
+              <span title="${otoparksJoined}" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: help; display: inline-flex; align-items: center; gap: 0.25rem;">
+                📍 ${adm.otoparks.length} Konum Yetkisi ℹ️
+              </span>
+            `;
+          }
         } else {
           authorizedLocationsHtml = `<span style="color: var(--color-text-muted); font-style: italic; font-size: 0.725rem;">Otopark Atanmamış</span>`;
         }
