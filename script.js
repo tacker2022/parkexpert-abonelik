@@ -15188,15 +15188,16 @@ async function removeCurrentAvatarPhoto() {
       }
     }
 
-    // Refresh active user select display avatar
+    // Refresh active user select display avatar and active sessions for superadmins
     const loggedInUserJson = localStorage.getItem('parkexpert_user');
     const loggedInUserObj = loggedInUserJson ? JSON.parse(loggedInUserJson) : null;
-    if (loggedInUserObj && loggedInUserObj.role === 'superadmin' && currentAdminVal !== 'superadmin') {
-      renderAdminsTable();
+    if (loggedInUserObj && loggedInUserObj.role === 'superadmin') {
+      if (currentAdminVal !== 'superadmin') {
+        renderAdminsTable();
+      }
+      // Refresh active sessions list
+      fetchActiveSessions();
     }
-    
-    // Refresh active sessions list
-    fetchActiveSessions();
 
   } catch (err) {
     console.error(err);
