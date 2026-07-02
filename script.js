@@ -15123,5 +15123,92 @@ window.handleCompanyPortalAvatarSuccess = handleCompanyPortalAvatarSuccess;
 window.handleCompanyPortalAvatarError = handleCompanyPortalAvatarError;
 window.dismissCompanyPortalAvatarReminder = dismissCompanyPortalAvatarReminder;
 
+function handleAvatarClick() {
+  const avatarImg = document.getElementById('current-user-avatar-img');
+  // Check if an avatar photo is currently loaded and visible
+  if (avatarImg && avatarImg.style.display !== 'none' && avatarImg.src && !avatarImg.src.startsWith('data:')) {
+    openModal('modal-avatar-options');
+  } else {
+    // No photo loaded -> trigger file input directly!
+    const fileInput = document.getElementById('header-avatar-upload-input');
+    if (fileInput) fileInput.click();
+  }
+}
+
+function triggerUploadFromOptions() {
+  closeModal('modal-avatar-options');
+  const fileInput = document.getElementById('header-avatar-upload-input');
+  if (fileInput) fileInput.click();
+}
+
+async function removeCurrentAvatarPhoto() {
+  if (!confirm("Profil fotoğrafınızı kaldırmak istediğinize emin misiniz?")) return;
+  
+  closeModal('modal-avatar-options');
+  
+  const token = localStorage.getItem('parkexpert_token');
+  if (!token) return;
+  
+  const select = document.getElementById('active-user-role');
+  if (!select) return;
+  const currentAdminVal = select.value;
+
+  try {
+    const res = await fetch('/api/admins', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id: currentAdminVal,
+        delete_avatar: true,
+        is_self_avatar: true
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Profil fotoğrafı kaldırılırken hata oluştu.");
+    }
+
+    showToastNotification('Fotoğraf Kaldırıldı', 'Profil fotoğrafınız başarıyla kaldırıldı.', 'trash');
+
+    // Reset UI images to use initials fallback
+    const avatarImg = document.getElementById('current-user-avatar-img');
+    if (avatarImg) {
+      avatarImg.style.display = 'none';
+      avatarImg.src = '';
+    }
+
+    const heroAvatarImgEl = document.getElementById('company-portal-avatar-img');
+    if (heroAvatarImgEl) {
+      heroAvatarImgEl.style.display = 'none';
+      heroAvatarImgEl.src = '';
+      if (heroAvatarImgEl.nextElementSibling) {
+        heroAvatarImgEl.nextElementSibling.style.display = 'inline-flex';
+      }
+    }
+
+    // Refresh active user select display avatar
+    const loggedInUserJson = localStorage.getItem('parkexpert_user');
+    const loggedInUserObj = loggedInUserJson ? JSON.parse(loggedInUserJson) : null;
+    if (loggedInUserObj && loggedInUserObj.role === 'superadmin' && currentAdminVal !== 'superadmin') {
+      renderAdminsTable();
+    }
+    
+    // Refresh active sessions list
+    fetchActiveSessions();
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+}
+
+window.handleAvatarClick = handleAvatarClick;
+window.triggerUploadFromOptions = triggerUploadFromOptions;
+window.removeCurrentAvatarPhoto = removeCurrentAvatarPhoto;
+
 
 

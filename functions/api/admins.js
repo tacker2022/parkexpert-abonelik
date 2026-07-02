@@ -203,14 +203,25 @@ export async function onRequest(context) {
       const payload = await context.request.json();
       const { id, name, username, password, otoparks, phone, email, role, photo_base64, is_self_avatar } = payload;
 
-      // Handle self avatar upload
+      // Handle self avatar upload or deletion
       if (is_self_avatar) {
-        if (!id || !photo_base64) {
-          return new Response(JSON.stringify({ error: "Eksik bilgi! ID veya fotoğraf verisi bulunamadı." }), { status: 400, headers });
+        if (!id) {
+          return new Response(JSON.stringify({ error: "Eksik bilgi! ID bulunamadı." }), { status: 400, headers });
         }
         // Authorize: Must be superadmin OR editing their own self avatar
         if (user.role !== "superadmin" && String(user.id) !== String(id)) {
           return new Response(JSON.stringify({ error: "Bu işlem için yetkiniz bulunmamaktadır!" }), { status: 403, headers });
+        }
+        if (payload.delete_avatar) {
+          try {
+            await context.env.BUCKET.delete(`avatars/${id}.jpg`);
+            return new Response(JSON.stringify({ success: true, message: "Profil fotoğrafı başarıyla silindi." }), { status: 200, headers });
+          } catch (e) {
+            return new Response(JSON.stringify({ error: `Fotoğraf silinirken hata oluştu: ${e.message}` }), { status: 500, headers });
+          }
+        }
+        if (!photo_base64) {
+          return new Response(JSON.stringify({ error: "Eksik bilgi! Fotoğraf verisi bulunamadı." }), { status: 400, headers });
         }
         await uploadAvatarToR2(id, photo_base64, context.env.BUCKET);
         return new Response(JSON.stringify({ success: true, message: "Profil fotoğrafı başarıyla güncellendi." }), { status: 200, headers });
