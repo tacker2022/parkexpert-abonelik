@@ -12696,6 +12696,21 @@ async function fetchActiveSessions() {
       // Resolve Authorized Locations / Company name
       let authorizedLocationsHtml = '<span style="color: var(--color-text-muted); font-style: italic;">-</span>';
       
+      // Resolve avatar photo if exists
+      let avatarUrl = '';
+      let userId = null;
+      if (session.role === 'company') {
+        const comp = companiesList.find(c => String(c.username).toLowerCase() === String(session.username).toLowerCase());
+        if (comp) userId = comp.id;
+      } else {
+        const adm = adminsList.find(a => String(a.username).toLowerCase() === String(session.username).toLowerCase());
+        if (adm) userId = adm.id;
+      }
+      if (userId) {
+        // Prevent browser caching by appending a short version parameter
+        avatarUrl = `/api/document?path=avatars/${userId}.jpg`;
+      }
+      
       if (session.role === 'superadmin') {
         authorizedLocationsHtml = `<span style="background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); font-size: 0.675rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem;"><i data-lucide="crown" style="width: 11px; height: 11px;"></i> Tüm Konumlar</span>`;
       } else if (session.role === 'company') {
@@ -12720,7 +12735,7 @@ async function fetchActiveSessions() {
             const otoparksJoined = adm.otoparks.map(o => o.replace(/'/g, "\\'")).join(', ');
             const otoparksDelimited = adm.otoparks.map(o => o.replace(/'/g, "\\'")).join('|||');
             authorizedLocationsHtml = `
-              <span title="${otoparksJoined}" onclick="openAuthorizedOtoparksModal('${adm.name.replace(/'/g, "\\'")}', '${otoparksDelimited}')" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+              <span title="${otoparksJoined}" onclick="openAuthorizedOtoparksModal('${adm.name.replace(/'/g, "\\'")}', '${otoparksDelimited}', '${avatarUrl || ''}')" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.15); font-size: 0.675rem; font-weight: 750; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                 📍 ${adm.otoparks.length} Konum Yetkisi ℹ️
               </span>
             `;
@@ -12728,6 +12743,24 @@ async function fetchActiveSessions() {
         } else {
           authorizedLocationsHtml = `<span style="color: var(--color-text-muted); font-style: italic; font-size: 0.725rem;">Otopark Atanmamış</span>`;
         }
+      }
+
+      let avatarHtml = '';
+      if (avatarUrl) {
+        avatarHtml = `
+          <div style="position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8);" onclick="zoomSessionAvatar('${avatarUrl}', '${session.name.replace(/'/g, "\\'")}')">
+            <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700; font-size: 0.75rem; border-radius: 50%; text-transform: uppercase;">
+              ${session.name.substring(0, 1).toUpperCase()}
+            </span>
+          </div>
+        `;
+      } else {
+        avatarHtml = `
+          <span class="user-avatar" style="width: 28px; height: 28px; font-size: 0.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700; flex-shrink: 0; text-transform: uppercase;">
+            ${session.name.substring(0, 1).toUpperCase()}
+          </span>
+        `;
       }
 
       return `
@@ -12741,9 +12774,7 @@ async function fetchActiveSessions() {
           </td>
           <td style="padding: 1rem; font-weight: 600; color: var(--color-text-dark);">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span class="user-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700;">
-                ${session.name.substring(0, 1).toUpperCase()}
-              </span>
+              ${avatarHtml}
               <span>${session.name} (${session.username})</span>
               ${isCurrent ? '<span style="font-size: 0.65rem; font-weight: 700; background: #10b981; color: #ffffff; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem;">BU CİHAZ</span>' : ''}
             </div>
@@ -14920,7 +14951,7 @@ function generateUsernameFromRepName(repName) {
 window.handleUsernameSuggestionMgmt = handleUsernameSuggestionMgmt;
 window.handleUsernameSuggestionOtopark = handleUsernameSuggestionOtopark;
 
-function openAuthorizedOtoparksModal(adminName, otoparksEscapedJoined) {
+function openAuthorizedOtoparksModal(adminName, otoparksEscapedJoined, avatarUrl) {
   const otoparks = otoparksEscapedJoined.split('|||').map(o => o.trim()).filter(Boolean);
   
   const avatarEl = document.getElementById('auth-otoparks-user-avatar');
@@ -14930,7 +14961,19 @@ function openAuthorizedOtoparksModal(adminName, otoparksEscapedJoined) {
   
   if (nameEl) nameEl.textContent = adminName;
   if (avatarEl) {
-    avatarEl.textContent = adminName ? adminName.substring(0, 1).toUpperCase() : '👤';
+    if (avatarUrl) {
+      avatarEl.innerHTML = `
+        <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; cursor: zoom-in;" onclick="zoomSessionAvatar('${avatarUrl}', '${adminName.replace(/'/g, "\\'")}')">
+        <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--color-primary); color: #ffffff; font-weight: 800; font-size: 1.1rem; border-radius: 50%; text-transform: uppercase;">
+          ${adminName ? adminName.substring(0, 1).toUpperCase() : '👤'}
+        </span>
+      `;
+      avatarEl.style.background = 'transparent';
+      avatarEl.style.padding = '0';
+    } else {
+      avatarEl.textContent = adminName ? adminName.substring(0, 1).toUpperCase() : '👤';
+      avatarEl.style.background = 'var(--color-primary)';
+    }
   }
   if (countEl) countEl.textContent = otoparks.length;
   
@@ -14952,7 +14995,65 @@ function openAuthorizedOtoparksModal(adminName, otoparksEscapedJoined) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function zoomSessionAvatar(url, name) {
+  let overlay = document.getElementById('premium-avatar-zoom-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'premium-avatar-zoom-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 15000;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      cursor: zoom-out;
+    `;
+    
+    overlay.onclick = () => {
+      overlay.style.opacity = '0';
+      const img = document.getElementById('premium-avatar-zoom-img');
+      if (img) img.style.transform = 'scale(0.95)';
+      setTimeout(() => { overlay.style.display = 'none'; }, 250);
+    };
+
+    overlay.innerHTML = `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 1.25rem; max-width: 90%; max-height: 90%;">
+        <img id="premium-avatar-zoom-img" src="" style="width: 280px; height: 280px; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-shadow: 0 20px 40px rgba(0,0,0,0.6); transform: scale(0.95); transition: transform 0.25s ease;">
+        <span id="premium-avatar-zoom-name" style="color: #ffffff; font-weight: 850; font-size: 1.15rem; text-shadow: 0 2px 8px rgba(0,0,0,0.6); font-family: system-ui, -apple-system, sans-serif;"></span>
+        <span style="color: rgba(255,255,255,0.5); font-size: 0.725rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(255,255,255,0.08); padding: 0.3rem 0.8rem; border-radius: 20px;">Kapatmak için tıklayın</span>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  const img = document.getElementById('premium-avatar-zoom-img');
+  const nameEl = document.getElementById('premium-avatar-zoom-name');
+  
+  if (img) {
+    img.src = url;
+    img.style.transform = 'scale(0.95)';
+  }
+  if (nameEl) nameEl.textContent = name;
+
+  overlay.style.display = 'flex';
+  overlay.offsetHeight; // force reflow
+  overlay.style.opacity = '1';
+  if (img) {
+    setTimeout(() => { img.style.transform = 'scale(1.03)'; }, 50);
+  }
+}
+
 window.openAuthorizedOtoparksModal = openAuthorizedOtoparksModal;
+window.zoomSessionAvatar = zoomSessionAvatar;
 
 
 
