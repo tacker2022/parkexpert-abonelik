@@ -7819,7 +7819,7 @@ function handleUserRoleChange() {
       const aTabs = document.querySelector('.admin-tabs');
       if (aTabs) aTabs.style.display = 'flex';
       const wStatus = document.querySelector('.sidebar-widget-status');
-      if (wStatus) wStatus.style.display = 'none';
+      if (wStatus) wStatus.style.display = 'block';
     } else if (userRole === 'company') {
       // B2B Company Portal Role
       if (document.getElementById('sidebar-tab-applications')) document.getElementById('sidebar-tab-applications').style.display = 'none';
@@ -7866,7 +7866,7 @@ function handleUserRoleChange() {
       const aTabs = document.querySelector('.admin-tabs');
       if (aTabs) aTabs.style.display = 'none';
       const wStatus = document.querySelector('.sidebar-widget-status');
-      if (wStatus) wStatus.style.display = 'none';
+      if (wStatus) wStatus.style.display = 'block';
 
       if (currentAdminTab !== 'company-portal') {
         switchAdminTab('company-portal');
