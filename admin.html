@@ -2213,26 +2213,15 @@
       <div class="modal-body" style="padding: 1.5rem; text-align: left; background: #ffffff;">
         <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; color: #10b981; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
           <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
-          <span>Yönetici giriş bilgileri başarıyla oluşturuldu ve gönderildi.</span>
+          <span>Giriş bilgileri oluşturuldu ve yetkiliye başarıyla gönderildi.</span>
         </div>
         
-        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0 0 0.75rem 0;">Aşağıdaki giriş bilgilerini kopyalayabilir veya simüle bildirimleri açabilirsiniz:</p>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0 0 0.75rem 0;">Giriş bilgileri (Kullanıcı adı ve Şifre) güvenlik ve gizlilik gereği gizlenmiştir. Bilgiler yetkiliye SMS, WhatsApp ve E-posta yoluyla iletilmiştir:</p>
         
         <div style="background: #f8fafc; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; font-family: inherit;">
           <div style="display: flex; justify-content: space-between; font-size: 0.825rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 0.4rem;">
             <span style="color: var(--color-text-muted); font-weight: 500;">Ad Soyad:</span>
             <strong id="cred-name" style="color: var(--color-text-dark);">-</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.825rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 0.4rem;">
-            <span style="color: var(--color-text-muted); font-weight: 500;">Kullanıcı Adı:</span>
-            <strong id="cred-username" style="color: var(--color-text-dark);">-</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.825rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 0.4rem;">
-            <span style="color: var(--color-text-muted); font-weight: 500;">Giriş Şifresi:</span>
-            <div style="display: flex; align-items: center; gap: 0.35rem;">
-              <strong id="cred-password" style="color: #4f46e5; font-family: monospace; font-size: 0.9rem;">-</strong>
-              <button onclick="copyCredPassword()" title="Kopyala" style="background: none; border: none; cursor: pointer; color: var(--color-text-muted); padding: 0.1rem; display: inline-flex; align-items: center;"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
-            </div>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 0.825rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 0.4rem;">
             <span style="color: var(--color-text-muted); font-weight: 500;">Telefon:</span>
@@ -2245,14 +2234,7 @@
         </div>
       </div>
       <div class="modal-footer" style="padding: 1rem 1.5rem; background: var(--color-bg-light); border-top: 1px solid var(--color-border-light); display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
-        <button class="btn" onclick="openSimulatedAdminWhatsApp()" style="background: #25d366; color: #ffffff; border: none; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.5rem 0.85rem; cursor: pointer;">
-          <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
-          <span>WhatsApp Bildirimi (Simüle)</span>
-        </button>
-        <button class="btn" onclick="openSimulatedAdminEmail()" style="background: #ea4335; color: #ffffff; border: none; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.775rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.5rem 0.85rem; cursor: pointer;">
-          <i data-lucide="mail" style="width: 14px; height: 14px;"></i>
-          <span>E-posta Bildirimi (Simüle)</span>
-        </button>
+        <button class="btn btn-primary" onclick="closeModal('modal-admin-credentials')" style="padding: 0.5rem 1.5rem; min-height: 38px; width: auto; background: var(--color-primary); color: var(--color-primary-dark); font-weight: 700; border: none; border-radius: var(--radius-sm); cursor: pointer;">Kapat</button>
       </div>
     </div>
   </div>

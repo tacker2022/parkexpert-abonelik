@@ -9214,26 +9214,15 @@ function showAdminCredentialsModal(admin, password) {
   currentSimulatedAdmin = { ...admin, password };
   
   const nameEl = document.getElementById('cred-name');
-  const userEl = document.getElementById('cred-username');
-  const passEl = document.getElementById('cred-password');
   const phoneEl = document.getElementById('cred-phone');
   const emailEl = document.getElementById('cred-email');
 
   if (nameEl) nameEl.textContent = admin.name;
-  if (userEl) userEl.textContent = admin.username;
-  if (passEl) passEl.textContent = password;
   if (phoneEl) phoneEl.textContent = admin.phone || '-';
   if (emailEl) emailEl.textContent = admin.email || '-';
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
   openModal('modal-admin-credentials');
-}
-
-function copyCredPassword() {
-  if (!currentSimulatedAdmin || !currentSimulatedAdmin.password) return;
-  navigator.clipboard.writeText(currentSimulatedAdmin.password).then(() => {
-    showToast("Kopyalandı", "Şifre panoya kopyalandı.", "check");
-  });
 }
 
 function openSimulatedAdminWhatsApp() {
@@ -9372,7 +9361,6 @@ async function sendAdminPassword(adminId) {
 
 window.generateRandomPassword = generateRandomPassword;
 window.showAdminCredentialsModal = showAdminCredentialsModal;
-window.copyCredPassword = copyCredPassword;
 window.openSimulatedAdminWhatsApp = openSimulatedAdminWhatsApp;
 window.openSimulatedAdminEmail = openSimulatedAdminEmail;
 window.sendAdminPassword = sendAdminPassword;
