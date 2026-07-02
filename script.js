@@ -12070,10 +12070,21 @@ function renderAuditLogsTable(logs) {
   const tbody = document.getElementById('audit-logs-table-body');
   if (!tbody) return;
 
-  currentlyRenderedAuditLogs = logs;
+  const hideTest = document.getElementById('audit-filter-hide-test')?.checked;
+  let filteredLogs = logs;
+  if (hideTest) {
+    filteredLogs = logs.filter(log => {
+      const username = (log.admin_username || '').toLowerCase();
+      const details = (log.details || '').toLowerCase();
+      const action = (log.action_type || '').toLowerCase();
+      return !(username.includes('test') || details.includes('test') || action.includes('test'));
+    });
+  }
+
+  currentlyRenderedAuditLogs = filteredLogs;
   tbody.innerHTML = '';
 
-  if (logs.length === 0) {
+  if (filteredLogs.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="8" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted); font-style: italic;">
@@ -12084,7 +12095,7 @@ function renderAuditLogsTable(logs) {
     return;
   }
 
-  logs.forEach((log, idx) => {
+  filteredLogs.forEach((log, idx) => {
     const tr = document.createElement('tr');
 
     // Format Date
