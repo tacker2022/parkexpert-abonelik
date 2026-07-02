@@ -3146,6 +3146,7 @@ async function handleAdminLogout(reason = 'user') {
   localStorage.removeItem('parkexpert_token');
   localStorage.removeItem('parkexpert_user');
   localStorage.removeItem('parkexpert_current_admin');
+  localStorage.removeItem(ADMIN_USERS_KEY);
   
   // Reload page to show login screen
   location.reload();
@@ -3194,6 +3195,7 @@ async function initAdminController() {
   if (loggedInUserJson) {
     const loggedInUser = JSON.parse(loggedInUserJson);
     if (loggedInUser.role !== 'superadmin') {
+      localStorage.removeItem(ADMIN_USERS_KEY);
       try {
         const res = await fetch('/api/admins', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -3736,7 +3738,7 @@ function applyFilters() {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
-  const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const activeAdminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
   const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
   const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
   const isYonetim = isYonetimRole(userRole);
@@ -3815,7 +3817,7 @@ function updateMetrics(apps) {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
-  const activeAdminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const activeAdminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
   const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (activeAdminObj.role || 'admin');
 
   const otoparks = JSON.parse(localStorage.getItem('parkexpert_otoparks')) || [];
@@ -7751,7 +7753,7 @@ function handleUserRoleChange() {
 
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
-    const adminObj = admins.find(a => String(a.id) === String(val)) || loggedInUser;
+    const adminObj = (String(val) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(val)) || loggedInUser);
     const userRole = adminObj.role || 'admin';
     
     if (adminObj && adminObj.name) {
@@ -8217,7 +8219,7 @@ function updateYonetimDashboardStats() {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
-  const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const adminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
   const userRole = activeRoleVal === 'superadmin' ? 'superadmin' : (adminObj.role || 'admin');
 
   if (!isYonetimRole(userRole)) return;
@@ -8262,7 +8264,7 @@ function handleYonetimAvatarZoom() {
   const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
   const userJson = localStorage.getItem('parkexpert_user');
   const loggedInUser = userJson ? JSON.parse(userJson) : {};
-  const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+  const adminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
   
   if (adminObj && adminObj.id) {
     const avatarUrl = `/api/document?path=avatars/${adminObj.id}.jpg`;
@@ -8392,7 +8394,7 @@ function selectYonetimLocation(parkName, clickedPill) {
     const admins = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY)) || [];
     const userJson = localStorage.getItem('parkexpert_user');
     const loggedInUser = userJson ? JSON.parse(userJson) : {};
-    const adminObj = admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser;
+    const adminObj = (String(activeRoleVal) === String(loggedInUser.id)) ? loggedInUser : (admins.find(a => String(a.id) === String(activeRoleVal)) || loggedInUser);
     const mgrName = adminObj ? (adminObj.name || 'Yönetici') : 'Yönetici';
     const personalGreeting = `${greeting}, ${mgrName}`;
 
