@@ -45,12 +45,16 @@
 
       <!-- User Profile Card in Sidebar -->
       <div class="admin-user" id="admin-user-selector-block">
-        <div class="user-avatar-container" style="position: relative; width: 56px; height: 56px; margin: 0 auto;">
+        <div class="user-avatar-container" style="position: relative; width: 56px; height: 56px; margin: 0 auto; cursor: pointer;" onclick="document.getElementById('header-avatar-upload-input')?.click()" title="Profil fotoğrafını değiştirmek için tıklayın">
           <div class="user-avatar" id="current-user-avatar" style="position: relative; overflow: hidden; width: 56px; height: 56px; border-radius: 50%;">
             <img id="current-user-avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;">
             <span id="current-user-avatar-initials" style="font-size: 1.25rem;">SA</span>
           </div>
-          <span class="user-status-dot" title="Aktif Oturum"></span>
+          <!-- Camera edit overlay badge -->
+          <div style="position: absolute; bottom: -2px; right: -2px; background: #2563eb; color: #ffffff; width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.15); z-index: 5;">
+            <i data-lucide="camera" style="width: 10px; height: 10px; color: #ffffff;"></i>
+          </div>
+          <span class="user-status-dot" title="Aktif Oturum" style="bottom: 0px; left: 0px; right: auto;"></span>
         </div>
         <input type="file" id="header-avatar-upload-input" accept="image/*" style="display: none;" onchange="handleHeaderAvatarUpload(this)">
         <div class="user-info">
@@ -1707,7 +1711,7 @@
               <!-- Company Avatar Container -->
               <div style="position: relative; width: 68px; height: 68px; flex-shrink: 0;">
                 <div style="position: relative; overflow: hidden; width: 68px; height: 68px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), #2563eb); border: 2.5px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.25); box-sizing: border-box; width: 100%; height: 100%;">
-                  <img id="company-portal-avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;">
+                  <img id="company-portal-avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" onload="handleCompanyPortalAvatarSuccess(this)" onerror="handleCompanyPortalAvatarError(this)" style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; display: none;">
                   <span id="company-portal-avatar-initial" style="font-size: 1.75rem; font-weight: 900; color: #ffffff; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%;">D</span>
                 </div>
                 <!-- Pulse online indicator dot -->
@@ -1758,6 +1762,19 @@
             <!-- Background decorative shape -->
             <div style="position: absolute; right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.02); z-index: 1;"></div>
             <div style="position: absolute; left: 10%; bottom: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(37, 99, 235, 0.03); z-index: 1;"></div>
+          </div>
+          
+          <!-- Dismissible Profile Photo Setup Reminder -->
+          <div id="company-portal-avatar-reminder" style="display: none; background: rgba(37, 99, 235, 0.04); border: 1.5px dashed rgba(37, 99, 235, 0.25); padding: 1rem 1.5rem; border-radius: var(--radius-md); margin-bottom: 2rem; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: 0 4px 12px rgba(15, 59, 162, 0.01); text-align: left; box-sizing: border-box; transition: all 0.25s ease;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+              <div style="background: rgba(37, 99, 235, 0.08); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;">
+                <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div style="font-size: 0.825rem; font-weight: 600; color: var(--color-text-dark); line-height: 1.45;">
+                <strong style="color: var(--color-primary-dark); font-weight: 800;">Profilini Özelleştir!</strong> Portalınızda profil fotoğrafınızın görünmesi için <a href="javascript:void(0)" onclick="document.getElementById('header-avatar-upload-input')?.click()" style="color: var(--color-primary); font-weight: 800; text-decoration: underline; transition: color 0.2s;">sol üstteki avatar resmine tıklayarak</a> hızlıca bir fotoğraf yükleyebilirsiniz.
+              </div>
+            </div>
+            <button onclick="dismissCompanyPortalAvatarReminder()" style="background: none; border: none; font-size: 1.25rem; color: var(--color-text-muted); cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center; outline: none; transition: color 0.2s;" title="Kapat">&times;</button>
           </div>
 
           <!-- B2B Portal Premium Statistics Cards Grid -->

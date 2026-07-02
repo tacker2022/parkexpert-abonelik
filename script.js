@@ -15087,5 +15087,41 @@ function zoomSessionAvatar(url, name) {
 window.openAuthorizedOtoparksModal = openAuthorizedOtoparksModal;
 window.zoomSessionAvatar = zoomSessionAvatar;
 
+function handleCompanyPortalAvatarSuccess(imgEl) {
+  imgEl.style.display = 'block';
+  const reminder = document.getElementById('company-portal-avatar-reminder');
+  if (reminder) reminder.style.display = 'none';
+}
+
+function handleCompanyPortalAvatarError(imgEl) {
+  imgEl.style.display = 'none';
+  if (imgEl.nextElementSibling) {
+    imgEl.nextElementSibling.style.display = 'inline-flex';
+  }
+  
+  const isDismissed = localStorage.getItem('parkexpert_dismiss_avatar_reminder') === 'true';
+  if (!isDismissed) {
+    const reminder = document.getElementById('company-portal-avatar-reminder');
+    if (reminder) {
+      reminder.style.display = 'flex';
+      reminder.style.opacity = '1';
+    }
+  }
+}
+
+function dismissCompanyPortalAvatarReminder() {
+  const reminder = document.getElementById('company-portal-avatar-reminder');
+  if (reminder) {
+    reminder.style.opacity = '0';
+    reminder.style.transform = 'translateY(-10px)';
+    setTimeout(() => { reminder.style.display = 'none'; }, 250);
+  }
+  localStorage.setItem('parkexpert_dismiss_avatar_reminder', 'true');
+}
+
+window.handleCompanyPortalAvatarSuccess = handleCompanyPortalAvatarSuccess;
+window.handleCompanyPortalAvatarError = handleCompanyPortalAvatarError;
+window.dismissCompanyPortalAvatarReminder = dismissCompanyPortalAvatarReminder;
+
 
 
