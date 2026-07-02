@@ -2703,6 +2703,10 @@ function togglePrivacyMode() {
     filterAuditLogs();
   }
   
+  if (activeRole === 'company' && typeof renderCompanyPortalVehicles === 'function') {
+    renderCompanyPortalVehicles(companyPortalVehicles);
+  }
+  
   if (currentAppId) {
     const drawer = document.getElementById('drawer-overlay');
     if (drawer && drawer.classList.contains('active')) {
@@ -14416,11 +14420,11 @@ function renderCompanyPortalVehicles(list) {
       <tr style="border-bottom: 1px solid var(--color-border-light);">
         <td style="padding: 1rem 1.5rem; font-weight: 700; color: var(--color-primary-dark); font-size: 0.9rem;">
           <span style="background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.15); padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); text-transform: uppercase;">
-            ${app.plate_number}
+            ${maskPlate(app.plate_number)}
           </span>
         </td>
-        <td style="padding: 1rem 1.5rem; font-weight: 600;">${app.full_name}</td>
-        <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">${app.phone}</td>
+        <td style="padding: 1rem 1.5rem; font-weight: 600;">${maskName(app.full_name)}</td>
+        <td style="padding: 1rem 1.5rem; color: var(--color-text-muted);">${maskPhone(app.phone)}</td>
         <td style="padding: 1rem 1.5rem;">
           ${typeBadgeHtml}
         </td>
