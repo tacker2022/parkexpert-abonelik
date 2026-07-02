@@ -7452,11 +7452,10 @@ function handleUserRoleChange() {
     }
     if (avatar) {
       avatar.className = 'user-avatar user-avatar-superadmin';
-      avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek için tıklayın');
+      avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek veya kaldırmak için tıklayın');
       avatar.style.cursor = 'pointer';
       avatar.onclick = () => {
-        const fileInput = document.getElementById('header-avatar-upload-input');
-        if (fileInput) fileInput.click();
+        handleAvatarClick();
       };
     }
     if (subtext) subtext.innerHTML = `<span class="badge-role badge-role-superadmin">SÜPER ADMİN</span><span class="badge-username">@superadmin</span>`;
@@ -7538,11 +7537,10 @@ function handleUserRoleChange() {
         } else {
           avatar.className = 'user-avatar user-avatar-representative';
         }
-        avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek için tıklayın');
+        avatar.setAttribute('title', 'Profil fotoğrafını değiştirmek veya kaldırmak için tıklayın');
         avatar.style.cursor = 'pointer';
         avatar.onclick = () => {
-          const fileInput = document.getElementById('header-avatar-upload-input');
-          if (fileInput) fileInput.click();
+          handleAvatarClick();
         };
       }
       if (subtext) {
