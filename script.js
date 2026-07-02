@@ -8226,8 +8226,22 @@ function handleYonetimAvatarZoom() {
   }
 }
 
+function handleCompanyPortalAvatarZoom() {
+  const userJson = localStorage.getItem('parkexpert_user');
+  if (!userJson) return;
+  const user = JSON.parse(userJson);
+  if (user && user.id) {
+    const avatarUrl = `/api/document?path=avatars/${user.id}.jpg`;
+    const name = user.rep_name || user.username || 'Firma Yetkilisi';
+    if (typeof zoomSessionAvatar === 'function') {
+      zoomSessionAvatar(avatarUrl, name);
+    }
+  }
+}
+
 window.updateYonetimDashboardStats = updateYonetimDashboardStats;
 window.handleYonetimAvatarZoom = handleYonetimAvatarZoom;
+window.handleCompanyPortalAvatarZoom = handleCompanyPortalAvatarZoom;
 
 // Global click listener to close operator dropdown
 window.addEventListener('click', (e) => {
