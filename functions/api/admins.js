@@ -160,17 +160,21 @@ export async function onRequest(context) {
 
   const method = context.request.method;
 
-  // Allow non-superadmin users to proceed ONLY if they are uploading their own avatar
+  // Allow non-superadmin users to proceed if they are reading their own profile or uploading their own avatar
   let isAllowed = user.role === "superadmin";
-  if (!isAllowed && method === "POST") {
-    try {
-      const clonedReq = context.request.clone();
-      const payload = await clonedReq.json();
-      if (payload.is_self_avatar && String(user.id) === String(payload.id)) {
-        isAllowed = true;
+  if (!isAllowed) {
+    if (method === "GET") {
+      isAllowed = true;
+    } else if (method === "POST") {
+      try {
+        const clonedReq = context.request.clone();
+        const payload = await clonedReq.json();
+        if (payload.is_self_avatar && String(user.id) === String(payload.id)) {
+          isAllowed = true;
+        }
+      } catch (err) {
+        console.error("Error reading cloned request body:", err);
       }
-    } catch (err) {
-      console.error("Error reading cloned request body:", err);
     }
   }
 
@@ -180,10 +184,15 @@ export async function onRequest(context) {
 
   try {
     // ----------------------------------------------------
-    // GET: List all admin users
+    // GET: List admin users (filtered by ownership for non-superadmins)
     // ----------------------------------------------------
     if (method === "GET") {
-      const res = await fetch(`${supabaseUrl}/rest/v1/admin_users?select=*&order=created_at.desc`, {
+      let queryUrl = `${supabaseUrl}/rest/v1/admin_users?select=*&order=created_at.desc`;
+      if (user.role !== "superadmin") {
+        queryUrl = `${supabaseUrl}/rest/v1/admin_users?id=eq.${user.id}&select=*`;
+      }
+      
+      const res = await fetch(queryUrl, {
         headers: {
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`

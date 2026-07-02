@@ -3189,11 +3189,39 @@ async function initAdminController() {
   await loadOtoparkCategories();
   await loadOtoparks();
 
+  // Fetch fresh administrator details dynamically on page load to update otoparks/role
+  const loggedInUserJson = localStorage.getItem('parkexpert_user');
+  if (loggedInUserJson) {
+    const loggedInUser = JSON.parse(loggedInUserJson);
+    if (loggedInUser.role !== 'superadmin') {
+      try {
+        const res = await fetch('/api/admins', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const adminsList = await res.json();
+          if (adminsList.length > 0) {
+            const freshUser = {
+              ...loggedInUser,
+              otoparks: adminsList[0].otoparks || [],
+              role: adminsList[0].role || loggedInUser.role,
+              name: adminsList[0].name || loggedInUser.name,
+              email: adminsList[0].email || loggedInUser.email,
+              phone: adminsList[0].phone || loggedInUser.phone
+            };
+            localStorage.setItem('parkexpert_user', JSON.stringify(freshUser));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to refresh admin user otoparks on load:", err);
+      }
+    }
+  }
+
   // Populate active admin user selector in header
-  populateActiveUserSelect().then(() => {
-    // Configure screen visibility and initial filters based on loaded admin
-    handleUserRoleChange();
-  });
+  await populateActiveUserSelect();
+  // Configure screen visibility and initial filters based on loaded admin
+  handleUserRoleChange();
 
   // Attach Turkish auto-uppercase listeners for otopark edit modal fields
   const uppercaseOtoparkIds = [
@@ -3714,8 +3742,9 @@ function applyFilters() {
   const isYonetim = isYonetimRole(userRole);
 
   filteredApplications = allApplications.filter(app => {
-    // Role-based visibility check for Yonetim (Only show locations that require management approval)
+    // Role-based visibility check for Yonetim (Only show locations that require management approval and user is authorized for)
     if (isYonetim) {
+      if (activeAdminObj.otoparks && !activeAdminObj.otoparks.includes(app.parking_location)) return false;
       const otoparkObj = otoparks.find(p => p.name === app.parking_location);
       const requiresManagement = otoparkObj ? (otoparkObj.requiresManagementApproval || otoparkObj.requires_management_approval) === true : false;
       if (!requiresManagement) return false;
