@@ -11604,6 +11604,7 @@ async function submitBulkSMS(event) {
 }
 
 let allAuditLogs = [];
+let currentlyRenderedAuditLogs = [];
 let auditCurrentPage = 1;
 let auditTotalCount = 0;
 
@@ -11955,6 +11956,7 @@ function renderAuditLogsTable(logs) {
   const tbody = document.getElementById('audit-logs-table-body');
   if (!tbody) return;
 
+  currentlyRenderedAuditLogs = logs;
   tbody.innerHTML = '';
 
   if (logs.length === 0) {
@@ -12086,7 +12088,7 @@ window.loadAuditLogs = loadAuditLogs;
 window.filterAuditLogs = filterAuditLogs;
 
 function viewAuditLogDetails(idx) {
-  const log = allAuditLogs[idx];
+  const log = currentlyRenderedAuditLogs[idx];
   if (!log) return;
 
   // Format Date
