@@ -235,6 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Populate active locations marquee ticker from DB
   populateTickerLocations();
 
+  // Initialize rotating welcome announcement slides if present
+  initWelcomeAnnouncementBanner();
+
   // Route page-specific controllers
   const formElement = document.getElementById('subscription-apply-form');
   const adminTable = document.getElementById('admin-table');
@@ -318,6 +321,59 @@ function initHeroLiveSimulation() {
     
     statusEl.innerHTML = `${currentState.iconSvg}<span style="vertical-align:middle;">${currentState.text}</span>`;
   }, 2200);
+}
+
+function initWelcomeAnnouncementBanner() {
+  const container = document.getElementById('welcome-announcement-banner');
+  if (!container) return;
+
+  const slides = container.querySelectorAll('.welcome-slide');
+  const dots = container.querySelectorAll('.welcome-dot');
+  if (slides.length <= 1) return;
+
+  let currentSlide = 0;
+  let slideInterval = null;
+
+  function showSlide(index) {
+    slides.forEach(s => {
+      s.classList.remove('active');
+      s.style.display = 'none';
+      s.style.opacity = '0';
+    });
+    dots.forEach(d => d.classList.remove('active'));
+
+    currentSlide = (index + slides.length) % slides.length;
+    const activeSlide = slides[currentSlide];
+    
+    activeSlide.style.display = 'flex';
+    setTimeout(() => {
+      activeSlide.classList.add('active');
+      activeSlide.style.opacity = '1';
+    }, 50);
+
+    if (dots[currentSlide]) {
+      dots[currentSlide].classList.add('active');
+    }
+  }
+
+  function startRotation() {
+    slideInterval = setInterval(() => {
+      showSlide(currentSlide + 1);
+    }, 6000);
+  }
+
+  function resetRotation() {
+    clearInterval(slideInterval);
+    startRotation();
+  }
+
+  window.showWelcomeSlide = (index) => {
+    showSlide(index);
+    resetRotation();
+  };
+
+  showSlide(0);
+  startRotation();
 }
 
 function populateTickerLocations() {

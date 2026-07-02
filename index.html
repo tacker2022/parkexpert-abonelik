@@ -26,7 +26,7 @@
   <link rel="icon" type="image/png" href="assets/logo_square.png?v=3">
   
   <!-- Global Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260702_1613">
 </head>
 <body>
   <!-- Top Ticker Bar (Active Locations) -->
@@ -62,22 +62,50 @@
   </header>
 
   <main>
-    <!-- Welcome Banner for newly integrated sites (Birlik Sanayi Sitesi) -->
-    <div class="welcome-banner-container">
+    <!-- Welcome Banner with Dynamic Announcements (Giyim Sanatkarları & Birlik Sanayi Sitesi) -->
+    <div class="welcome-banner-container" id="welcome-announcement-banner">
       <div class="welcome-banner">
-        <span class="welcome-badge">
-          <i data-lucide="sparkles" style="width: 11px; height: 11px;"></i>
-          Yeni Üye
-        </span>
-        <div class="welcome-text">
-          <span>Aramıza Hoş Geldin <strong>BİRLİK SANAYİ SİTESİ</strong>!</span> 
-          <span class="welcome-subtext">HGS Geçiş ve Dijital Abonelik Sisteminiz Başarıyla Kuruldu.</span>
+        
+        <!-- Slide 1: Giyim Sanatkarları (Coming Soon) -->
+        <div class="welcome-slide active" id="slide-giyim-sanatkarlari">
+          <span class="welcome-badge" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);">
+            <i data-lucide="calendar" style="width: 11px; height: 11px;"></i>
+            Çok Yakında
+          </span>
+          <div class="welcome-text">
+            <span><strong>GİYİM SANATKARLARI İŞ VE TİCARET MERKEZİ</strong> otoparkımız çok yakında hizmetinizde!</span> 
+            <span class="welcome-subtext">HGS Geçiş ve Dijital Abonelik Sistemimiz <strong>13 Temmuz'da</strong> aktif olacaktır.</span>
+          </div>
+          <a href="basvuru.html" class="welcome-cta" style="background: #2563eb; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);">
+            <span>Detayları İncele</span>
+            <i data-lucide="arrow-right"></i>
+          </a>
         </div>
-        <a href="basvuru.html?otopark=birlik-sanayi" class="welcome-cta">
-          <span>Hemen Başvur</span>
-          <i data-lucide="arrow-right"></i>
-        </a>
-        <button class="welcome-close-btn" onclick="this.parentElement.parentElement.remove()" aria-label="Kapat">
+
+        <!-- Slide 2: Birlik Sanayi Sitesi (Active) -->
+        <div class="welcome-slide" id="slide-birlik-sanayi" style="display: none; opacity: 0;">
+          <span class="welcome-badge">
+            <i data-lucide="sparkles" style="width: 11px; height: 11px;"></i>
+            Yeni Üye
+          </span>
+          <div class="welcome-text">
+            <span>Aramıza Hoş Geldin <strong>BİRLİK SANAYİ SİTESİ</strong>!</span> 
+            <span class="welcome-subtext">HGS Geçiş ve Dijital Abonelik Sisteminiz Başarıyla Kuruldu.</span>
+          </div>
+          <a href="basvuru.html?otopark=birlik-sanayi" class="welcome-cta">
+            <span>Hemen Başvur</span>
+            <i data-lucide="arrow-right"></i>
+          </a>
+        </div>
+
+        <!-- Dots Navigation -->
+        <div class="welcome-dots">
+          <span class="welcome-dot active" onclick="showWelcomeSlide(0)"></span>
+          <span class="welcome-dot" onclick="showWelcomeSlide(1)"></span>
+        </div>
+
+        <!-- Close Button (Shared) -->
+        <button class="welcome-close-btn" onclick="document.getElementById('welcome-announcement-banner').remove()" aria-label="Kapat">
           <i data-lucide="x"></i>
         </button>
       </div>
@@ -499,6 +527,6 @@
   <!-- Lucide Vector Icons Library -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Global & Interface Scripts -->
-  <script src="script.js?v=20260616_1650"></script>
+  <script src="script.js?v=20260702_1613"></script>
 </body>
 </html>
