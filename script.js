@@ -3315,11 +3315,17 @@ async function loadApplications() {
   if (!token) return;
 
   try {
-    const response = await fetch(`/api/applications?_t=${Date.now()}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
+    const [response, companiesRes] = await Promise.all([
+      fetch(`/api/applications?_t=${Date.now()}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      }),
+      fetch(`/api/companies?all=true`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).catch(err => {
+        console.error("Failed to load companies in loadApplications:", err);
+        return null;
+      })
+    ]);
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
@@ -3336,6 +3342,14 @@ async function loadApplications() {
       throw new Error(errData.error || "Could not load applications");
     }
     allApplications = await response.json();
+
+    if (companiesRes && companiesRes.ok) {
+      try {
+        window.allRegisteredCompanies = await companiesRes.json();
+      } catch(e) {
+        console.error("Error parsing companies list:", e);
+      }
+    }
     
     // Track current IDs for live alerts
     allApplications.forEach(app => {
@@ -3408,8 +3422,20 @@ function populateCompanyFilter() {
   const currentVal = filterCompany.value;
   filterCompany.innerHTML = '<option value="">Tüm Firmalar</option>';
   
-  // Get unique companies from allApplications, mapping empty/null to 'SERBEST ÇALIŞAN'
-  const companies = [...new Set(allApplications.map(app => app.company_name || 'SERBEST ÇALIŞAN'))];
+  // Get unique companies from allApplications
+  const appCompanies = allApplications.map(app => app.company_name).filter(Boolean);
+  
+  // Get registered companies from B2B registry
+  const regCompanies = (window.allRegisteredCompanies || []).map(c => c.name).filter(Boolean);
+  
+  // Merge lists to get all unique company names
+  const mergedCompanies = new Set([...appCompanies, ...regCompanies]);
+  const companies = Array.from(mergedCompanies);
+  
+  if (!companies.includes('SERBEST ÇALIŞAN')) {
+    companies.push('SERBEST ÇALIŞAN');
+  }
+  
   companies.sort((a, b) => {
     if (a === 'SERBEST ÇALIŞAN') return 1;
     if (b === 'SERBEST ÇALIŞAN') return -1;
@@ -6637,6 +6663,7 @@ function switchAdminTab(tabName) {
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         window.allRegisteredCompanies = data;
+        populateCompanyFilter();
         renderCompaniesTable(filteredApplications);
       })
       .catch(err => {
