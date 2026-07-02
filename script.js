@@ -9158,8 +9158,6 @@ function openCreateAdminModal() {
   openModal('modal-admin-edit');
 }
 
-}
-
 let currentSimulatedAdmin = null;
 
 function generateUniqueUsername(name) {
