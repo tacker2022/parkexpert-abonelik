@@ -12747,20 +12747,22 @@ async function fetchActiveSessions() {
         }
       }
 
+      const displayName = (session.username === 'superadmin' || session.name === 'Süper Yönetici') ? 'Talha Çalargün' : session.name;
+
       let avatarHtml = '';
       if (avatarUrl) {
         avatarHtml = `
-          <div style="position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8);" onclick="zoomSessionAvatar('${avatarUrl}', '${session.name.replace(/'/g, "\\'")}')">
+          <div style="position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: zoom-in; box-shadow: 0 2px 6px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8);" onclick="zoomSessionAvatar('${avatarUrl}', '${displayName.replace(/'/g, "\\")}')">
             <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
             <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700; font-size: 0.75rem; border-radius: 50%; text-transform: uppercase;">
-              ${session.name.substring(0, 1).toUpperCase()}
+              ${displayName.substring(0, 1).toUpperCase()}
             </span>
           </div>
         `;
       } else {
         avatarHtml = `
           <span class="user-avatar" style="width: 28px; height: 28px; font-size: 0.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${isCurrent ? '#10b981' : '#0f3ba2'}; color: #ffffff; font-weight: 700; flex-shrink: 0; text-transform: uppercase;">
-            ${session.name.substring(0, 1).toUpperCase()}
+            ${displayName.substring(0, 1).toUpperCase()}
           </span>
         `;
       }
@@ -12777,7 +12779,7 @@ async function fetchActiveSessions() {
           <td style="padding: 1rem; font-weight: 600; color: var(--color-text-dark);">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               ${avatarHtml}
-              <span>${session.name} (${session.username})</span>
+              <span>${displayName} (${session.username})</span>
               ${isCurrent ? '<span style="font-size: 0.65rem; font-weight: 700; background: #10b981; color: #ffffff; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem;">BU CİHAZ</span>' : ''}
             </div>
           </td>
