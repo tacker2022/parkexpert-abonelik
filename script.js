@@ -14444,6 +14444,8 @@ function renderCompanyPortalVehicles(list) {
       </tr>
     `;
   }).join('');
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function filterCompanyPortalVehicles() {
